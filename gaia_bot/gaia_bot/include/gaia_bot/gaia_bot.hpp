@@ -19,7 +19,6 @@
 #include <sensor_msgs/msg/range.hpp>
 #include <vision_msgs/msg/detection3_d.hpp>
 #include <trajectory_msgs/msg/joint_trajectory.hpp>
-//#include <std_msgs/msg/string.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <memory>
@@ -31,7 +30,7 @@ namespace gaia_bot
 {
 
 /// \class GaiaBot
-/// \brief ROS 2 Node for basic shape processing.
+/// \brief ROS 2 Node for GaiaBot behaviors.
 class GaiaBot : public rclcpp::Node
 {
 public:
