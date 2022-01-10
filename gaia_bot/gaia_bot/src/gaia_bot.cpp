@@ -90,7 +90,6 @@ void GaiaBot::publish_neck_pose(float rotation, float lift)
 
 void GaiaBot::range_callback(const Range::ConstSharedPtr msg)
 {
-  gaia_log::app().info("Range Message {}", msg->range);
   gaia::db::begin_transaction();
   // TODO: Generalize to handle multiple range sensors
   auto range_sensor_iter = range_sensors_t::list().where(range_sensors_t::expr::id == 0).begin();

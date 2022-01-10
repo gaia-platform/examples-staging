@@ -55,7 +55,7 @@ translate_ruleset(
     -isystem${sensor_msgs_INCLUDE_DIRS} -I${PROJECT_SOURCE_DIR}/include
 )
 
-# Add a library for the ROS2 baia_bot Node.
+# Add a library for the ROS2 gaia_bot Node.
 # We added a library instead of an executable to create a Composable Node,
 # which allows dynamically loading multiple Nodes into a shared process.
 # https://docs.ros.org/en/galactic/Concepts/About-Composition.html

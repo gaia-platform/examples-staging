@@ -29,19 +29,17 @@ class FacesNode(Node):
             self.listener_callback,
             10)
         self.bridge = CvBridge()
+        self.face_cascade = cv2.CascadeClassifier('faces/haarcascade_frontalface_default.xml')
 
         self.publisher_ = self.create_publisher(Detection3D, 'face', 10)
 
 
     def listener_callback(self, data):
-        self.get_logger().info('Video width: "%f"' % data.width)
- 
         # Convert ROS Image message to OpenCV image
         current_frame = self.bridge.imgmsg_to_cv2(data)
         frame_gray = cv2.cvtColor(current_frame, cv2.COLOR_BGR2GRAY)
         frame_gray = cv2.equalizeHist(frame_gray)
-        face_cascade = cv2.CascadeClassifier('faces/haarcascade_frontalface_default.xml')
-        detected_faces = face_cascade.detectMultiScale(frame_gray)
+        detected_faces = self.face_cascade.detectMultiScale(frame_gray)
         if(len(detected_faces)):
             for (x, y, w, h) in detected_faces:
                 face = Detection3D()

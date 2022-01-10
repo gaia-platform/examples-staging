@@ -12,21 +12,13 @@ After installation of Ubuntu run the following in a terminal to install graphica
 ```bash
 sudo apt update
 sudo apt upgrade
-
-sudo apt install lubuntu-desktop
-sudo apt install lightdm
-
-sudo apt install ssh
-sudo apt install python3-pip
-sudo pip3 install RPi.GPIO
-sudo pip3 install opencv-python
+sudo apt install lubuntu-desktop lightdm ssh python3-pip RPi.GPIO
 ```
 
 ### [Install ROS2](https://docs.ros.org/en/galactic/Installation/Ubuntu-Install-Debians.html)
 After installation of ROS2 run the following to install associated components:
 ```bash
-sudo apt install python3-colcon-common-extensions
-sudo apt install python3-rosdep2
+sudo apt install python3-colcon-common-extensions python3-rosdep2
 ```
 
 ### Modify Raspberry Pi firmware configuration
@@ -48,13 +40,8 @@ Reboot
 sudo reboot
 ```
 
-### [Install ros2_v4l2_camera](https://gitlab.com/boldhearts/ros2_v4l2_camera) ROS2 node.
-```bash
-sudo apt install ros-galactic-v4l2-camera
-```
-
 ### Clone project
-If you already have a ROS2 workspace, `cd` into its `src` directory and clone this repo.
+Create a ROS2 workspace if you have not already, `cd` into its `src` directory and clone this repo.
 ```bash
 mkdir -p ~/ros2_ws/src
 cd ~/ros2_ws/src
@@ -68,9 +55,14 @@ source /opt/ros/galactic/setup.bash
 ```
 
 ### Update gpio permissions
-In order for the range sensor node to work, permissions on the Raspberry Pi's memory mapped gpio pins. This must be done each time the Raspberry Pi is started.
+In order for the range sensor node to work, permissions on the Raspberry Pi's memory mapped gpio pins need to be updated. First add yourself to the dialout group. This only needs to be done once.
 ```bash
-sudo chown root:$USER /dev/gpiomem
+sudo usermod -aG dialout $USER
+```
+
+Then change the group ownership on /dev/gpiomem to dialout. This must be done each time the Raspberry Pi is started.
+```bash
+sudo chown root.dialout /dev/gpiomem
 sudo chmod g+rw /dev/gpiomem
 ```
 
@@ -81,14 +73,17 @@ rosdep install --from-paths src -i -y
 ```
 
 ### Build
-Navigate into each node's folder (gaia_bot, faces, range, pca9685) to build and install each node.
-From within each folder:
+Navigate into the main gaia_bot folder containing all of the nodes. Then build and install.
 ```bash
+cd ~/ros2_ws/src/examples/gaia_bot
 colcon build
 source install/setup.bash
 ```
 
 ### Launch
+
+TODO: Create launch file to launch all nodes
+
 Launch the camera node:
 ```bash
 ros2 run v4l2_camera v4l2_camera_node
@@ -96,24 +91,20 @@ ros2 run v4l2_camera v4l2_camera_node
 
 In a new terminal launch the faces node:
 ```bash
-cd ~/ros2_ws/src/examples/gaia_bot/faces
 ros2 run faces faces
 ```
 
 In another new terminal launch the range node:
 ```bash
-cd ~/ros2_ws/src/examples/gaia_bot/range
 ros2 run range range
 ```
 
 In another new terminal launch the neck_pose node:
 ```bash
-cd ~/ros2_ws/src/examples/gaia_bot/pca9685
 ros2 run pca9685 neck_pose
 ```
 
 In another new terminal launch the gaia_bot node:
 ```bash
-cd ~/ros2_ws/src/examples/gaia_bot/gaia_bot
 ros2 launch gaia_bot gaia_bot.launch.py
 ```
