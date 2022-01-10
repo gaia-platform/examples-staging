@@ -40,12 +40,6 @@ Reboot
 sudo reboot
 ```
 
-### Source ROS2
-In order to use ROS2 execute the following. Consider adding to .bashrc or similar in order to execute in each new terminal window.
-```bash
-source /opt/ros/galactic/setup.bash
-```
-
 ### Update gpio permissions
 In order for the range sensor node to work, permissions on the Raspberry Pi's memory mapped gpio pins need to be updated. First add yourself to the dialout group. This only needs to be done once.
 ```bash
@@ -64,6 +58,12 @@ Create a ROS2 workspace if you have not already, `cd` into its `src` directory a
 mkdir -p ~/ros2_ws/src
 cd ~/ros2_ws/src
 git clone https://github.com/gaia-platform/examples.git
+```
+
+### Source ROS2
+In order to use ROS2 execute the following. Consider adding to .bashrc or similar in order to execute in each new terminal window.
+```bash
+source /opt/ros/galactic/setup.bash
 ```
 
 ### Install dependencies listed in package.xml files
