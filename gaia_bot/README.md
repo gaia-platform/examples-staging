@@ -40,14 +40,6 @@ Reboot
 sudo reboot
 ```
 
-### Clone project
-Create a ROS2 workspace if you have not already, `cd` into its `src` directory and clone this repo.
-```bash
-mkdir -p ~/ros2_ws/src
-cd ~/ros2_ws/src
-git clone https://github.com/gaia-platform/examples.git
-```
-
 ### Source ROS2
 In order to use ROS2 execute the following. Consider adding to .bashrc or similar in order to execute in each new terminal window.
 ```bash
@@ -64,6 +56,14 @@ Then change the group ownership on /dev/gpiomem to dialout. This must be done ea
 ```bash
 sudo chown root.dialout /dev/gpiomem
 sudo chmod g+rw /dev/gpiomem
+```
+
+### Clone project
+Create a ROS2 workspace if you have not already, `cd` into its `src` directory and clone this repo.
+```bash
+mkdir -p ~/ros2_ws/src
+cd ~/ros2_ws/src
+git clone https://github.com/gaia-platform/examples.git
 ```
 
 ### Install dependencies listed in package.xml files
