@@ -14,12 +14,13 @@
 
 import launch
 from launch_ros.actions import ComposableNodeContainer
+from launch_ros.actions import Node
 from launch_ros.descriptions import ComposableNode
 
 
 def generate_launch_description():
     """Generate launch description with a single component."""
-    container = ComposableNodeContainer(
+    gaia_bot_container = ComposableNodeContainer(
             name='gaia_bot_container',
             namespace='',
             package='rclcpp_components',
@@ -33,4 +34,22 @@ def generate_launch_description():
             output='screen',
     )
 
-    return launch.LaunchDescription([container])
+    camera = Node(
+        package = 'v4l2_camera',
+        namespace='',
+        executable='v4l2_camera_node',
+        name='v4l2_camera',
+    )
+
+    faces = Node(
+        package = 'faces',
+        namespace='',
+        executable='faces',
+        name='faces',
+    )
+
+    return launch.LaunchDescription([
+        gaia_bot_container,
+        camera,
+        faces,
+    ])
