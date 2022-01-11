@@ -10,6 +10,7 @@
   <depend>vision_msgs</depend>
   <depend>libopencv-dev</depend>
   <exec_depend>v4l2_camera</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

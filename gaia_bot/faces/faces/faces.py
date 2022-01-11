@@ -18,6 +18,8 @@ from sensor_msgs.msg import Image
 from vision_msgs.msg import Detection3D
 import cv2
 from cv_bridge import CvBridge
+from ament_index_python.packages import get_package_share_directory
+import os
 
 class FacesNode(Node):
 
@@ -29,7 +31,8 @@ class FacesNode(Node):
             self.listener_callback,
             10)
         self.bridge = CvBridge()
-        self.face_cascade = cv2.CascadeClassifier('faces/haarcascade_frontalface_default.xml')
+        data_file_name = os.path.join(get_package_share_directory('faces'), 'resource', 'haarcascade_frontalface_default.xml')
+        self.face_cascade = cv2.CascadeClassifier(data_file_name)
 
         self.publisher_ = self.create_publisher(Detection3D, 'face', 10)
 
