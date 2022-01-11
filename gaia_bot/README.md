@@ -73,9 +73,9 @@ rosdep install --from-paths src -i -y
 ```
 
 ### Build
-Navigate into the main gaia_bot folder containing all of the nodes. Then build and install.
+Navigate into the main ros2_ws folder then build and install.
 ```bash
-cd ~/ros2_ws/src/examples/gaia_bot
+cd ~/ros2_ws
 colcon build
 source install/setup.bash
 ```
