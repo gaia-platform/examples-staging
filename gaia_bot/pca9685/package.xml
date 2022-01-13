@@ -5,7 +5,9 @@
   <version>0.0.0</version>
   <description>TODO: Package description</description>
   <maintainer email="gaiabot@todo.todo">gaiabot</maintainer>
-  <license>TODO: License declaration</license>
+  <license>Apache 2.0</license>
+
+  <depend>gaia_bot_interfaces</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

@@ -18,7 +18,7 @@ sudo apt install lubuntu-desktop lightdm ssh python3-pip RPi.GPIO
 ### [Install ROS2](https://docs.ros.org/en/galactic/Installation/Ubuntu-Install-Debians.html)
 After installation of ROS2 run the following to install associated components:
 ```bash
-sudo apt install python3-colcon-common-extensions python3-rosdep2
+sudo apt install python3-colcon-common-extensions python3-rosdep2 python3-smbus
 ```
 
 ### Modify Raspberry Pi firmware configuration
@@ -46,10 +46,11 @@ In order for the range sensor node to work, permissions on the Raspberry Pi's me
 sudo usermod -aG dialout $USER
 ```
 
-Then change the group ownership on /dev/gpiomem to dialout. This must be done each time the Raspberry Pi is started.
+Then change the group ownership on /dev/gpiomem to dialout and update permissions on the i2c bus. This must be done each time the Raspberry Pi is started.
 ```bash
 sudo chown root.dialout /dev/gpiomem
 sudo chmod g+rw /dev/gpiomem
+sudo chmod a+rw /dev/i2c-*
 ```
 
 ### Clone project

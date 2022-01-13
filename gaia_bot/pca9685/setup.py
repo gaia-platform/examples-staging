@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'neck_pose = pca9685.neck_pose:main',
+            'wheels = pca9685.wheels:main',
         ],
     },
 )
