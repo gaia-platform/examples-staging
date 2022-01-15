@@ -17,6 +17,8 @@
 
 #include <gaia/system.hpp>
 #include <sensor_msgs/msg/range.hpp>
+#include <sensor_msgs/msg/battery_state.hpp>
+#include <sensor_msgs/msg/illuminance.hpp>
 #include <vision_msgs/msg/detection3_d.hpp>
 #include <trajectory_msgs/msg/joint_trajectory.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -45,8 +47,21 @@ public:
 
 private:
   rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr m_joint_trajectory_pub{};
+
+  rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr m_battery_state_sub{};
+  rclcpp::Subscription<sensor_msgs::msg::Illuminance>::SharedPtr m_left_light_sub{};
+  rclcpp::Subscription<sensor_msgs::msg::Illuminance>::SharedPtr m_right_light_sub{};
   rclcpp::Subscription<sensor_msgs::msg::Range>::SharedPtr m_range_sub{};
   rclcpp::Subscription<vision_msgs::msg::Detection3D>::SharedPtr m_face_detection_sub{};
+
+  /// \brief Handle incoming messages.
+  void left_light_callback(const sensor_msgs::msg::Illuminance::ConstSharedPtr msg);
+
+  /// \brief Handle incoming messages.
+  void right_light_callback(const sensor_msgs::msg::Illuminance::ConstSharedPtr msg);
+
+  /// \brief Handle incoming messages.
+  void battery_state_callback(const sensor_msgs::msg::BatteryState::ConstSharedPtr msg);
 
   /// \brief Handle incoming messages.
   void range_callback(const sensor_msgs::msg::Range::ConstSharedPtr msg);

@@ -40,6 +40,11 @@ Reboot
 sudo reboot
 ```
 
+### Install python packages
+```bash
+sudo pip3 install rpi_ws281x
+```
+
 ### Update gpio permissions
 In order for the range sensor node to work, permissions on the Raspberry Pi's memory mapped gpio pins need to be updated. First add yourself to the dialout group. This only needs to be done once.
 ```bash

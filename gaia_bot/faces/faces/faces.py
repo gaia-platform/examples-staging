@@ -36,7 +36,6 @@ class FacesNode(Node):
 
         self.publisher_ = self.create_publisher(Detection3D, 'face', 10)
 
-
     def listener_callback(self, data):
         # Convert ROS Image message to OpenCV image
         current_frame = self.bridge.imgmsg_to_cv2(data)
@@ -59,7 +58,6 @@ class FacesNode(Node):
         cv2.imshow("camera", frame_gray)        
         cv2.waitKey(3)
 
-
 def main(args=None):
     rclpy.init(args=args)
 
@@ -72,7 +70,6 @@ def main(args=None):
     # when the garbage collector destroys the node object)
     faces.destroy_node()
     rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()
