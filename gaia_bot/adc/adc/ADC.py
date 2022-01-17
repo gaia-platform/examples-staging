@@ -1,3 +1,10 @@
+# Adapted from Freenove under Creative Commons Licence 3.0
+# 
+# See:
+#   https://github.com/Freenove/Freenove_4WD_Smart_Car_Kit_for_Raspberry_Pi
+#   https://creativecommons.org/licenses/by/3.0/
+#
+
 import smbus
 import time
 class Adc:

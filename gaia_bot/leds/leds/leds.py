@@ -11,6 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+
+# Includes code adapted from Freenove under Creative Commons Licence 3.0
+# 
+# See:
+#   https://github.com/Freenove/Freenove_4WD_Smart_Car_Kit_for_Raspberry_Pi
+#   https://creativecommons.org/licenses/by/3.0/
+#
 
 import rclpy
 from rclpy.node import Node
