@@ -15,8 +15,8 @@ setup(
     zip_safe=True,
     maintainer='gaia',
     maintainer_email='steve@gaiaplatform.io',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='ADC nodes for analog sensors',
+    license='Apache 2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

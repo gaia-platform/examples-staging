@@ -3,9 +3,9 @@
 <package format="3">
   <name>adc</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="steve@gaiaplatform.io">ubuntu</maintainer>
-  <license>TODO: License declaration</license>
+  <description>ADC nodes for analog sensors</description>
+  <maintainer email="steve@gaiaplatform.io">gaia</maintainer>
+  <license>Apache 2.0</license>
 
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>

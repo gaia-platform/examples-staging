@@ -16,10 +16,10 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='ubuntu',
-    maintainer_email='ubuntu@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer='gaia',
+    maintainer_email='steve@gaiaplatform.io',
+    description='Face detection node',
+    license='Apache 2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
