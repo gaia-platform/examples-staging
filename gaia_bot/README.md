@@ -18,7 +18,7 @@ sudo apt install lubuntu-desktop lightdm ssh python3-pip RPi.GPIO
 ### [Install ROS2](https://docs.ros.org/en/galactic/Installation/Ubuntu-Install-Debians.html)
 After installation of ROS2 run the following to install associated components:
 ```bash
-sudo apt install python3-colcon-common-extensions python3-rosdep2 python3-smbus
+sudo apt install python3-colcon-common-extensions python3-rosdep2
 ```
 
 ### Modify Raspberry Pi firmware configuration
