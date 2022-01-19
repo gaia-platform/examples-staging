@@ -51,7 +51,7 @@ In order for the range sensor node to work, permissions on the Raspberry Pi's me
 sudo usermod -aG dialout $USER
 ```
 
-Then change the group ownership on /dev/gpiomem to dialout and update permissions on the i2c bus. This must be done each time the Raspberry Pi is started.
+Then change the group ownership on `/dev/gpiomem` to `dialout` and update permissions on the I2C bus. This must be done every time the Raspberry Pi is started.
 ```bash
 sudo chown root.dialout /dev/gpiomem
 sudo chmod g+rw /dev/gpiomem
