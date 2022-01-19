@@ -19,7 +19,9 @@
 
 using gaia::gaia_bot::ego_t;
 using gaia::gaia_bot::range_sensors_t;
+using sensor_msgs::msg::BatteryState;
 using sensor_msgs::msg::Range;
+using sensor_msgs::msg::Illuminance;
 using vision_msgs::msg::Detection3D;
 using trajectory_msgs::msg::JointTrajectory;
 using trajectory_msgs::msg::JointTrajectoryPoint;
@@ -55,6 +57,18 @@ GaiaBot::GaiaBot(const rclcpp::NodeOptions & options)
 
   m_joint_trajectory_pub = create_publisher<JointTrajectory>("neck_pose", rclcpp::QoS(10));
 
+  m_left_light_sub = create_subscription<Illuminance>(
+    "left_light", rclcpp::QoS(10),
+    std::bind(&GaiaBot::left_light_callback, this, _1));
+
+  m_right_light_sub = create_subscription<Illuminance>(
+    "right_light", rclcpp::QoS(10),
+    std::bind(&GaiaBot::right_light_callback, this, _1));
+
+  m_battery_state_sub = create_subscription<BatteryState>(
+    "battery", rclcpp::QoS(10),
+    std::bind(&GaiaBot::battery_state_callback, this, _1));
+
   m_range_sub = create_subscription<Range>(
     "range", rclcpp::QoS(10),
     std::bind(&GaiaBot::range_callback, this, _1));
@@ -86,6 +100,24 @@ void GaiaBot::publish_neck_pose(float rotation, float lift)
   msg.points.push_back(jtpLift);
 
   m_ptr->m_joint_trajectory_pub->publish(msg);
+}
+
+void GaiaBot::left_light_callback(const Illuminance::ConstSharedPtr msg)
+{
+  gaia_log::app().info("Left light Illuminance {}", msg->illuminance);
+  // TODO: Handle left light illuminance
+}
+
+void GaiaBot::right_light_callback(const Illuminance::ConstSharedPtr msg)
+{
+  gaia_log::app().info("Right light Illuminance {}", msg->illuminance);
+  // TODO: Handle right light illuminance
+}
+
+void GaiaBot::battery_state_callback(const BatteryState::ConstSharedPtr msg)
+{
+  gaia_log::app().info("BatteryState voltage {}", msg->voltage);
+  // TODO: Handle battery state
 }
 
 void GaiaBot::range_callback(const Range::ConstSharedPtr msg)

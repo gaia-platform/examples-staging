@@ -3,9 +3,13 @@
 <package format="3">
   <name>pca9685</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="gaiabot@todo.todo">gaiabot</maintainer>
-  <license>TODO: License declaration</license>
+  <description>Nodes making use of pca9685 interface</description>
+  <maintainer email="steve@gaiaplatform.io">gaia</maintainer>
+  <license>Apache 2.0</license>
+
+  <depend>gaia_bot_interfaces</depend>
+
+  <exec_depend>python3-smbus</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

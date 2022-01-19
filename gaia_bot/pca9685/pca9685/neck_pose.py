@@ -11,19 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
- 
+
 import rclpy
 from rclpy.node import Node
-
 from trajectory_msgs.msg import JointTrajectory
-
 from .PCA9685 import PCA9685
+
 class Servo:
     def __init__(self):
         self.PwmServo = PCA9685(0x40, debug=True)
         self.PwmServo.setPWMFreq(50)
         self.PwmServo.setServoPulse(8,1500)
         self.PwmServo.setServoPulse(9,1500)
+
     def setServoPwm(self,channel,angle,error=10):
         angle=int(angle)
         if channel=='rotation':

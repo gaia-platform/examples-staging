@@ -1,16 +1,13 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>range</name>
+  <name>leds</name>
   <version>0.0.0</version>
-  <description>Ultrasonic range detection node</description>
+  <description>LEDs Node</description>
   <maintainer email="steve@gaiaplatform.io">gaia</maintainer>
   <license>Apache 2.0</license>
 
-  <exec_depend>rclpy</exec_depend>
-
-  <depend>std_msgs</depend>
-  <depend>sensor_msgs</depend>
+  <depend>gaia_bot_interfaces</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

@@ -1,8 +1,6 @@
 from setuptools import setup
-import os
-from glob import glob
 
-package_name = 'faces'
+package_name = 'adc'
 
 setup(
     name=package_name,
@@ -12,18 +10,17 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        (os.path.join('share', package_name, 'resource'), glob('resource/*')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='gaia',
     maintainer_email='steve@gaiaplatform.io',
-    description='Face detection node',
+    description='ADC nodes for analog sensors',
     license='Apache 2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'faces = faces.faces:main',
+            'sensors = adc.sensors:main',
         ],
     },
 )

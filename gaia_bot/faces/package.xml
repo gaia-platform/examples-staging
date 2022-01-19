@@ -3,9 +3,10 @@
 <package format="3">
   <name>faces</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="ubuntu@todo.todo">ubuntu</maintainer>
-  <license>TODO: License declaration</license>
+  <description>Face detection node</description>
+  <maintainer email="steve@gaiaplatform.io">gaia</maintainer>
+  <license>Apache 2.0</license>
+
   <exec_depend>rclpy</exec_depend>
   <depend>vision_msgs</depend>
   <depend>libopencv-dev</depend>

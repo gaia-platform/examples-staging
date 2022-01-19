@@ -34,6 +34,62 @@ def generate_launch_description():
             output='screen',
     )
 
+    camera = Node(
+        package = 'v4l2_camera',
+        namespace='',
+        executable='v4l2_camera_node',
+        name='v4l2_camera'
+    )
+
+    faces = Node(
+        package = 'faces',
+        namespace='',
+        executable='faces',
+        name='faces',
+    )
+
+    leds = Node(
+        package = 'leds',
+        namespace='',
+        executable='leds',
+        name='leds'
+    )
+
+    range = Node(
+        package = 'range',
+        namespace='',
+        executable='range',
+        name='range'
+    )
+
+    sensors = Node(
+        package = 'adc',
+        namespace='',
+        executable='sensors',
+        name='sensors'
+    )
+
+    wheels = Node(
+        package = 'pca9685',
+        namespace='',
+        executable='wheels',
+        name='wheels'
+    )
+
+    neck_pose = Node(
+        package = 'pca9685',
+        namespace='',
+        executable='neck_pose',
+        name='neck_pose'
+    )
+
     return launch.LaunchDescription([
         gaia_bot_container,
+        camera,
+        faces,
+        leds,
+        range,
+        sensors,
+        wheels,
+        neck_pose,
     ])
