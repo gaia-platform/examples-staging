@@ -1,0 +1,4 @@
+logs/
+.clearpath_db
+cmake-*
+.idea
