@@ -295,6 +295,8 @@ public:
             if (m_input[0] >= '0' && m_input[0] <= '9')
             {
                 uint32_t flight_number = m_input[0] - '0';
+                std::cout << "\n";
+
                 begin_transaction();
                 auto flight_iter = flights_t::list().where(flights_t::expr::flight_number == flight_number).begin();
                 if (flight_iter != flights_t::list().end()
@@ -304,8 +306,15 @@ public:
                     flight_w.flight_status = "landed";
                     flight_w.flight_miles = flight_iter->route().route_miles();
                     flight_w.update_row();
+                    std::cout << "Flight miles and status updated.\n";
+                }
+                else
+                {
+                    std::cout << "Flight already landed.\n";
                 }
                 commit_transaction();
+                std::cout << "Press enter to continue.";
+                read_input();
                 return true;
             }
         }
