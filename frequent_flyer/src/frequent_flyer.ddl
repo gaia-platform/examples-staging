@@ -19,21 +19,24 @@ table airports (
     arrival_trips references trips[]
 )
 
-table routes (
-    -- References
-    departure_airport references airports
-        using departure_routes,
-    arrival_airport references airports
-        using arrival_routes,
-    flights references flights[]
-)
-
 table airplanes (
     -- Fields
     tail_number uint32 unique,
     max_weight uint32,
 
     -- References
+    flights references flights[]
+)
+
+table routes (
+    -- Fields
+    route_miles uint32,
+
+    -- References
+    departure_airport references airports
+        using departure_routes,
+    arrival_airport references airports
+        using arrival_routes,
     flights references flights[]
 )
 
@@ -70,7 +73,7 @@ table trips (
     id uint32 unique,
     traveler_id uint32,
     description string,
-    trip_miles_flown uint32,
+    trip_miles uint32,
     segments_flown uint8,
 
     -- References
@@ -87,9 +90,8 @@ table travelers (
     id uint32 unique,
     first_name string,
     surname string,
-    membership_number uint32,
-    member_miles_flown uint32,
-    membership_level string,
+    lifetime_miles uint32,
+    member_level string,
 
     -- References
     trips references trips[]
