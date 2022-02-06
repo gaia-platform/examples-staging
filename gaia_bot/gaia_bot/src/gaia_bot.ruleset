@@ -18,13 +18,142 @@
 #include <sensor_msgs/msg/range.hpp>
 #include <sstream>
 
-using gaia_bot::GaiaBot;
+// using gaia_bot::GaiaBot::publish_neck_pose;
 using sensor_msgs::msg::Range;
+using namespace gaia::gaia_bot;
 
-ruleset gaia_bot
+const uint64_t face_track_timeout = 3000;
+const float look_range = 0.01;
+const float neck_move_step = 0.005;
+// const uint64_t face_detection_timeout = 5000;
+
+ruleset gaia_bot: serial_group()
 {
-  on_change(range_sensors.distance)
-  {
-    gaia_log::app().info("range_sensor distance changed {}", range_sensors.distance);
-  }
+    on_update(ego.now)
+    {
+        for (/FT:face_tracks) if (!FT.remove_flag)
+        {
+            uint64_t last_timestamp_new;
+            last_timestamp_new = FT.start_timestamp;
+            uint16_t detection_count_new = 0;
+            float dx_new = 0.0;
+            float dy_new = 0.0;
+
+            for (FT->FD:face_detections)
+            {
+                if (FD.timestamp > last_timestamp_new)
+                {
+                    last_timestamp_new = FD.timestamp;
+                }
+                detection_count_new++;
+                dx_new += FD.dx;
+                dy_new += FD.dy;
+            }
+
+            FT.detection_count = detection_count_new;
+
+            if (detection_count_new == 0)
+            {
+                gaia_log::app().info("Setting remove flag for FT, existing flag {}", FT.remove_flag);
+
+                FT.remove_flag = true;
+            }
+            else if (last_timestamp_new + face_track_timeout > ego.now)
+            {
+                FT.last_timestamp = last_timestamp_new;
+
+                // detection_count_new should never be less than 1
+                dx_new /= detection_count_new;
+                dy_new /= detection_count_new;
+                FT.dx = dx_new;
+                FT.dy = dy_new;
+            }
+            else
+            {
+                for (FT->FD:face_detections)
+                {
+                    FD.remove_flag = true;
+                }
+            }
+
+            if (detection_count_new > 10)
+            {
+                // gaia_log::app().info("face_track: {}, detections {}", FT.id, FT.detection_count);
+                for (/NP:neck_pose)
+                {
+                    gaia_log::app().info("dx_new: {}, NP.rotation {}", dx_new, NP.rotation);
+                    if (dx_new > look_range)
+                    {
+                      NP.rotation += neck_move_step;
+                    }
+                    else if (dx_new < -look_range)
+                    {
+                      NP.rotation -= neck_move_step;
+                    }
+                    if (dy_new > look_range)
+                    {
+                      NP.lift -= neck_move_step;
+                    }
+                    else if (dy_new < look_range)
+                    {
+                      NP.lift += neck_move_step;
+                    }
+                }
+            }
+        }
+    }
+
+    on_change(range_sensors.distance)
+    {
+        gaia_log::app().info("range_sensor distance changed {}", range_sensors.distance);
+    }
+
+    on_change(neck_pose)
+    {
+        gaia_log::app().info("neck_pose rotation:{}, lift:{}", neck_pose.rotation, neck_pose.lift);
+        gaia_bot::GaiaBot::publish_neck_pose(neck_pose.rotation, neck_pose.lift);
+    }
+
+    on_insert(FD:face_detections)
+    {
+        // gaia_log::app().info("face detection {}, {}, {}, {}, {}, {}", FD.dx, FD.dy, FD.dz, FD.width, FD.height, FD.depth);
+
+        uint32_t face_tracks_id_max = 0;
+        float dx_min, dx_max, dy_min, dy_max;
+        dx_min = FD.dx - (FD.width / 2);
+        dx_max = dx_min + FD.width;
+        dy_min = FD.dy - (FD.height / 2);
+        dy_max = dy_min + FD.height;
+
+        for (/FT:face_tracks)
+        {
+            if (face_tracks_id_max < FT.id)
+            {
+                face_tracks_id_max = FT.id;
+            }
+            if (!FT.remove_flag && FT.dx > dx_min && FT.dx < dx_max && FT.dy > dy_min && FT.dy < dy_max)
+            {
+                FD.face_track_id = FT.id;
+                return;
+            }
+        }
+
+        face_tracks_id_max++;
+        gaia_log::app().info("inserting face_track {}", face_tracks_id_max);
+        face_tracks.insert(id:face_tracks_id_max, name:"face_track_name", start_timestamp:FD.timestamp,
+            last_timestamp:FD.timestamp, dx:FD.dx, dy:FD.dy, dz:FD.dz, detection_count:1, ego_id:1);
+        FD.face_track_id = face_tracks_id_max;
+    }
+
+    on_update(face_tracks.remove_flag)
+    {
+        face_tracks.ego_id = 0;
+        face_tracks.remove();
+    }
+
+    on_update(face_detections.remove_flag)
+    {
+        face_detections.face_track_id = 0;
+        face_detections.remove();
+    }
 }

@@ -87,9 +87,9 @@ def generate_launch_description():
         gaia_bot_container,
         camera,
         faces,
-        leds,
-        range,
-        sensors,
-        wheels,
+#        leds,
+#        range,
+#        sensors,
+#        wheels,
         neck_pose,
     ])

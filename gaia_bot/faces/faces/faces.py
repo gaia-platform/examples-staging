@@ -46,7 +46,7 @@ class FacesNode(Node):
             for (x, y, w, h) in detected_faces:
                 face = Detection3D()
                 face.bbox.center.position.x = (2 * x + w) / data.width - 1.0
-                face.bbox.center.position.y = -1.0 * ((2 * y + h) / data.height - 1.0)
+                face.bbox.center.position.y = (2 * y + h) / data.height - 1.0
                 face.bbox.center.position.z = 0.0
                 face.bbox.size.x = float(2 * w / data.width)
                 face.bbox.size.y = float(2 * h / data.height)
