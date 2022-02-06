@@ -17,4 +17,26 @@ using namespace gaia::frequent_flyer;
 
 ruleset frequent_flyer_ruleset
 {
+    {
+        trip_miles += @flight_miles;
+    }
+
+    {
+        lifetime_miles += @flight_miles;
+    }
+
+    {
+        if (@lifetime_miles > 1000)
+        {
+            member_level = "silver";
+        }
+    }
+
+    on_update(flights.flight_status)
+    {
+        if (strcmp(flights.flight_status, "landed") == 0)
+        {
+            trips.segments_flown += 1;
+        }
+    }
 }
