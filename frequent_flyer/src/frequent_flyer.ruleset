@@ -6,16 +6,9 @@
 // or at https://opensource.org/licenses/MIT.
 /////////////////////////////////////////////
 
-#include <algorithm>
-#include <atomic>
-
 #include "gaia/logger.hpp"
 
-#include "gaia_frequent_flyer.h"
-
-using namespace gaia::frequent_flyer;
-
-ruleset frequent_flyer_ruleset
+ruleset frequent_flyer
 {
     {
         trip_miles += @flight_miles;

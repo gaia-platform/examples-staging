@@ -30,10 +30,11 @@ using std::chrono::duration_cast;
 template <class T_table>
 void delete_all_rows()
 {
-    for (auto obj = *T_table::list().begin();
-         obj; obj = *T_table::list().begin())
+    for (auto obj_it = T_table::list().begin();
+        obj_it != T_table::list().end();)
     {
-        obj.delete_row();
+        auto next_obj_it = obj_it++;
+        next_obj_it->delete_row();
     }
 }
 
@@ -44,56 +45,13 @@ uint64_t get_time_millis()
 
 void remove_all_data()
 {
-    for (auto airplane = *airplanes_t::list().begin();
-        airplane; airplane = *airplanes_t::list().begin())
-    {
-        airplane.flights().clear();
-        airplane.delete_row();
-    }
-
-    for (auto airport = *airports_t::list().begin();
-        airport; airport = *airports_t::list().begin())
-    {
-        airport.departure_routes().clear();
-        airport.arrival_routes().clear();
-        airport.departure_trips().clear();
-        airport.arrival_trips().clear();
-        airport.delete_row();
-    }
-
-    for (auto route = *routes_t::list().begin();
-        route; route = *routes_t::list().begin())
-    {
-        route.flights().clear();
-        route.delete_row();
-    }
-
-    for (auto segment = *segments_t::list().begin();
-        segment; segment = *segments_t::list().begin())
-    {
-        auto segment_writer = segment.writer();
-        segment_writer.flight_id = 0;
-        segment_writer.trip_id = 0;
-        segment_writer.update_row();
-        segment.delete_row();
-    }
-
-    for (auto trip = *trips_t::list().begin();
-        trip; trip = *trips_t::list().begin())
-    {
-        auto trip_writer = trip.writer();
-        trip_writer.traveler_id = 0;
-        trip_writer.update_row();
-        trip.delete_row();
-    }
-
-    for (auto flight = *flights_t::list().begin();
-        flight; flight = *flights_t::list().begin())
-    {
-        flight.delete_row();
-    }
-
+    delete_all_rows<segments_t>();
+    delete_all_rows<trips_t>();
     delete_all_rows<travelers_t>();
+    delete_all_rows<flights_t>();
+    delete_all_rows<routes_t>();
+    delete_all_rows<airplanes_t>();
+    delete_all_rows<airports_t>();
 }
 
 void init_storage()
