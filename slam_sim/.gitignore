@@ -1,0 +1,7 @@
+__pycache__
+slam_sim
+*.o
+test_*
+.*.swp
+out
+tmp
