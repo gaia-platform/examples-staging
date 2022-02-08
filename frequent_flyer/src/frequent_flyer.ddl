@@ -8,43 +8,43 @@
 
 database frequent_flyer
 
-table airports (
+table airport (
     -- Fields
     airport_code string unique,
 
     -- References
-    departure_routes references routes[],
-    arrival_routes references routes[],
-    departure_trips references trips[],
-    arrival_trips references trips[]
+    departure_routes references route[],
+    arrival_routes references route[],
+    departure_trips references trip[],
+    arrival_trips references trip[]
 )
 
-table airplanes (
+table airplane (
     -- Fields
     tail_number uint32 unique,
     max_weight uint32,
 
     -- References
-    flights references flights[]
+    flights references flight[]
 )
 
-table routes (
+table route (
     -- Fields
     route_miles uint32,
     departure_airport_code string,
     arrival_airport_code string,
 
     -- References
-    departure_airport references airports
+    departure_airport references airport
         using departure_routes
-            where routes.departure_airport_code = airports.airport_code,
-    arrival_airport references airports
+            where route.departure_airport_code = airport.airport_code,
+    arrival_airport references airport
         using arrival_routes
-            where routes.arrival_airport_code = airports.airport_code,
-    flights references flights[]
+            where route.arrival_airport_code = airport.airport_code,
+    flights references flight[]
 )
 
-table flights (
+table flight (
     -- Fields
     flight_number uint32 unique,
     flight_date uint64,
@@ -54,26 +54,26 @@ table flights (
     segments_flown uint8,
 
     -- References
-    airplane references airplanes
-        where flights.airplane_tail_number = airplanes.tail_number,
-    route references routes,
-    segments references segments[]
+    airplane references airplane
+        where flight.airplane_tail_number = airplane.tail_number,
+    route references route,
+    segments references segment[]
 )
 
-table segments (
+table segment (
     -- Fields
     segment_order uint8,
     flight_number uint32,
     trip_id uint32,
 
     -- References
-    flight references flights
-        where segments.flight_number = flights.flight_number,
-    trip references trips
-        where segments.trip_id = trips.id
+    flight references flight
+        where segment.flight_number = flight.flight_number,
+    trip references trip
+        where segment.trip_id = trip.id
 )
 
-table trips (
+table trip (
     -- Fields
     id uint32 unique,
     traveler_id uint32,
@@ -84,17 +84,17 @@ table trips (
     arrival_airport_code string,
 
     -- References
-    traveler references travelers,
-    segments references segments[],
-    departure_airport references airports
+    traveler references traveler,
+    segments references segment[],
+    departure_airport references airport
         using departure_trips
-            where trips.departure_airport_code = airports.airport_code,
-    arrival_airport references airports
+            where trip.departure_airport_code = airport.airport_code,
+    arrival_airport references airport
         using arrival_trips
-            where trips.arrival_airport_code = airports.airport_code
+            where trip.arrival_airport_code = airport.airport_code
 )
 
-table travelers (
+table traveler (
     -- Fields
     id uint32 unique,
     first_name string,
@@ -103,6 +103,6 @@ table travelers (
     member_level string,
 
     -- References
-    trips references trips[]
-        where travelers.id = trips.traveler_id
+    trips references trip[]
+        where traveler.id = trip.traveler_id
 )

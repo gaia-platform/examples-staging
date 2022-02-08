@@ -28,8 +28,8 @@ set(FREQUENT_FLYER_RULESET ${PROJECT_SOURCE_DIR}/src/frequent_flyer.ruleset)
 
 # --- Generate Direct Access classes from DDL---
 process_schema(
-    DDL_FILE ${FREQUENT_FLYER_DDL}
-    DATABASE_NAME frequent_flyer
+  DDL_FILE ${FREQUENT_FLYER_DDL}
+  DATABASE_NAME frequent_flyer
 )
 
 # -- Translate ruleset into CPP --

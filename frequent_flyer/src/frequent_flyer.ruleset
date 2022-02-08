@@ -25,11 +25,11 @@ ruleset frequent_flyer
         }
     }
 
-    on_update(flights.flight_status)
+    on_update(flight.flight_status)
     {
-        if (strcmp(flights.flight_status, "landed") == 0)
+        if (strcmp(flight.flight_status, "landed") == 0)
         {
-            trips.segments_flown += 1;
+            trip.segments_flown += 1;
         }
     }
 }
