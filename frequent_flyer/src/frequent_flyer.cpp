@@ -60,95 +60,47 @@ void init_storage()
 
     remove_all_data();
 
-    auto route_seattle_la = routes_t::get(routes_t::insert_row(960));
-    auto route_la_seattle = routes_t::get(routes_t::insert_row(960));
-    auto route_la_ohare = routes_t::get(routes_t::insert_row(1745));
-    auto route_ohare_la = routes_t::get(routes_t::insert_row(1745));
-    auto route_ohare_seattle = routes_t::get(routes_t::insert_row(1716));
-    auto route_ohare_boston = routes_t::get(routes_t::insert_row(867));
-    auto route_boston_seattle = routes_t::get(routes_t::insert_row(2485));
+    airports_t::insert_row("SEA");
+    airports_t::insert_row("LAX");
+    airports_t::insert_row("ORD");
+    airports_t::insert_row("BOS");
 
-    auto airplane_1 = airplanes_t::get(airplanes_t::insert_row(1, 10000));
-    auto airplane_2 = airplanes_t::get(airplanes_t::insert_row(2, 20000));
-    auto airplane_3 = airplanes_t::get(airplanes_t::insert_row(3, 30000));
-    auto airplane_4 = airplanes_t::get(airplanes_t::insert_row(4, 40000));
+    airplanes_t::insert_row(10, 10000);
+    airplanes_t::insert_row(20, 20000);
+    airplanes_t::insert_row(30, 30000);
+    airplanes_t::insert_row(40, 40000);
 
-    auto airport_seattle = airports_t::get(airports_t::insert_row("Seattle"));
-    airport_seattle.departure_routes().insert(route_seattle_la);
-    airport_seattle.arrival_routes().insert(route_la_seattle);
-    airport_seattle.arrival_routes().insert(route_ohare_seattle);
-    airport_seattle.arrival_routes().insert(route_boston_seattle);
+    auto route_seattle_la = routes_t::get(routes_t::insert_row(960, "SEA", "LAX"));
+    auto route_la_seattle = routes_t::get(routes_t::insert_row(960, "LAX", "SEA"));
+    auto route_la_ohare = routes_t::get(routes_t::insert_row(1745, "LAX", "ORD"));
+    auto route_ohare_la = routes_t::get(routes_t::insert_row(1745, "ORD", "LAX"));
+    auto route_ohare_seattle = routes_t::get(routes_t::insert_row(1716, "ORD", "SEA"));
+    auto route_ohare_boston = routes_t::get(routes_t::insert_row(867, "ORD", "BOS"));
+    auto route_boston_seattle = routes_t::get(routes_t::insert_row(2485, "BOS", "SEA"));
 
-    auto airport_la = airports_t::get(airports_t::insert_row("Los Angeles"));
-    airport_la.departure_routes().insert(route_la_seattle);
-    airport_la.departure_routes().insert(route_la_ohare);
-    airport_la.arrival_routes().insert(route_seattle_la);
-    airport_la.arrival_routes().insert(route_ohare_la);
-
-    auto airport_ohare = airports_t::get(airports_t::insert_row("O'Hare"));
-    airport_ohare.departure_routes().insert(route_ohare_la);
-    airport_ohare.departure_routes().insert(route_ohare_seattle);
-    airport_ohare.departure_routes().insert(route_ohare_boston);
-    airport_ohare.arrival_routes().insert(route_la_ohare);
-
-    auto airport_boston = airports_t::get(airports_t::insert_row("Boston"));
-    airport_ohare.departure_routes().insert(route_boston_seattle);
-    airport_ohare.arrival_routes().insert(route_ohare_boston);
-
-    auto flight = flights_t::get(flights_t::insert_row(1, 1, 0, 0, "scheduled", 0));
-    airplane_1.flights().insert(flight);
-    route_seattle_la.flights().insert(flight);
-
-    flight = flights_t::get(flights_t::insert_row(2, 2, 0, 0, "scheduled", 0));
-    airplane_2.flights().insert(flight);
-    route_la_ohare.flights().insert(flight);
-
-    flight = flights_t::get(flights_t::insert_row(3, 3, 0, 0, "scheduled", 0));
-    airplane_2.flights().insert(flight);
-    route_ohare_boston.flights().insert(flight);
-
-    flight = flights_t::get(flights_t::insert_row(4, 4, 0, 0, "scheduled", 0));
-    airplane_2.flights().insert(flight);
-    route_boston_seattle.flights().insert(flight);
-
-    flight = flights_t::get(flights_t::insert_row(5, 5, 0, 0, "scheduled", 0));
-    airplane_3.flights().insert(flight);
-    route_ohare_seattle.flights().insert(flight);
-
-    flight = flights_t::get(flights_t::insert_row(6, 6, 0, 0, "scheduled", 0));
-    airplane_3.flights().insert(flight);
-    route_seattle_la.flights().insert(flight);
-
-    flight = flights_t::get(flights_t::insert_row(7, 7, 0, 0, "scheduled", 0));
-    airplane_3.flights().insert(flight);
-    route_la_seattle.flights().insert(flight);
-
-    flight = flights_t::get(flights_t::insert_row(8, 8, 0, 0, "scheduled", 0));
-    airplane_4.flights().insert(flight);
-    route_ohare_la.flights().insert(flight);
-
-    flight = flights_t::get(flights_t::insert_row(9, 9, 0, 0, "scheduled", 0));
-    airplane_4.flights().insert(flight);
-    route_la_ohare.flights().insert(flight);
+    route_seattle_la.flights().insert(flights_t::insert_row(1, 0, 0, "scheduled", 10, 0));
+    route_la_ohare.flights().insert(flights_t::insert_row(2, 0, 0, "scheduled", 20, 0));
+    route_ohare_boston.flights().insert(flights_t::insert_row(3, 0, 0, "scheduled", 20, 0));
+    route_boston_seattle.flights().insert(flights_t::insert_row(4, 0, 0, "scheduled", 20, 0));
+    route_ohare_seattle.flights().insert(flights_t::insert_row(5, 0, 0, "scheduled", 30, 0));
+    route_seattle_la.flights().insert(flights_t::insert_row(6, 0, 0, "scheduled", 30, 0));
+    route_la_seattle.flights().insert(flights_t::insert_row(7, 0, 0, "scheduled", 30, 0));
+    route_ohare_la.flights().insert(flights_t::insert_row(8, 0, 0, "scheduled", 40, 0));
+    route_la_ohare.flights().insert(flights_t::insert_row(9, 0, 0, "scheduled", 40, 0));
 
     travelers_t::insert_row(1, "Jean-Luc", "Picard", 0, "basic");
     travelers_t::insert_row(2, "Worf", "", 0, "basic");
+    travelers_t::insert_row(3, "Data", "", 0, "basic");
 
-    auto trip = trips_t::insert_row(2, 1, "Jean-Luc's trip 2", 0, 0);
-    airport_seattle.departure_trips().insert(trip);
-    airport_la.arrival_trips().insert(trip);
-    auto segment = segments_t::insert_row(1, 6, 2);
+    trips_t::insert_row(2, 1, "Jean-Luc's trip 2", 0, 0, "SEA", "LAX");
+    segments_t::insert_row(1, 6, 2);
 
-    trip = trips_t::insert_row(1, 1, "Jean-Luc's trip 1", 0, 0);
-    airport_ohare.departure_trips().insert(trip);
-    airport_seattle.arrival_trips().insert(trip);
-    segment = segments_t::insert_row(2, 7, 1);
-    segment = segments_t::insert_row(1, 8, 1);
+    trips_t::insert_row(1, 1, "Jean-Luc's trip 1", 0, 0, "ORD", "SEA");
+    segments_t::insert_row(2, 7, 1);
+    segments_t::insert_row(1, 8, 1);
 
-    trip = trips_t::insert_row(3, 2, "Warf's trip", 0, 0);
-    airport_la.departure_trips().insert(trip);
-    airport_seattle.arrival_trips().insert(trip);
-    segment = segments_t::insert_row(1, 7, 3);
+    trips_t::insert_row(3, 2, "Warf's trip", 0, 0, "LAX", "SEA");
+    segments_t::insert_row(1, 7, 3);
 
     commit_transaction();
 }
@@ -162,8 +114,8 @@ void dump_db()
     for (auto route : routes_t::list())
     {
         std::cout << "    |"
-            << std::right << std::setw(26) << route.departure_airport().city() << " to "
-            << std::left << std::setw(35) << route.arrival_airport().city() << "|\n";
+            << std::right << std::setw(26) << route.departure_airport().airport_code() << " to "
+            << std::left << std::setw(35) << route.arrival_airport().airport_code() << "|\n";
         for (auto flight : route.flights())
         {
             std::cout << "    +--------------+----------------------+---------------------------+\n";
@@ -187,13 +139,13 @@ void dump_db()
         for (auto trip : traveler.trips())
         {
             std::cout << "    +------------------------------------------------------------+\n";
-            std::cout << "    | Trip to " << std::left << std::setw(51) << trip.arrival_airport().city() << "|\n";
+            std::cout << "    | Trip to " << std::left << std::setw(51) << trip.arrival_airport().airport_code() << "|\n";
             for (auto segment : trip.segments())
             {
                 std::cout << "   "
                     << " | Segment: " << std::setw(4) << (int)segment.segment_order() << "| "
-                    << std::setw(12) << segment.flight().route().departure_airport().city() << " to "
-                    << std::setw(12) << segment.flight().route().arrival_airport().city()
+                    << std::right << std::setw(12) << segment.flight().route().departure_airport().airport_code() << " to "
+                    << std::left << std::setw(12) << segment.flight().route().arrival_airport().airport_code()
                     << "  | Flight: " << std::setw(4) << segment.flight().flight_number() << "|\n";
             }
         }
