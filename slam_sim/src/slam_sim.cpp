@@ -8,14 +8,15 @@
 #include <string>
 
 #include "gaia/system.hpp"
+#include <gaia/db/db.hpp>
+#include <gaia/logger.hpp>
+#include <gaia/exceptions.hpp>
 
 #include "slam_sim.hpp"
-
 
 namespace slam_sim {
 
 char g_map_json[JSON_BUFFER_LEN] = { 0 };
-
 
 // Used so clock time starts when simulator starts.
 static double g_system_base_time = 0.0;

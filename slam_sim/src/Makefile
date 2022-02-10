@@ -1,22 +1,16 @@
 include ../Makefile.inc
 
-# Make sure that we're not using g++. If so then environment variables
-#   aren't correctly set.
-GXX_NAME = g++
-ifeq ($(CXX), $(GXX_NAME))
-    $(error Using g++. Environment variables are not correctly configured)
-endif
-
 TARGET = slam_sim
 
 TEST_TARGETS = test_line_segment test_analyze
 
 OBJS = line_segment.o analyze.o slam_sim.o comm_thread.o
-EXT_OBJS = 
+EXT_OBJS = ../gaia/slam_rules.o ../gaia/gaia_slam.o
+
 LIBS = /usr/local/lib/libgaia.so -lcurl -pthread
 
 all: $(OBJS) 
-	$(CXX) $(OBJS) -o $(TARGET) $(LIBS)
+	$(CXX) $(OBJS) $(EXT_OBJS) -o $(TARGET) $(LIBS)
 
 test: $(TEST_TARGETS)
 

@@ -3,6 +3,13 @@
 #include <mutex>
 #include <vector>
 
+#include "gaia/system.hpp"
+#include <gaia/db/db.hpp>
+#include <gaia/logger.hpp>
+#include <gaia/exceptions.hpp>
+
+#include "slam/gaia_slam.h"
+
 #include "json.hpp"
 #include "line_segment.hpp"
 #include "slam_sim.hpp"
@@ -14,6 +21,15 @@ using std::vector;
 using std::string;
 using nlohmann::json;
 using utils::line_segment_t;
+
+using gaia::direct_access::auto_transaction_t;
+using gaia::slam::graph_t;
+using gaia::slam::graph_writer;
+using gaia::slam::observations_t;
+using gaia::slam::lidar_data_t;
+
+static observations_t g_observation;   // most recent observation
+static graph_t g_graph;         // present graph
 
 static double g_x_pos = 0.0;
 static double g_y_pos = 0.0;
@@ -39,8 +55,8 @@ vector<line_segment_t> g_world_lines;
 // Raw json of world map.
 char g_world_map[JSON_BUFFER_LEN];
 
-static double g_radial[NUM_RAYS];
-static double g_range[NUM_RAYS];
+static std::vector<float> g_radial;
+static std::vector<float> g_range;
 static string g_sensor_data;
 
 static std::mutex g_map_mutex;
@@ -138,7 +154,7 @@ static void build_sensor_view(std::string& response)
     idx += sprintf(&buf[idx], SENSOR_EST_MOTION, g_dx_est, g_dy_est, g_dheading_est_degs);
     idx += sprintf(&buf[idx], ", \n");
     idx += sprintf(&buf[idx], "\"lidar\": [ \n");
-    for (uint32_t i=0; i<NUM_RAYS; i++) 
+    for (uint32_t i=0; i<g_radial.size(); i++) 
     {
         idx += sprintf(&buf[idx], SENSOR_LIDAR, g_radial[i], g_range[i]);
         if (i < NUM_RAYS-1) 
@@ -154,12 +170,13 @@ static void build_sensor_view(std::string& response)
 
 void calculate_sensors(std::string& response)
 {
+    g_range.clear();
+    g_radial.clear();
     for (uint32_t n=0; n<NUM_RAYS; n++)
     {
         double theta = g_heading_degs + -FOV_DEGS/2.0 
                 + (double) n * FOV_DEGS / (double) (NUM_RAYS-1);
         double min_dist = -1.0;
-//printf("Checking  range %.1f,%.1f  %.1f degs\n", g_x_pos, g_y_pos, theta);
         for (uint32_t i=0; i<g_world_lines.size(); i++)
         {
             line_segment_t& seg = g_world_lines[i];
@@ -170,9 +187,8 @@ void calculate_sensors(std::string& response)
                 }
             }
         }
-//printf("    Best range: %.1f\n", min_dist);
-        g_range[n] = min_dist;
-        g_radial[n] = theta;
+        g_range.push_back(min_dist);
+        g_radial.push_back(theta);
     }
     build_sensor_view(response);
     g_dx = 0;
@@ -181,6 +197,46 @@ void calculate_sensors(std::string& response)
     g_dx_est = 0;
     g_dy_est = 0;
     g_dheading_est_degs = 0.0;
+    ////////////////////////////////////////////
+    // Sensor input is calculated. Create an observation point.
+    auto_transaction_t tx;
+    int32_t observation_num = 0;
+    if (g_graph.num_observations() > 0) {
+        // Existing graph. Get the next observation number.
+        observation_num = g_observation.num() + 1;
+    }
+    observations_t observation = 
+        observations_t::get(observations_t::insert_row(
+            observation_num,    // num
+            g_graph.id(),       // graph_id
+            0.0, 0.0, 0.0,      // measured dx, dy and ddegs
+            0.0, 0.0, 0.0, 1.0, // estimated dx, dy, ddegs, confidence
+            0.0, 0.0, 0.0, 1.0  // calculated x, y, heading_degs, confidence
+            ));
+    if (g_graph.num_observations() == 0) {
+        // New graph. Link it to this observation.
+        observation.parent().connect(g_graph);
+        g_graph.first_observation().connect(observation);
+    } else {
+        // This is a subsequent observation on an existing graph.
+        //  Link the observations.
+        observation.next().connect(g_observation);
+        g_observation.prev().connect(observation);
+    }
+    // Update present observation.
+    g_observation = observation;
+    // Update number of observations in graph.
+    graph_writer w = g_graph.writer();
+    w.num_observations = g_graph.num_observations() + 1;
+    w.update_row();
+    // Build lidar data.
+    lidar_data_t view = lidar_data_t::get(lidar_data_t::insert_row(
+            g_radial,     // theta_deg
+            g_range       // distance
+            ));
+    view.observation().connect(g_observation);
+    g_observation.lidar().connect(view);
+    tx.commit();
 }
 
 // Build sensor view
@@ -242,6 +298,21 @@ void set_position(double x_pos, double y_pos, double heading_degs)
     g_dx_est = 0.0;
     g_dy_est = 0.0;
     g_dheading_est_degs = 0.0;
+    // When a new position is set this can create a discontinuity or
+    //  can represent movement to a ground truth, among other
+    //  posibilities. Either way, create a new graph to track motion
+    //  going forward from here.
+    auto_transaction_t tx;
+    int32_t graph_id = g_graph.id();
+    g_graph = graph_t::get(graph_t::insert_row(
+        graph_id + 1,   // id
+        x_pos,          // start_x
+        y_pos,          // start_y
+        heading_degs,   // start_heading_degs
+        0               // num_observations
+        ));
+    tx.commit();
+
 }
 
 // Position

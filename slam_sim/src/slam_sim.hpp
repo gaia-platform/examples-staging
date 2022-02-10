@@ -1,4 +1,5 @@
 #pragma once
+#include "gaia_slam.h"
 
 namespace slam_sim
 {

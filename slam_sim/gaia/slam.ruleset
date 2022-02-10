@@ -1,0 +1,15 @@
+#include <assert.h>
+
+#include <iostream>
+#include <string>
+
+#include "gaia/common.hpp"
+#include "gaia/rules/rules.hpp"
+
+#include "slam/gaia_slam.h"
+
+ruleset observation_ruleset
+{
+
+}
+
