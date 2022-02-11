@@ -1,6 +1,13 @@
 #include <sstream>
+#include <memory>
 
 #include <gaia/logger.hpp>
+
+#include "prefix_logger.hpp"
+
+// The main program will set the pointer to some instance.
+// See the rule: on_insert(log_record)
+extern std::shared_ptr<gaia::clearpath::prefix_logger_t> g_prefix_log;
 
 // Rule examples. These examples are in two categories. The first shows
 //  the basics about rules, including how they're called and how data
@@ -194,3 +201,11 @@ ruleset event_rule_example : serial_group()
     }
 }
 
+
+ruleset shared_objects
+{
+    on_insert(log_record)
+    {
+        g_prefix_log->log(message);
+    }
+};

@@ -113,3 +113,9 @@ table incoming_data_event
     pose_y double
 )
 
+
+table log_record
+(
+    message string
+)
+
