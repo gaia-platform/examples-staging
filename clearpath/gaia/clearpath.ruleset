@@ -1,0 +1,163 @@
+#include <stdlib.h>
+#include <iostream>
+
+#include "gaia_clearpath.h"
+
+// Rule examples. These examples are in two categories. The first shows
+//  the basics about rules, including how they're called and how data
+//  can be accessed from within a rule. The second shows rules being
+//  called that create new records, in turn inducing additional rules to
+//  fire.
+
+using std::cout;
+using std::endl;
+
+using gaia::clearpath::vertex_writer;
+
+// This ruleset provides example rules showing how rules are defined and
+//  how data can be accessed within a rule. 
+ruleset clearpath_rule_examples
+{
+    ////////////////////////////////////////////
+    // Explicit rules
+    // These rules fire when a record is inserted and/or modified.
+    // Each rule is called once each change/insertion, with a
+    //  reference to that record being passed in as a parameter.
+    //
+    // These rules are:
+    //    on_insert()   fired when a new record is created
+    //    on_update()   fired when a record or field is updated
+    //    on_change()   fired when a record is created or updated
+
+    ////////////////////
+    // Record insertion
+    on_insert(vertex)
+    {
+         cout << "A: Insert of vertex record with ID " << vertex.id << endl;
+    }
+
+    on_insert(v: vertex)
+    {
+        // Alternative syntax for the rule parameters. This form
+        //  allows using `v` as shorthand for the vertex record.
+        cout << "B: Insert of vertex record with ID " << v.id << endl;
+    }
+    // NOTE that having 2 on_insert rules for the same table results
+    //  in both rules firing. Given these two rules, an insert into
+    //  the vertex table would result in the output:
+    //    B: Insert of record with ID <...>
+    //    A: Insert of record with ID <...>
+
+
+    ////////////////////
+    // Record updates
+    // An 'on_update' rule fires whenver there is a change to the contents
+    //  of a record or field.
+    on_update(vertex)
+    {
+        // When referencing fields in a record, if the field name is
+        //  unique then it can be used directly, w/o specifying
+        //  the table (e.g., 'deprecation_count') while if a record
+        //  occurs in different tables (e.g., 'id') then the table
+        //  must be specified.
+        cout << "Vertex " << vertex.id << " has deprecation count of "
+            << deprecation_count << endl;
+    }
+
+    // Update rules can be for records or for specific fields within a
+    //  record. For example, here's a rule strictly for the vertex
+    //  'confidence' field.
+    on_update(vertex.confidence)
+    {
+        cout << "Vertex " << vertex.id << " has changed to "
+            << vertex.confidence << endl;
+    }
+
+
+    ////////////////////
+    // Record change (i.e., insertion or update)
+    on_change(point_edge)
+    {
+        // Fired for any change or update to the point_edge table.
+        cout << "Point edge " << point_edge.id << " has changed\n";
+    }
+
+
+    ////////////////////////////////////////////
+    // Using tags
+    // Tags are a form of shorthand letting you use a shorter label
+    //  to describe a longer table or field name. In the contexts of
+    //  'for' loops and 'on_xxxxxx()' functions, a tag is defined
+    //  by placing it before a colon, e.g., <tag>:<table|field>. E.g.,
+
+    // Use the tage 'pe' for the table name 'point_edge'.
+    on_change(pe: point_edge)
+    {
+        cout << "Point edge (pe) " << pe.id << " has changed\n";
+    }
+
+
+    ////////////////////////////////////////////
+    // Following references between tables
+    // The symbol ->
+    // The field in a record is accessed using <record>.<field>. When
+    //  following the reference to another table, the "->" operator
+    //  is used. For example (table)->(referenced table). 
+
+    on_change(v: vertex)
+    {
+        cout << "Vertex " << v.id << " is part of graph "
+            << v->graph.uuid << endl;
+    }
+
+     
+    ////////////////////
+    // Iterating through a 1:n relationship
+    // 
+    // This example combines tags and following references between
+    //  tables to list the entries in B that is liked to by table A
+    //  as a result in changes to table A.
+
+    on_update(graph)   // Graph record has changed.
+    {
+        // Iterate through graph record's vertices. This is done with 
+        // a 'for' loop over the graph's 'vertices' reference.
+        cout << "Graph " << graph.uuid << " vertices:\n";
+        for (graph.vertices->vertex)
+        {
+            cout << "  " << vertex.id << " has confidence " 
+                << vertex.confidence << endl;
+        }
+    }
+
+    // Here's an example of the preceding function using tags
+    on_update(g: graph)   // Graph record 'g' has changed.
+    {
+        cout << "Graph " << g.uuid << " vertices:\n";
+        for (g.vertices->v:vertex)
+        {
+            cout << "  " << v.id << " has confidence " << v.confidence << endl;
+        }
+    }
+}
+
+
+// Rule examples where the creates other records.
+ruleset event_rule_example
+{
+    // When a new graph record is inserted, create a vertex.
+    // Note that the newly created vertex will induce the
+    //  "on_insert(vertex)" rule(s) to fire.
+    on_insert(graph)
+    {
+        int64_t vertex_id = random();
+        cout << "Graph " << graph.uuid << " creating vertex with ID "
+            << vertex_id << endl;
+        // Create a new vertex record
+        vertex_writer writer = vertex_writer();
+        writer.id = vertex_id;
+        writer.deprecation_count = 0;
+        writer.insert_row();
+    }
+}
+
