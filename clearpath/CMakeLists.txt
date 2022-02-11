@@ -25,15 +25,6 @@ process_schema(
   DATABASE_NAME clearpath
 )
 
-# -- Translate ruleset into CPP --
-translate_ruleset(
-  RULESET_FILE ${PROJECT_SOURCE_DIR}/gaia/clearpath.ruleset
-  DATABASE_NAME clearpath
-  CLANG_PARAMS
-    -I ${PROJECT_SOURCE_DIR}/include
-)
-
-
 add_executable(clearpath
   src/main.cpp
   src/graph.cpp
