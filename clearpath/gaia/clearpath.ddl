@@ -107,7 +107,7 @@ table point_edge
 table incoming_data_event
 (
     id int64 unique,
-    source string,
+    type int64,
     data uint8[],
     pose_x double,
     pose_y double

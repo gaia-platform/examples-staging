@@ -1,5 +1,6 @@
-#include <stdlib.h>
-#include <iostream>
+#include <sstream>
+
+#include <gaia/logger.hpp>
 
 // Rule examples. These examples are in two categories. The first shows
 //  the basics about rules, including how they're called and how data
@@ -27,27 +28,19 @@ ruleset clearpath_rule_examples
     // Record insertion
     on_insert(vertex)
     {
-         std::cout << "A: Insert of vertex record with ID "
-            << vertex.id << std::endl;
+        gaia_log::app().info("Inserted vertex record with ID {}", vertex.id);
     }
 
-    on_insert(v: vertex)
-    {
-        // Alternative syntax for the rule parameters. This form
-        //  allows using `v` as shorthand for the vertex record.
-        std::cout << "B: Insert of vertex record with ID "
-            << v.id << std::endl;
-    }
     // NOTE that having 2 on_insert rules for the same table results
     //  in both rules firing. Given these two rules, an insert into
     //  the vertex table would result in the output:
-    //    B: Insert of record with ID <...>
-    //    A: Insert of record with ID <...>
+    //    B: Inserted record with ID <...>
+    //    A: Inserted record with ID <...>
 
 
     ////////////////////
     // Record updates
-    // An 'on_update' rule fires whenver there is a change to the contents
+    // An 'on_update' rule fires whenever there is a change to the contents
     //  of a record or field.
     on_update(vertex)
     {
@@ -56,8 +49,7 @@ ruleset clearpath_rule_examples
         //  the table (e.g., 'deprecation_count') while if a record
         //  occurs in different tables (e.g., 'id') then the table
         //  must be specified.
-        std::cout << "Vertex " << vertex.id << " has deprecation count of "
-            << deprecation_count << std::endl;
+        gaia_log::app().info("Vertex {} has deprecation count of {}", vertex.id, deprecation_count);
     }
 
     // Update rules can be for records or for specific fields within a
@@ -65,17 +57,15 @@ ruleset clearpath_rule_examples
     //  'confidence' field.
     on_update(vertex.confidence)
     {
-        std::cout << "Vertex " << vertex.id << " has changed to "
-            << vertex.confidence << std::endl;
+        gaia_log::app().info("Vertex {} has changed to {}", vertex.id, vertex.confidence);
     }
-
 
     ////////////////////
     // Record change (i.e., insertion or update)
     on_change(point_edge)
     {
         // Fired for any change or update to the point_edge table.
-        std::cout << "Point edge " << point_edge.id << " has changed\n";
+        gaia_log::app().info("Point edge {} has changed", point_edge.id);
     }
 
 
@@ -89,7 +79,7 @@ ruleset clearpath_rule_examples
     // Use the tag 'pe' for the table name 'point_edge'.
     on_change(pe: point_edge)
     {
-        std::cout << "Point edge (pe) " << pe.id << " has changed\n";
+        gaia_log::app().info("Point edge (pe) {} has changed", pe.id);
     }
 
 
@@ -102,8 +92,7 @@ ruleset clearpath_rule_examples
 
     on_change(v: vertex)
     {
-        std::cout << "Vertex " << v.id << " is part of graph "
-            << v->graph.uuid << std::endl;
+        gaia_log::app().info("Vertex {} is part of graph {}", v.id, v->graph.uuid);
     }
 
    
@@ -118,29 +107,35 @@ ruleset clearpath_rule_examples
     {
         // Iterate through graph record's vertices. This is done with
         // a 'for' loop over the graph's 'vertices' reference.
-        std::cout << "Graph " << graph.uuid << " vertices:\n";
+        std::stringstream ss;
+        ss << "Graph " << graph.uuid << " vertices:\n";
         for (graph.vertices->vertex)
         {
-            std::cout << "  " << vertex.id << " has confidence "
-                << vertex.confidence << std::endl;
+            ss << "  " << vertex.id << " has confidence "
+                << vertex.confidence << "\n";
         }
+        gaia_log::app().info(ss.str().c_str());
     }
 
     // Here's an example of the preceding function using tags
     on_update(g: graph)   // Graph record 'g' has changed.
     {
-        std::cout << "Graph " << g.uuid << " vertices:\n";
+        std::stringstream ss;
+        ss << "Graph " << g.uuid << " vertices:\n";
         for (g.vertices->v:vertex)
         {
-            std::cout << "  " << v.id << " has confidence "
-                << v.confidence << std::endl;
+            ss << "  " << v.id << " has confidence "
+                << v.confidence << "\n";
         }
+        gaia_log::app().info(ss.str().c_str());
     }
 }
 
 
 // Rule examples where the creates other records.
-ruleset event_rule_example
+// The serial_group() keyword makes the rules in the ruleset to run serially:
+// only one rule is executed in a given point in time.
+ruleset event_rule_example : serial_group()
 {
     // When a new graph record is inserted, create a vertex.
     // Note that the newly created vertex will induce the
@@ -148,13 +143,14 @@ ruleset event_rule_example
     on_insert(graph)
     {
         int64_t vertex_id = random();
-        std::cout << "Graph " << graph.uuid << " creating vertex with ID "
-            << vertex_id << std::endl;
+        gaia_log::app().info("Graph {} creating vertex with ID {}", graph.uuid, vertex_id);
+
         // Create a new vertex record
         vertex.insert(
             id: vertex_id,
+            graph_uuid: graph.uuid,
             deprecation_count: 0
-            );
+        );
     }
 
     // Here's an example with slightly more processing. The paradigm here
@@ -167,6 +163,8 @@ ruleset event_rule_example
     //  table.
     on_insert(incoming_data_event)
     {
+        gaia_log::app().info("Processing incoming_data_event with ID {}", id);
+
         // The loop below finds the maximum id value for existing edge ids.
         // In practice, we wouldn't search the table each time to look for
         //  a new ID. This is only done to provide an example of searching
@@ -182,17 +180,17 @@ ruleset event_rule_example
                 max_vertex_id = V.id;
             }
         }
+
         // Create a vertex record
         std::string graph_uuid_string("aaaaaaaa-0000-0000-0000-000000000000");
         auto new_vertex = vertex.insert(
             id: max_vertex_id + 1,
-            source: incoming_data_event.source,
+            type: incoming_data_event.type,
             data: incoming_data_event.data,
             pose_x: incoming_data_event.pose_x,
             pose_y: incoming_data_event.pose_y,
             graph_uuid: graph_uuid_string.c_str()
-            );
-
+        );
     }
 }
 
