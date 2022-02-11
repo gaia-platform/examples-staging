@@ -1,7 +1,5 @@
 #include <stdlib.h>
-#include <stdint.h>
 #include <iostream>
-#include <vector>
 
 // Rule examples. These examples are in two categories. The first shows
 //  the basics about rules, including how they're called and how data
@@ -9,12 +7,9 @@
 //  called that create new records, in turn inducing additional rules to
 //  fire.
 
-#include "gaia_clearpath.h"
-
-using gaia::clearpath::vertex_writer;
 
 // This ruleset provides example rules showing how rules are defined and
-//  how data can be accessed within a rule. 
+//  how data can be accessed within a rule.
 ruleset clearpath_rule_examples
 {
     ////////////////////////////////////////////
@@ -32,7 +27,7 @@ ruleset clearpath_rule_examples
     // Record insertion
     on_insert(vertex)
     {
-         std::cout << "A: Insert of vertex record with ID " 
+         std::cout << "A: Insert of vertex record with ID "
             << vertex.id << std::endl;
     }
 
@@ -40,7 +35,7 @@ ruleset clearpath_rule_examples
     {
         // Alternative syntax for the rule parameters. This form
         //  allows using `v` as shorthand for the vertex record.
-        std::cout << "B: Insert of vertex record with ID " 
+        std::cout << "B: Insert of vertex record with ID "
             << v.id << std::endl;
     }
     // NOTE that having 2 on_insert rules for the same table results
@@ -87,9 +82,9 @@ ruleset clearpath_rule_examples
     ////////////////////////////////////////////
     // Using tags
     // Tags are a form of shorthand letting you use a shorter label
-    //  to describe a longer table or field name. In the contexts of
-    //  'for' loops and 'on_xxxxxx()' functions, a tag is defined
-    //  by placing it before a colon, e.g., <tag>:<table|field>. E.g.,
+    //  to describe a longer table name. In the contexts of 'for'
+    //  loops and 'on_xxxxxx()' functions, a tag is defined by placing
+    //  it before a colon, e.g., <tag>:<table|field>. E.g.,
 
     // Use the tag 'pe' for the table name 'point_edge'.
     on_change(pe: point_edge)
@@ -103,7 +98,7 @@ ruleset clearpath_rule_examples
     // The symbol "->"
     // The field in a record is accessed using <record>.<field>. When
     //  following the reference to another table, the "->" operator
-    //  is used. For example (table)->(referenced table). 
+    //  is used. For example (table)->(referenced table).
 
     on_change(v: vertex)
     {
@@ -111,22 +106,22 @@ ruleset clearpath_rule_examples
             << v->graph.uuid << std::endl;
     }
 
-     
+   
     ////////////////////
     // Iterating through a 1:n relationship
-    // 
+    //
     // This example combines tags and following references between
     //  tables to list the entries in B that is liked to by table A
     //  as a result in changes to table A.
 
     on_update(graph)   // Graph record has changed.
     {
-        // Iterate through graph record's vertices. This is done with 
+        // Iterate through graph record's vertices. This is done with
         // a 'for' loop over the graph's 'vertices' reference.
         std::cout << "Graph " << graph.uuid << " vertices:\n";
         for (graph.vertices->vertex)
         {
-            std::cout << "  " << vertex.id << " has confidence " 
+            std::cout << "  " << vertex.id << " has confidence "
                 << vertex.confidence << std::endl;
         }
     }
@@ -137,7 +132,7 @@ ruleset clearpath_rule_examples
         std::cout << "Graph " << g.uuid << " vertices:\n";
         for (g.vertices->v:vertex)
         {
-            std::cout << "  " << v.id << " has confidence " 
+            std::cout << "  " << v.id << " has confidence "
                 << v.confidence << std::endl;
         }
     }
