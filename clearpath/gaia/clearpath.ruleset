@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdint.h>
 #include <iostream>
 #include <vector>
 
@@ -161,7 +162,7 @@ ruleset event_rule_example
             );
     }
 
-//    // Here's an example with slightly more processing. The paradigm here
+    // Here's an example with slightly more processing. The paradigm here
     //  is that incoming data has arrived, and that arrival in turn
     //  resulted in an entry being created in the incoming_data_event
     //  table, storing that data.
@@ -186,11 +187,7 @@ ruleset event_rule_example
                 max_vertex_id = V.id;
             }
         }
-        // Here is an alternative way to generate a record. The above
-        //  example used the "Direct Access" technique, which works
-        //  both in rules files and also in procedural C++ code. The
-        //  alternative here can be used in rules files, creating a
-        //  record with one function call.
+        // Create a vertex record
         std::string graph_uuid_string("aaaaaaaa-0000-0000-0000-000000000000");
         auto new_vertex = vertex.insert(
             id: max_vertex_id + 1,
