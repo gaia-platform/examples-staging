@@ -36,7 +36,7 @@ AccessModifierOffset: -4
 
 # From clang-format-11 there are more fine grained options for this setting.
 AlignOperands: DontAlign
-BreakBeforeBinaryOperators: All
+BreakBeforeBinaryOperators: None
 BreakBeforeTernaryOperators: true
 
 AllowAllConstructorInitializersOnNextLine: true
@@ -53,7 +53,7 @@ AllowShortLambdasOnASingleLine: Inline
 # If false, all arguments will either be all on the same line or will have one line each.
 BinPackArguments: true
 BinPackParameters: true
-AlignAfterOpenBracket: AlwaysBreak
+AlignAfterOpenBracket: DontAlign
 AllowAllArgumentsOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: true
 

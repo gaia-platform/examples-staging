@@ -9,8 +9,8 @@
 #include <gaia/db/db.hpp>
 #include <gaia/direct_access/auto_transaction.hpp>
 #include <gaia/logger.hpp>
-#include <gaia/system.hpp>
 #include <gaia/rules/rules.hpp>
+#include <gaia/system.hpp>
 
 #include "gaia_clearpath.h"
 #include "graph.hpp"
@@ -70,8 +70,8 @@ int main()
 
     auto vertex_it = vertex_t::list()
                          .where(
-                             vertex_expr::id == 2
-                             && vertex_expr::type == vertex_type::c_lidar_scan);
+                             vertex_expr::id == 2 &&
+                             vertex_expr::type == vertex_type::c_lidar_scan);
 
     if (vertex_it.begin() == vertex_it.end())
     {
@@ -84,7 +84,8 @@ int main()
 
     auto edge_it = edge_t::list()
                        .where(
-                           edge_expr::dest == v1 || edge_expr::src == v1);
+                           edge_expr::dest == v1 ||
+                           edge_expr::src == v1);
 
     for (const edge_t& e : edge_it)
     {
