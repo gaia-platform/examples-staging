@@ -10,6 +10,7 @@
 #include <gaia/direct_access/auto_transaction.hpp>
 #include <gaia/logger.hpp>
 #include <gaia/system.hpp>
+#include <gaia/rules/rules.hpp>
 
 #include "gaia_clearpath.h"
 #include "graph.hpp"
@@ -22,6 +23,9 @@ using namespace gaia::clearpath::graph;
 int main()
 {
     gaia::system::initialize();
+
+    // This examples wants to focus on direct_access hence the rules are disabled.
+    gaia::rules::unsubscribe_rules();
 
     // The no_auto_restart argument prevents beginning a new transaction
     // when the current one is committed.

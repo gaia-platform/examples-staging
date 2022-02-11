@@ -25,19 +25,49 @@ process_schema(
   DATABASE_NAME clearpath
 )
 
-add_executable(clearpath
-  src/main.cpp
+# -- Translate ruleset into CPP --
+translate_ruleset(
+  RULESET_FILE ${PROJECT_SOURCE_DIR}/gaia/clearpath.ruleset
+  DATABASE_NAME clearpath
+    -I ${PROJECT_SOURCE_DIR}/include
+)
+
+#
+# Direct Access Example
+#
+add_executable(clearpath_direct_access
+  src/main_direct_access.cpp
   src/graph.cpp
 )
 
-target_add_gaia_generated_sources(clearpath)
+target_add_gaia_generated_sources(clearpath_direct_access)
 
-target_include_directories(clearpath PRIVATE
+target_include_directories(clearpath_direct_access PRIVATE
   ${GAIA_INC}
   ${PROJECT_SOURCE_DIR}/include
 )
 
-target_link_libraries(clearpath PRIVATE
+target_link_libraries(clearpath_direct_access PRIVATE
+  ${GAIA_LIB}
+  Threads::Threads
+)
+
+#
+# Rules Example
+#
+add_executable(clearpath_rules
+  src/main_rules.cpp
+  src/graph.cpp
+)
+
+target_add_gaia_generated_sources(clearpath_rules)
+
+target_include_directories(clearpath_rules PRIVATE
+  ${GAIA_INC}
+  ${PROJECT_SOURCE_DIR}/include
+)
+
+target_link_libraries(clearpath_rules PRIVATE
   ${GAIA_LIB}
   Threads::Threads
 )

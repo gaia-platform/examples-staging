@@ -59,6 +59,7 @@ void clear_data()
     clear_table<point_edge_t>();
     clear_table<vertex_t>();
     clear_table<graph_t>();
+    clear_table<incoming_data_event_t>();
 }
 
 } // namespace gaia::clearpath::graph
