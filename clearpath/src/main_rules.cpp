@@ -105,5 +105,12 @@ int main()
     }
     gaia::db::commit_transaction();
 
+    ///
+    /// Now you can write your additional logic to trigger the other rules,
+    /// or write some new rules!
+    ///
+    /// For instance, you may want to create edges between vertexes..
+    ///
+
     gaia::system::shutdown();
 }

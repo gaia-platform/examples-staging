@@ -93,5 +93,9 @@ int main()
 
     txn.commit();
 
+    ///
+    /// Now you can write your additional logic to use the direct_access API.
+    ///
+
     gaia::system::shutdown();
 }
