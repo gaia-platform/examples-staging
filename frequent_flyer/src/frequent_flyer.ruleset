@@ -11,10 +11,6 @@
 ruleset frequent_flyer
 {
     {
-        trip_miles += @flight_miles;
-    }
-
-    {
         lifetime_miles += @flight_miles;
     }
 
