@@ -155,17 +155,13 @@ ruleset event_rule_example
         std::cout << "Graph " << graph.uuid << " creating vertex with ID "
             << vertex_id << std::endl;
         // Create a new vertex record
-        vertex_writer writer = vertex_writer();
-        writer.id = vertex_id;
-        writer.deprecation_count = 0;
-        writer.insert_row();
-//        vertex.insert(    // syntax error -- need to specify all fields
-//            id: vertex_id,
-//            deprecation_count: 0
-//            );
+        vertex.insert(
+            id: vertex_id,
+            deprecation_count: 0
+            );
     }
 
-    // Here's an example with slightly more processing. The paradigm here
+//    // Here's an example with slightly more processing. The paradigm here
     //  is that incoming data has arrived, and that arrival in turn
     //  resulted in an entry being created in the incoming_data_event
     //  table, storing that data.
@@ -195,28 +191,13 @@ ruleset event_rule_example
         //  both in rules files and also in procedural C++ code. The
         //  alternative here can be used in rules files, creating a
         //  record with one function call.
-        std::string compression_string("none");
         std::string graph_uuid_string("aaaaaaaa-0000-0000-0000-000000000000");
-
-        const unsigned char pose_data[64] = { 0 };
-        std::vector<uint8_t> pose_vector;
-
         auto new_vertex = vertex.insert(
             id: max_vertex_id + 1,
-            type: 0,
-            pose: pose_data,
-            deprecation_count: 0,
-            reference: 0,
-            session: 0,
             source: incoming_data_event.source,
             data: incoming_data_event.data,
             pose_x: incoming_data_event.pose_x,
             pose_y: incoming_data_event.pose_y,
-            stamp_sec: 100,
-            stamp_nsec: 0,
-            level: 1,
-            compression: compression_string.c_str(),
-            confidence: 0.98,
             graph_uuid: graph_uuid_string.c_str()
             );
 
