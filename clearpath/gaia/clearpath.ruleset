@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <iostream>
-
-#include "gaia_clearpath.h"
+#include <vector>
 
 // Rule examples. These examples are in two categories. The first shows
 //  the basics about rules, including how they're called and how data
@@ -9,8 +8,7 @@
 //  called that create new records, in turn inducing additional rules to
 //  fire.
 
-using std::cout;
-using std::endl;
+#include "gaia_clearpath.h"
 
 using gaia::clearpath::vertex_writer;
 
@@ -33,14 +31,16 @@ ruleset clearpath_rule_examples
     // Record insertion
     on_insert(vertex)
     {
-         cout << "A: Insert of vertex record with ID " << vertex.id << endl;
+         std::cout << "A: Insert of vertex record with ID " 
+            << vertex.id << std::endl;
     }
 
     on_insert(v: vertex)
     {
         // Alternative syntax for the rule parameters. This form
         //  allows using `v` as shorthand for the vertex record.
-        cout << "B: Insert of vertex record with ID " << v.id << endl;
+        std::cout << "B: Insert of vertex record with ID " 
+            << v.id << std::endl;
     }
     // NOTE that having 2 on_insert rules for the same table results
     //  in both rules firing. Given these two rules, an insert into
@@ -60,8 +60,8 @@ ruleset clearpath_rule_examples
         //  the table (e.g., 'deprecation_count') while if a record
         //  occurs in different tables (e.g., 'id') then the table
         //  must be specified.
-        cout << "Vertex " << vertex.id << " has deprecation count of "
-            << deprecation_count << endl;
+        std::cout << "Vertex " << vertex.id << " has deprecation count of "
+            << deprecation_count << std::endl;
     }
 
     // Update rules can be for records or for specific fields within a
@@ -69,8 +69,8 @@ ruleset clearpath_rule_examples
     //  'confidence' field.
     on_update(vertex.confidence)
     {
-        cout << "Vertex " << vertex.id << " has changed to "
-            << vertex.confidence << endl;
+        std::cout << "Vertex " << vertex.id << " has changed to "
+            << vertex.confidence << std::endl;
     }
 
 
@@ -79,7 +79,7 @@ ruleset clearpath_rule_examples
     on_change(point_edge)
     {
         // Fired for any change or update to the point_edge table.
-        cout << "Point edge " << point_edge.id << " has changed\n";
+        std::cout << "Point edge " << point_edge.id << " has changed\n";
     }
 
 
@@ -90,24 +90,24 @@ ruleset clearpath_rule_examples
     //  'for' loops and 'on_xxxxxx()' functions, a tag is defined
     //  by placing it before a colon, e.g., <tag>:<table|field>. E.g.,
 
-    // Use the tage 'pe' for the table name 'point_edge'.
+    // Use the tag 'pe' for the table name 'point_edge'.
     on_change(pe: point_edge)
     {
-        cout << "Point edge (pe) " << pe.id << " has changed\n";
+        std::cout << "Point edge (pe) " << pe.id << " has changed\n";
     }
 
 
     ////////////////////////////////////////////
     // Following references between tables
-    // The symbol ->
+    // The symbol "->"
     // The field in a record is accessed using <record>.<field>. When
     //  following the reference to another table, the "->" operator
     //  is used. For example (table)->(referenced table). 
 
     on_change(v: vertex)
     {
-        cout << "Vertex " << v.id << " is part of graph "
-            << v->graph.uuid << endl;
+        std::cout << "Vertex " << v.id << " is part of graph "
+            << v->graph.uuid << std::endl;
     }
 
      
@@ -122,21 +122,22 @@ ruleset clearpath_rule_examples
     {
         // Iterate through graph record's vertices. This is done with 
         // a 'for' loop over the graph's 'vertices' reference.
-        cout << "Graph " << graph.uuid << " vertices:\n";
+        std::cout << "Graph " << graph.uuid << " vertices:\n";
         for (graph.vertices->vertex)
         {
-            cout << "  " << vertex.id << " has confidence " 
-                << vertex.confidence << endl;
+            std::cout << "  " << vertex.id << " has confidence " 
+                << vertex.confidence << std::endl;
         }
     }
 
     // Here's an example of the preceding function using tags
     on_update(g: graph)   // Graph record 'g' has changed.
     {
-        cout << "Graph " << g.uuid << " vertices:\n";
+        std::cout << "Graph " << g.uuid << " vertices:\n";
         for (g.vertices->v:vertex)
         {
-            cout << "  " << v.id << " has confidence " << v.confidence << endl;
+            std::cout << "  " << v.id << " has confidence " 
+                << v.confidence << std::endl;
         }
     }
 }
@@ -151,13 +152,74 @@ ruleset event_rule_example
     on_insert(graph)
     {
         int64_t vertex_id = random();
-        cout << "Graph " << graph.uuid << " creating vertex with ID "
-            << vertex_id << endl;
+        std::cout << "Graph " << graph.uuid << " creating vertex with ID "
+            << vertex_id << std::endl;
         // Create a new vertex record
         vertex_writer writer = vertex_writer();
         writer.id = vertex_id;
         writer.deprecation_count = 0;
         writer.insert_row();
+//        vertex.insert(    // syntax error -- need to specify all fields
+//            id: vertex_id,
+//            deprecation_count: 0
+//            );
+    }
+
+    // Here's an example with slightly more processing. The paradigm here
+    //  is that incoming data has arrived, and that arrival in turn
+    //  resulted in an entry being created in the incoming_data_event
+    //  table, storing that data.
+    // For this example, the data stored in this event is used to
+    //  create a new vertex. In the process, the vertex table is scanned
+    //  to find then next lowest ID, showing how to traverse an entire
+    //  table.
+    on_insert(incoming_data_event)
+    {
+        // The loop below finds the maximum id value for existing edge ids.
+        // In practice, we wouldn't search the table each time to look for
+        //  a new ID. This is only done to provide an example of searching
+        //  a table.
+        // Note that this uses a new syntax, modified from the 'tag'
+        //  syntax described above. In this case the leading slash '/' means
+        //  to search through all records in the specified table.
+        uint64_t max_vertex_id = 0;
+        for (/V:vertex)
+        {
+            if (V.id > max_vertex_id)
+            {
+                max_vertex_id = V.id;
+            }
+        }
+        // Here is an alternative way to generate a record. The above
+        //  example used the "Direct Access" technique, which works
+        //  both in rules files and also in procedural C++ code. The
+        //  alternative here can be used in rules files, creating a
+        //  record with one function call.
+        std::string compression_string("none");
+        std::string graph_uuid_string("aaaaaaaa-0000-0000-0000-000000000000");
+
+        const unsigned char pose_data[64] = { 0 };
+        std::vector<uint8_t> pose_vector;
+
+        auto new_vertex = vertex.insert(
+            id: max_vertex_id + 1,
+            type: 0,
+            pose: pose_data,
+            deprecation_count: 0,
+            reference: 0,
+            session: 0,
+            source: incoming_data_event.source,
+            data: incoming_data_event.data,
+            pose_x: incoming_data_event.pose_x,
+            pose_y: incoming_data_event.pose_y,
+            stamp_sec: 100,
+            stamp_nsec: 0,
+            level: 1,
+            compression: compression_string.c_str(),
+            confidence: 0.98,
+            graph_uuid: graph_uuid_string.c_str()
+            );
+
     }
 }
 

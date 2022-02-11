@@ -100,3 +100,16 @@ table point_edge
         using out_p_edges
         where point_edge.src_id = vertex.id
 )
+
+------------------------------------------------------------------------
+-- Example table. For this example, assume that an entry is made into
+--  the 'incoming_data_event' table when a new packet of data arrives. 
+table incoming_data_event
+(
+    id int64 unique,
+    source string,
+    data uint8[],
+    pose_x double,
+    pose_y double
+)
+
