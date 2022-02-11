@@ -72,35 +72,26 @@ void init_storage()
 
     auto route_seattle_la = route_t::get(route_t::insert_row(960, "SEA", "LAX"));
     auto route_la_seattle = route_t::get(route_t::insert_row(960, "LAX", "SEA"));
-    auto route_la_ohare = route_t::get(route_t::insert_row(1745, "LAX", "ORD"));
     auto route_ohare_la = route_t::get(route_t::insert_row(1745, "ORD", "LAX"));
-    auto route_ohare_seattle = route_t::get(route_t::insert_row(1716, "ORD", "SEA"));
-    auto route_ohare_boston = route_t::get(route_t::insert_row(867, "ORD", "BOS"));
-    auto route_boston_seattle = route_t::get(route_t::insert_row(2485, "BOS", "SEA"));
 
     route_seattle_la.flights().insert(flight_t::insert_row(1, 0, 0, "scheduled", 10, 0));
-    route_la_ohare.flights().insert(flight_t::insert_row(2, 0, 0, "scheduled", 20, 0));
-    route_ohare_boston.flights().insert(flight_t::insert_row(3, 0, 0, "scheduled", 20, 0));
-    route_boston_seattle.flights().insert(flight_t::insert_row(4, 0, 0, "scheduled", 20, 0));
-    route_ohare_seattle.flights().insert(flight_t::insert_row(5, 0, 0, "scheduled", 30, 0));
-    route_seattle_la.flights().insert(flight_t::insert_row(6, 0, 0, "scheduled", 30, 0));
-    route_la_seattle.flights().insert(flight_t::insert_row(7, 0, 0, "scheduled", 30, 0));
-    route_ohare_la.flights().insert(flight_t::insert_row(8, 0, 0, "scheduled", 40, 0));
-    route_la_ohare.flights().insert(flight_t::insert_row(9, 0, 0, "scheduled", 40, 0));
+    route_seattle_la.flights().insert(flight_t::insert_row(2, 0, 0, "scheduled", 20, 0));
+    route_la_seattle.flights().insert(flight_t::insert_row(3, 0, 0, "scheduled", 30, 0));
+    route_ohare_la.flights().insert(flight_t::insert_row(4, 0, 0, "scheduled", 40, 0));
 
     traveler_t::insert_row(1, "Jean-Luc", "Picard", 0, "basic");
     traveler_t::insert_row(2, "Worf", "", 0, "basic");
-    traveler_t::insert_row(3, "Data", "", 0, "basic");
+    traveler_t::insert_row(3, "Riker", "", 0, "basic");
 
     trip_t::insert_row(2, 1, "Jean-Luc's trip 2", 0, 0, "SEA", "LAX");
-    segment_t::insert_row(1, 6, 2);
+    segment_t::insert_row(1, 1, 2);
 
     trip_t::insert_row(1, 1, "Jean-Luc's trip 1", 0, 0, "ORD", "SEA");
-    segment_t::insert_row(2, 7, 1);
-    segment_t::insert_row(1, 8, 1);
+    segment_t::insert_row(2, 3, 1);
+    segment_t::insert_row(1, 4, 1);
 
     trip_t::insert_row(3, 2, "Warf's trip", 0, 0, "LAX", "SEA");
-    segment_t::insert_row(1, 7, 3);
+    segment_t::insert_row(1, 3, 3);
 
     commit_transaction();
 }
@@ -155,20 +146,22 @@ void dump_db()
     bool first_flight = true;
     std::cout << "\n+=========+\n";
     std::cout << "| Flights |\n";
-    std::cout << "+=====================================================================\n";
+    std::cout << "+==================================================================\n";
     for (auto flight : flight_t::list())
     {
         if (!first_flight)
         {
-            std::cout << "    +-------------+----------------------+---------------------------+\n";
+            std::cout << "    +-----------+------------+---------------+--------------------+\n";
         }
         first_flight = false;
         std::cout << "   "
-            << " | Flight: " << std::setw(3) << flight.flight_number()
-            << " | Flight miles: " << std::setw(6) << flight.flight_miles()
-            << " | Flight status: " << std::setw(11) << flight.flight_status() << "|\n";
+            << " | Flight: " << std::setw(2) << flight.flight_number() << "| "
+            << flight.route().departure_airport().airport_code() << " to "
+            << flight.route().arrival_airport().airport_code()
+            << " | Miles: " << std::setw(6) << flight.flight_miles()
+            << " | Status: " << std::setw(11) << flight.flight_status() << "|\n";
     }
-    std::cout << "    ==================================================================\n";
+    std::cout << "    ===============================================================\n";
     commit_transaction();
 }
 
