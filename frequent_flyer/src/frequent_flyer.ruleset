@@ -1,0 +1,35 @@
+/////////////////////////////////////////////
+// Copyright (c) 2022 Gaia Platform LLC
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+/////////////////////////////////////////////
+
+#include "gaia/logger.hpp"
+
+ruleset frequent_flyer
+{
+    {
+        trip_miles += @flight_miles;
+    }
+
+    {
+        lifetime_miles += @flight_miles;
+    }
+
+    {
+        if (@lifetime_miles > 1000)
+        {
+            member_level = "silver";
+        }
+    }
+
+    on_update(flight.flight_status)
+    {
+        if (strcmp(flight.flight_status, "landed") == 0)
+        {
+            trip.segments_flown += 1;
+        }
+    }
+}
