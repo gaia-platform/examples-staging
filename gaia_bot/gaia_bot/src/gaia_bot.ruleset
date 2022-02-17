@@ -18,14 +18,12 @@
 #include <sensor_msgs/msg/range.hpp>
 #include <sstream>
 
-// using gaia_bot::GaiaBot::publish_neck_pose;
 using sensor_msgs::msg::Range;
 using namespace gaia::gaia_bot;
 
 const uint64_t face_track_timeout = 3000;
 const float look_range = 0.01;
 const float neck_move_step = 0.005;
-// const uint64_t face_detection_timeout = 5000;
 
 ruleset gaia_bot: serial_group()
 {
