@@ -47,3 +47,15 @@ Reacts to updates in the flight status.
 - Uses the [on_update](https://gaia-platform.github.io/gaia-platform-docs.io/articles/reference/declarative-on_update.html) rule prefix to watch for updates to the flight_status field in the trip table.
 - When the frequent flyer app updates flight status, the rules engine fires this rule which updates the trip segments when the flight status is set to landed.
 - For more information on the on_ rule prefixes, see [on_xxxx Rule prefixes](https://gaia-platform.github.io/gaia-platform-docs.io/articles/rulesets-gaia-programming-model.html#on_xxxx-rule-prefixes) in the Gaia programming model documentation.
+
+## Frequent Flyer app direct access code
+
+The app uses the Direct Access classes to update the database.
+
+- Explictly starts a transaction against the database. For more information, see [TBD]().
+- Gets a list of flights that match the flight number and sets the cursor to the start of the list. With the sample data set this returns just one row or no rows.
+- Iterate through the returned list of flights flights that have have a status of "scheduled".
+- Use the [Direct Access Classes API](https://gaia-platform.github.io/gaia-platform-docs.io/articles/reference/da-class-api.html) to instantiate a writer.
+- Set the `flight_status` and `flight_miles`.
+- Update the row.
+- Commit the transaction.
