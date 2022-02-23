@@ -2,7 +2,7 @@
 
 
 
-This example models a frequent flyer program. The air
+This example models a frequent flyer program.
 
 The schema tracks the following the information:
 
