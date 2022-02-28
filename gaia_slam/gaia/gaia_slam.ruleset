@@ -6,186 +6,86 @@
 // or at https://opensource.org/licenses/MIT.
 ////////////////////////////////////////////////////
 
-#include <sstream>
+#include <atomic>
 
 #include <gaia/logger.hpp>
 
-// Rule examples. These examples are in two categories. The first shows
-//  the basics about rules, including how they're called and how data
-//  can be accessed from within a rule. The second shows rules being
-//  called that create new records, in turn inducing additional rules to
-//  fire.
+constexpr uint64_t c_first_vertex_id = 0;
+std::atomic<uint64_t> c_last_edge_id = 0;
 
-
-// This ruleset provides example rules showing how rules are defined and
-//  how data can be accessed within a rule.
-ruleset gaia_slam_rule_examples
+// The serial_group() keyword makes the rules in the ruleset run serially:
+// only one rule is executed at a time. This prevents transaction
+// conflicts when modifying the same data.
+ruleset data_processing : serial_group()
 {
-    // Explicit rules
-    // These rules fire when a record is inserted and/or modified.
-    // Each rule is called once each change/insertion, with a
-    //  reference to that record being passed in as a parameter.
-    //
-    // These rules are:
-    //    on_insert()   fired when a new record is created
-    //    on_update()   fired when a record or field is updated
-    //    on_change()   fired when a record is created or updated
 
-
-    // Record insertion
-    on_insert(vertex)
-    {
-        gaia_log::app().info("Inserted vertex record with ID {}", vertex.id);
-    }
-
-    // NOTE that having 2 on_insert rules for the same table results
-    //  in both rules firing.
-
-
-    // Record updates
-    // An 'on_update' rule fires whenever there is an update to the contents
-    //  of any field in a record.
-    on_update(vertex)
-    {
-        // When referencing fields in a record, if the field name is
-        //  unique then it can be used directly, w/o specifying
-        //  the table (e.g., 'pose_x') while if a record
-        //  occurs in different tables (e.g., 'id') then the table
-        //  must be specified (e.g. 'vertex.id').
-        gaia_log::app().info("Vertex {} has updated pose_x to {}", vertex.id, pose_x);
-    }
-
-    // Update rules can be for records or for specific fields within a
-    //  record. For example, here's a rule strictly for the vertex
-    //  'pose_y' field.
-    on_update(vertex.pose_y)
-    {
-        gaia_log::app().info("Vertex {} has updated pose_y to {}", vertex.id, vertex.pose_y);
-    }
-
-    // Record change (i.e., insertion or update)
-    on_change(edge)
-    {
-        // Fired for any insert or update to the edge table.
-        gaia_log::app().info("Edge {} has been inserted/updated!", edge.id);
-    }
-
-
-    // Using tags
-    // Tags are a form of shorthand letting you use a shorter label
-    //  to describe a longer table name. In the contexts of 'for'
-    //  loops and 'on_xxxxxx()' functions, a tag is defined by placing
-    //  it before a colon, e.g., <tag>:<table|field>. E.g.,
-
-    // Use the tag 'e' for the table name 'edge'.
-    on_change(e: edge)
-    {
-        gaia_log::app().info("Edge (e) {} has been inserted/updated!", e.id);
-    }
-
-
-    // Following references between tables.
-    // The symbol "->"
-    // The field in a record is accessed using <record>.<field>. When
-    //  following the reference to another table, the "->" operator
-    //  is used. For example (table)->(referenced table).
-
-    on_change(v: vertex)
-    {
-        gaia_log::app().info("Vertex {} is part of graph {}", v.id, v->graph.uuid);
-    }
-
-
-    // Iterating through a 1:n relationship
-    //
-    // This example combines tags and following references between
-    //  tables to list the entries in B that is liked to by table A
-    //  as a result in changes to table A.
-
-    on_update(graph)   // Graph record has changed.
-    {
-        // Iterate through graph record's vertices. This is done with
-        // a 'for' loop over the graph's 'vertices' reference.
-        std::stringstream ss;
-        ss << "Graph " << graph.uuid << " updated. Listing vertices:\n";
-        for (graph.vertices->vertex)
-        {
-            ss << "  " << vertex.id << "\n";
-        }
-        gaia_log::app().info(ss.str().c_str());
-    }
-
-    // Here's an example of the preceding function using tags
-    on_update(g: graph)   // Graph record 'g' has changed.
-    {
-        std::stringstream ss;
-        ss << "Graph " << g.uuid << " vertices:\n";
-        for (g.vertices->v:vertex)
-        {
-            ss << "  " << v.id << "\n";
-        }
-        gaia_log::app().info(ss.str().c_str());
-    }
-}
-
-
-// Rule examples where the creates other records.
-// The serial_group() keyword makes the rules in the ruleset to run serially:
-// only one rule is executed in a given point in time.
-ruleset event_rule_example : serial_group()
-{
-    // When a new graph record is inserted, create a vertex.
-    // Note that the newly created vertex will induce the
-    //  "on_insert(vertex)" rule(s) to fire.
-    on_insert(graph)
-    {
-        int64_t vertex_id = random();
-        gaia_log::app().info("Graph {} creating vertex with ID {}", graph.uuid, vertex_id);
-
-        // Create a new vertex record
-        vertex.insert(
-            id: vertex_id,
-            graph_uuid: graph.uuid
-        );
-    }
-
-    // Here's an example with slightly more processing. The paradigm here
-    //  is that incoming data has arrived, and that arrival in turn
-    //  resulted in an entry being created in the incoming_data_event
-    //  table, storing that data.
-    // For this example, the data stored in this event is used to
-    //  create a new vertex. In the process, the vertex table is scanned
-    //  to find then next lowest ID, showing how to traverse an entire
-    //  table.
+    // Process an incoming data event by creating a new vertex in the graph.
     on_insert(incoming_data_event)
     {
-        gaia_log::app().info("Processing incoming_data_event with ID {}", id);
+        gaia_log::app().info("Processing incoming_data_event(id: {})", id);
 
         // The loop below finds the maximum id value for existing edge ids.
         // In practice, we wouldn't search the table each time to look for
         //  a new ID. This is only done to provide an example of searching
         //  a table.
-        // Note that this uses a new syntax, modified from the 'tag'
-        //  syntax described above. In this case the leading slash '/' means
-        //  to search through all records in the specified table.
-        uint64_t max_vertex_id = 0;
-        for (/V:vertex)
+        // The leading slash '/' means to search through all records in the
+        //  specified table.
+        uint64_t max_vertex_id = c_first_vertex_id;
+        for (/v:vertex)
         {
-            if (V.id > max_vertex_id)
+            if (v.id > max_vertex_id)
             {
-                max_vertex_id = V.id;
+                max_vertex_id = v.id;
             }
         }
 
+        uint64_t new_vertex_id = max_vertex_id + 1;
+        gaia_log::app().info("Creating new vertex(id: {})", new_vertex_id);
+
         // Create a vertex record
-        std::string graph_uuid_string("aaaaaaaa-0000-0000-0000-000000000000");
-        auto new_vertex = vertex.insert(
-            id: max_vertex_id + 1,
+        std::string graph_id_string("graph_1");
+        vertex.insert(
+            id: new_vertex_id,
             type: incoming_data_event.type,
             data: incoming_data_event.data,
             pose_x: incoming_data_event.pose_x,
             pose_y: incoming_data_event.pose_y,
-            graph_uuid: graph_uuid_string.c_str()
+            graph_id: graph_id_string.c_str()
         );
+    }
+
+    // Process each new vertex by creating an edge with the previous existing vertex.
+    on_insert(vertex)
+    {
+        gaia_log::app().info("Processing vertex(id: {})", id);
+
+        if (vertex.id == c_first_vertex_id)
+        {
+            return;
+        }
+
+        uint64_t prev_vertex_id = vertex.id - 1;
+        uint64_t new_edge_id = c_last_edge_id.fetch_add(1);
+        gaia_log::app().info(
+            "Creating edge(id: {}) with between vertex(id: {}) and vertex(id: {})",
+            new_edge_id, prev_vertex_id, vertex.id);
+
+        edge.insert(
+            id: new_edge_id,
+            graph_id: vertex.graph_id,
+            src_id: prev_vertex_id,
+            dest_id: vertex.id);
+    }
+}
+
+ruleset graph_processing
+{
+    // Reacts to the creation of an edge by just printing it.
+    // This rule could contain part of the SALM algorithm.
+    on_insert(edge)
+    {
+        gaia_log::app().info(
+            "Created edge(id: {}) vertex(id: {}) -> vertex(id: {})",
+                edge.id, edge.src_id, edge.dest_id);
     }
 }

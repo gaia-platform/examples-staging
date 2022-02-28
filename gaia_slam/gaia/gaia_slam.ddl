@@ -8,13 +8,15 @@
 
 database gaia_slam
 
+-- SLAM graph.
 table graph
 (
-    uuid string unique,
+    id string unique,
     vertices references vertex[],
     edges references edge[]
 )
 
+-- A new vertex is created every time a new observation from a sensor is done.
 table vertex
 (
     id uint64 unique,
@@ -24,23 +26,24 @@ table vertex
     pose_y double,
 
     -- Relationships
-    graph_uuid string,
+    graph_id string,
     graph references graph
         using vertices
-        where vertex.graph_uuid = graph.uuid,
+        where vertex.graph_id = graph.id,
 
     in_edges references edge[],
     out_edges references edge[]
 )
 
+-- A new edge is created between every new created vertex and the previous one.
 table edge
 (
     id uint64 unique,
 
     -- Relationships
-    graph_uuid string,
+    graph_id string,
     graph references graph
-        where edge.graph_uuid = graph.uuid,
+        where edge.graph_id = graph.id,
 
     dest_id uint64,
     dest references vertex
@@ -53,9 +56,9 @@ table edge
         where edge.src_id = vertex.id
 )
 
-------------------------------------------------------------------------
--- Example table. For this example, assume that an entry is made into
---  the 'incoming_data_event' table when a new packet of data arrives. 
+-- This table represents a generic input from a sensor.
+-- i.e. Lidar sensor, image, etc..
+-- Note: this is just an example.
 table incoming_data_event
 (
     id uint64 unique,

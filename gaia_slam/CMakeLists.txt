@@ -9,7 +9,6 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(gaia_slam)
-project(gaia_slam)
 
 set(CMAKE_CXX_STANDARD 17)
 

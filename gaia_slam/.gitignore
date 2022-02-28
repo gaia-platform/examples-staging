@@ -2,3 +2,5 @@ logs/
 .gaia_slam_db
 cmake-*
 .idea
+.clang-tidy
+.clang-format

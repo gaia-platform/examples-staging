@@ -36,6 +36,9 @@ void wait_for_rules()
     sleep_for(std::chrono::milliseconds(c_rule_wait_millis));
 }
 
+/**
+ * Shows how mutating the database triggers the rules in `gaia/gaia_slam.ruleset`.
+ */
 int main()
 {
     gaia::system::initialize();
@@ -46,39 +49,17 @@ int main()
     clear_data();
     gaia::db::commit_transaction();
 
-    gaia_log::app().info("=== Creates a new Graph and observe the corresponding rules triggered ===");
+    gaia_log::app().info("=== Creates a new Graph ===");
 
-    // This code triggers the following rules:
-    // 1. on_insert(graph): triggered when a graph is created and creates a random vertex (which triggers the next rule).
-    // 2. on_insert(vertex): triggered when a vertex is created.
-    // 3. on_change(v: vertex): Triggered when a vertex is created or updated.
     gaia::db::begin_transaction();
     graph_t graph = create_graph("graph_1");
     gaia::db::commit_transaction();
 
-    wait_for_rules();
-
-    gaia_log::app().info("=== Updates a vertex and observe the corresponding rules triggered ===");
-
-    // This code triggers the following rules:
-    // 1. on_update(vertex): triggered when any vertex field is updated.
-    // 2. on_update(vertex.confidence): triggered when the confidence field is updated.
-    // 3. on_change(v: vertex): Triggered when a vertex is created or updated.
-    gaia::db::begin_transaction();
-    vertex_t vertex1 = *vertex_t::list().begin();
-    vertex_writer vertex_w = vertex1.writer();
-    vertex_w.pose_y = 0.4;
-    vertex_w.pose_x = 0.1;
-    vertex_w.update_row();
-    gaia::db::commit_transaction();
-
-    wait_for_rules();
-
     gaia_log::app().info("=== Inserting {} incoming_data_event of type {} ===", c_num_data_events, vertex_type::c_lidar_scan);
 
-    // This code triggers the following rules:
-    // 1. on_insert(incoming_data_event): triggered when an incoming_data_event is inserted. This insert a new vertex.
-    // 2. All the rules triggered on vertex insertion.
+    // Insert some incoming_data_event rows to simulate data arriving from sensors.
+    // This should trigger the following rule:
+    // - on_insert(incoming_data_event): triggered when an incoming_data_event is inserted. This insert a new vertex.
     gaia::db::begin_transaction();
     for (int i = 0; i < c_num_data_events; i++)
     {
@@ -94,9 +75,9 @@ int main()
 
     wait_for_rules();
 
-    gaia_log::app().info("=== Retrieving vertexes/edges with type {} ===", vertex_type::c_image_keyframe);
+    gaia_log::app().info("=== Retrieving vertices/edges with type {} ===", vertex_type::c_image_keyframe);
 
-    // This code verify that the vertex with type vertex_type::c_image_keyframe has been created.
+    // This code verifies that the vertex with type vertex_type::c_image_keyframe has been created.
     gaia::db::begin_transaction();
     for (const vertex_t& v : vertex_t::list()
                                  .where(vertex_expr::type == vertex_type::c_image_keyframe))
@@ -105,13 +86,9 @@ int main()
     }
     gaia::db::commit_transaction();
 
-    wait_for_rules();
-
     ///
     /// Now you can write your additional logic to trigger the other rules,
     /// or write some new rules!
-    ///
-    /// For instance, you may want to create edges between vertexes..
     ///
 
     gaia::system::shutdown();

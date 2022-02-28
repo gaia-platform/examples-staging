@@ -11,9 +11,9 @@
 namespace gaia::gaia_slam::graph
 {
 
-graph_t create_graph(const std::string& uuid)
+graph_t create_graph(const std::string& id)
 {
-    return graph_t::get(graph_t::insert_row(uuid.c_str()));
+    return graph_t::get(graph_t::insert_row(id.c_str()));
 }
 
 vertex_t create_vertex(const graph_t& graph, int64_t id, int64_t vertex_type)
@@ -21,23 +21,23 @@ vertex_t create_vertex(const graph_t& graph, int64_t id, int64_t vertex_type)
     vertex_writer vertex_w;
     vertex_w.id = id;
     vertex_w.type = vertex_type;
-    vertex_w.graph_uuid = graph.uuid();
+    vertex_w.graph_id = graph.id();
 
     return vertex_t::get(vertex_w.insert_row());
 }
 
 edge_t create_edge(int64_t id, const vertex_t& src, const vertex_t& dest)
 {
-    if (src.graph_uuid() == dest.graph_uuid())
+    if (src.graph_id() == dest.graph_id())
     {
-        throw std::runtime_error("You cannot create an edge from vertexes in different graphs!");
+        throw std::runtime_error("You cannot create an edge from vertices in different graphs!");
     }
 
     edge_writer edge_w;
     edge_w.id = id;
     edge_w.src_id = src.id();
     edge_w.dest_id = dest.id();
-    edge_w.graph_uuid = src.graph_uuid();
+    edge_w.graph_id = src.graph_id();
 
     return edge_t::get(edge_w.insert_row());
 }
