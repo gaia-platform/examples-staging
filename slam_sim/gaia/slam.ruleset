@@ -1,0 +1,122 @@
+#include <assert.h>
+
+#include <iostream>
+#include <string>
+
+#include "gaia/common.hpp"
+#include "gaia/rules/rules.hpp"
+
+#include "slam/gaia_slam.h"
+
+constexpr double ARRIVE_DEST_RADIUS_METERS = 1.0;
+
+ruleset map_ruleset serial_group("maps")
+{
+}
+
+
+ruleset observation_ruleset serial_group("observations")
+{
+    on_change(path.state)
+    {
+        if (state == PATH_STATE_STARTING)
+        {
+            // Sanity check. A new path should have no observations.
+            assert(path.num_observations == 0);
+
+            // Create first observation. That will trigger the sequence 
+            //  of events moving toward the destination.
+            create_observation();
+            path.state = PATH_STATE_ACTIVE;
+        }
+        else if (path.state == PATH_STATE_DONE)
+        {
+            // Path just completed. Calculate error and store results
+            //  in error_correction. There should be no transaction
+            //  conflicts as this is the only code path altering
+            //  the record in that table. Once error is calculated
+            //  a new area map can be created.
+            calc_path_error(path);
+        }
+    }
+
+
+    on_update(e: error_correction)
+    {
+        // We have a new estimated error. Update our running error estimate.
+        update_summary_error();
+        // Build a new map w/ our latest error estimate.
+        build_area_map();
+    }
+
+
+    on_update(m: area_map)
+    {
+        // When the area map is updated it's usually time to select a
+        //  new destination. 
+        select_destination();
+    }
+
+
+    on_change(e: estimated_position)
+    {
+        // If position is sufficiently close to destination then select
+        //  a new destination.
+        destination_t dest = desination::list()::begin();
+        assert(exists(dest));
+        double dx = dest.x_meters - e.x_meters;
+        double dy = dest.y_meters - e.y_meters;
+        double dist = sqrt(dx*dx + dy*dy);
+        if (dist < ARRIVE_DEST_RADIUS_METERS)
+        {
+            // conditions to consider -- are we near anchor and don't
+            //  see it or did we arrive at remote destination?
+            select_destination();
+        }
+
+
+        if (state == PATH_STATE_ACTIVE)
+        {
+            // Alice is outbound. See if it's time to stop exploring and
+            //  find a landmark.
+            if (num_observations > get_exploration_length())
+            {
+                state = PATH_STATE_FIND_LANDMARK;
+            }
+        }
+    }
+
+
+    on_change(d: destination)
+    {
+        // make sure destination and location are w/in map......
+        // TODO FIXME using high-res map good for collision avoidance
+        //  but it's not sufficient for navigation, e.g., it cannot
+        //  guide around long penninsula. 
+        // Maybe have high-res map that's very local to Alice and
+        //  build that from low-res map. Don't worry about destination
+        //  being in map. Coarse path can be inheritted from low-res map.
+        //  This should save time generating local high-res map.
+
+        generate_local_map();
+    }
+
+
+    on_change(w: working_map)
+    {
+        // Local map is updated so we have the latest map and collision
+        //  avoidance info. Move forward.
+        move_toward_destination();
+    }
+
+
+    on_insert(o: observation)
+    {
+        // TODO check and see if it's time to abort quest for this
+        //  destination.
+
+
+        update_working_map();
+    }
+}
+
