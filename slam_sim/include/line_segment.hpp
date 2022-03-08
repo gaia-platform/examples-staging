@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////
 
 // Line segment representation. Assumptions here are that coordinate
 //  space uses screen coordinates, such that increasing Y is downward,
@@ -18,7 +25,7 @@ public:
 
     // Distance from x,y to the point of intersection on this line
     //  segment along the path theta_deg. If no intersection (e.g.,
-    //  theta is moving away from segment, or if it's parallel) 
+    //  theta is moving away from segment, or if it's parallel)
     //  then a negative number is returned.
     // theta_deg is compass-based (0 is north, 90 is east, etc)
     double intersect_range(double x, double y, double theta_deg);
@@ -37,4 +44,3 @@ protected:
 double unwrap_compass(double theta_degs);
 
 } // namespace utils
-
