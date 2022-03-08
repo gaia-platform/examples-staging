@@ -51,6 +51,7 @@ void move_toward_destination();
 // Performs a full sensor sweep of the environment and creates a record
 //  in the 'observations' table.
 // First brings Alice to a halt if not already stopped.
+// Creates observations record, updates estimated_position record.
 void create_observation();
 
 
@@ -60,7 +61,7 @@ void create_observation();
 // Given position fixes at the start and end point of the path, estimate
 //  DR error and update DR error estimate.
 // Updates error_correction record.
-void calc_path_error();
+void calc_path_error(gaia::slam::path_t& path);
 
 // Generates a low-res map off the area with path information to destination.
 // Stores in 'area_map' record.

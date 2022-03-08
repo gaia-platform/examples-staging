@@ -145,6 +145,7 @@ table path
   state int32,
 
   -- Observations that are part of this path.
+  num_observations uint32,
   start_obs_id int32,
   latest_obs_id int32,
   first_observation references observations
@@ -177,8 +178,8 @@ table observations
   dx_meters float,
   dy_meters float,
 
-  path_first references path[] using first_observation,
-  path_latest references path[] using latest_observation,
+  path references path[] using first_observation,
+  path_dup references path[] using latest_observation,
 
   ------------------------------
   -- Sensing
