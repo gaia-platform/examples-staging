@@ -121,7 +121,7 @@ table pending_destination
   --  appriate, this location will become the the new destination.
   -- Uses world coordinates, with increasing X,Y being rightward/upward
   x_meters float,
-  y_meters float,
+  y_meters float
 )
 
 
@@ -205,7 +205,6 @@ table observations
 -- A salient feature of the environment that is uniquely identifiable and
 --  that can be used to generate a position fix.
 table landmarks
---table anchor_points
 (
   landmark_id int32 unique,
   description string unique,
@@ -228,7 +227,6 @@ table landmarks
 -- Locations of observed landmarks.
 -- Note that measured distance and range to the landmark will be more
 --  accurate the closer Alice is to it.
---table anchor_sightings
 table landmark_sightings
 (
   range_meters float,
@@ -237,7 +235,7 @@ table landmark_sightings
   -- Observation corresponding to this sighting.
   observation_id int32,
   observation references observations
-    where landmark_sightings.observation_id = observations.id
+    where landmark_sightings.observation_id = observations.id,
 
   -- Landmark that was sighted
   landmark_id int32,

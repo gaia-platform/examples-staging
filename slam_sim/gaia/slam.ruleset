@@ -8,10 +8,21 @@
 
 #include "slam/gaia_slam.h"
 
-constexpr double ARRIVE_DEST_RADIUS_METERS = 1.0; // TODO move to header
+#include "slam_sim.hpp"
+
+using slam_sim::select_destination();
+using slam_sim::select_landmark_destination();
+using slam_sim::full_stop();
+using slam_sim::move_toward_destination();
+
+using slam_sim::create_observation();
+
+using slam_sim::build_area_map();
+using slam_sim::build_local_map();
+using slam_sim::build_working_map();
 
 
-ruleset observation_ruleset // serial_group("observations")
+ruleset observation_ruleset
 {
     on_update(path.state)
     {
