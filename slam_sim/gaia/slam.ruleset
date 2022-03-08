@@ -8,16 +8,12 @@
 
 #include "slam/gaia_slam.h"
 
-constexpr double ARRIVE_DEST_RADIUS_METERS = 1.0;
+constexpr double ARRIVE_DEST_RADIUS_METERS = 1.0; // TODO move to header
 
-ruleset map_ruleset serial_group("maps")
+
+ruleset observation_ruleset // serial_group("observations")
 {
-}
-
-
-ruleset observation_ruleset serial_group("observations")
-{
-    on_change(path.state)
+    on_update(path.state)
     {
         if (state == PATH_STATE_STARTING)
         {
@@ -41,53 +37,68 @@ ruleset observation_ruleset serial_group("observations")
     }
 
 
-    on_update(e: error_correction)
+    on_insert(o: observation)
     {
-        // We have a new estimated error. Update our running error estimate.
-        update_summary_error();
-        // Build a new map w/ our latest error estimate.
-        build_area_map();
-    }
+        // An observation of the surroundings was made. Now we need to
+        //  move on towards our destination.
+        // There are several things to consider. Updating the destination
+        //  record will trigger a rebuilding of the local maps, which will
+        //  in turn have Alice move toward the destination.
 
-
-    on_update(m: area_map)
-    {
-        // When the area map is updated it's usually time to select a
-        //  new destination. 
-        select_destination();
-    }
-
-
-    on_change(e: estimated_position)
-    {
-        // If position is sufficiently close to destination then select
-        //  a new destination.
-        destination_t dest = desination::list()::begin();
-        assert(exists(dest));
-        double dx = dest.x_meters - e.x_meters;
-        double dy = dest.y_meters - e.y_meters;
-        double dist = sqrt(dx*dx + dy*dy);
-        if (dist < ARRIVE_DEST_RADIUS_METERS)
+        pending_destination_t new_dest = pending_destination::begin();
+        if (new_dest)
         {
-            // conditions to consider -- are we near anchor and don't
-            //  see it or did we arrive at remote destination?
+            // If there's a new destination request pending, set that as the
+            //  destination.
+
+            // TODO modify destination record
+        }
+        else if (num_observations == 0)
+        {
+            // This is a newly created path. Select a destination.
             select_destination();
+        }
+        else if ((state == PATH_STATE_ACTIVE) && 
+            (num_observations > expected_arrival))
+        {
+            // We're exploring and should have reached our destination
+            //  already. Give up and go back to a landmark.
+            select_landmark_destination();
         }
 
 
-        if (state == PATH_STATE_ACTIVE)
+// TODO if we're close enough to a landmark right now, terminate the path
+
+
+        else
         {
-            // Alice is outbound. See if it's time to stop exploring and
-            //  find a landmark.
-            if (num_observations > get_exploration_length())
+            // If position is sufficiently close to destination then stop
+            //  exploring and go find a landmark (or if we arrived where one
+            //  should be, go look for another one).
+            estimated_position_t pos = estimated_position_t::list()::begin();
+            destination_t dest = desination::list()::begin();
+            assert(exists(pos));
+            assert(exists(dest));
+            double dx = dest.x_meters - pos.x_meters;
+            double dy = dest.y_meters - pos.y_meters;
+            double dist = sqrt(dx*dx + dy*dy);
+            if (dist < ARRIVE_DEST_RADIUS_METERS)
             {
-                state = PATH_STATE_FIND_LANDMARK;
+                // Arrived at destination. Find a landmark to calibrate
+                //  position and then update map.
+                select_landmark_destination();
+            }
+            else
+            {
+                // Destination hasn't changed. Rebuild the working map
+                //  and proceed.
+                update_working_map();
             }
         }
     }
 
 
-    on_change(d: destination)
+    on_update(d: destination)
     {
         // make sure destination and location are w/in map......
         // TODO FIXME using high-res map good for collision avoidance
@@ -102,21 +113,48 @@ ruleset observation_ruleset serial_group("observations")
     }
 
 
-    on_change(w: working_map)
+    on_update(m: local_map)
     {
-        // Local map is updated so we have the latest map and collision
-        //  avoidance info. Move forward.
+        // Local map was updated. Now rebuild working map.
+        generate_working_map();
+    }
+
+
+    on_update(w: working_map)
+    {
+        // Working map was updated. Based on contents of map, move
+        //  toward destination.
+        // Alice control drops down to procedural code here, with
+        //  direction setting, forward motion, and distance travelled
+        //  managed at procedural level. When Alice has moved far enough
+        //  forward, an observation record will be made.
         move_toward_destination();
     }
 
 
-    on_insert(o: observation)
+    on_insert(c: collision_event)
     {
-        // TODO check and see if it's time to abort quest for this
-        //  destination.
+        // A collision was detected, or the range sensor detected something
+        //  closer than it's supposed to be. Initiate a stop, which will
+        //  in turn create a new observation.
+        full_stop();
+    }
 
 
-        update_working_map();
+
+    on_update(e: error_correction)
+    {
+        // We have a new estimated error. Update our running error estimate.
+        update_summary_error();
+        // Build a new map w/ our latest error estimate.
+        build_area_map();
+    }
+
+
+    on_update(m: area_map)
+    {
+        // When the area map is updated it's time to create a new path.
+        create_new_path();
     }
 }
 
