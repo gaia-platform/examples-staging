@@ -1,3 +1,11 @@
+////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////
+
 #include "gaia/logger.hpp"
 
 #include "actions.hpp"
@@ -191,11 +199,11 @@ ruleset access_control_ruleset
     // Allow a person in depending on how they were scanned
     // and if they entered during their allowed time.
     //
-    // Reacts to: 
+    // Reacts to:
     //      person.badged
     //      person.parked
     //      person.on_wifi
-    // Changes: 
+    // Changes:
     //      person.credentialed
     //      person.admissible
     //
@@ -213,9 +221,9 @@ ruleset access_control_ruleset
 
     // Handles face scans for employees who are currently admissible to a building or room.
     //
-    // Reacts to: 
+    // Reacts to:
     //      scan.face_scan
-    // Changes: 
+    // Changes:
     //      person.entered
     //      person.inside
     //
@@ -228,9 +236,9 @@ ruleset access_control_ruleset
 
     // Handles face scans for visitors who have ongoing events in a room/building.
     //
-    // Reacts to: 
+    // Reacts to:
     //      scan.face_scan
-    // Changes: 
+    // Changes:
     //      person.entered
     //      person.inside
     //
@@ -245,7 +253,7 @@ ruleset access_control_ruleset
                 helpers::let_them_in(person.gaia_id(), scan.gaia_id());
                 return;
             }
-            
+
             if (scan_t::get(scan.gaia_id()).seen_in_room())
             {
                 actions::not_this_room(person.person_id, scan->room.name, scan->room->building.name);
@@ -259,7 +267,7 @@ ruleset access_control_ruleset
 
 // Handles face scans for people who are credentialed but are currently inadmissible.
     //
-    // Reacts to: 
+    // Reacts to:
     //      scan.face_scan
     //
     {
@@ -278,9 +286,9 @@ ruleset access_control_ruleset
 
     // Handles people leaving rooms/buildings.
     //
-    // Reacts to: 
+    // Reacts to:
     //      scan.leaving
-    // Changes: 
+    // Changes:
     //      person.entered
     //      person.inside
     //

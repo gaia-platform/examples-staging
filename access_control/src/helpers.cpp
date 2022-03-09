@@ -1,3 +1,11 @@
+////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////
+
 #include <chrono>
 #include <limits>
 #include <random>
@@ -158,7 +166,7 @@ void helpers::let_them_in(
     {
         disconnect_person_from_room(person_id);
         scan.seen_in_room().people_inside().insert(person);
-        
+
         std::string building_and_room = std::to_string(scan.seen_at_building().building_id());
         building_and_room.append(",");
         building_and_room.append(std::to_string(scan.seen_in_room().room_id()));

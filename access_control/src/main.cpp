@@ -1,3 +1,11 @@
+////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////
+
 #include <cstdlib>
 #include <iostream>
 #include <signal.h>
@@ -128,7 +136,7 @@ json get_building_json(building_t building)
 json get_init_json()
 {
     json j;
-    
+
     j["buildings"] = json::array();
     for (const auto& building : building_t::list())
     {
@@ -324,7 +332,7 @@ bool get_person(uint64_t person_id, person_t& person)
         return false;
     }
 
-    person = *person_iter;  
+    person = *person_iter;
     return true;
 }
 
@@ -336,7 +344,7 @@ bool get_room(uint64_t room_id, room_t& room)
         return false;
     }
 
-    room = *room_iter;  
+    room = *room_iter;
     return true;
 }
 
@@ -348,7 +356,7 @@ bool get_building(uint64_t building_id, building_t& building)
         return false;
     }
 
-    building = *building_iter;  
+    building = *building_iter;
     return true;
 }
 
@@ -361,31 +369,31 @@ void add_scan(const json &j)
     if (j["scan_type"] == "badge")
     {
         scan_w.scan_type = e_scan_type::badge;
-    } 
+    }
     else if (j["scan_type"] == "vehicle_entering")
     {
         scan_w.scan_type = e_scan_type::vehicle_entering;
-    } 
+    }
     else if (j["scan_type"] == "vehicle_departing")
     {
         scan_w.scan_type = e_scan_type::vehicle_departing;
-    } 
+    }
     else if (j["scan_type"] == "joining_wifi")
     {
         scan_w.scan_type = e_scan_type::joining_wifi;
-    } 
+    }
     else if (j["scan_type"] == "leaving_wifi")
     {
         scan_w.scan_type = e_scan_type::leaving_wifi;
-    } 
+    }
     else if (j["scan_type"] == "face")
     {
         scan_w.scan_type = e_scan_type::face;
-    } 
+    }
     else if (j["scan_type"] == "leaving")
     {
         scan_w.scan_type = e_scan_type::leaving;
-    } 
+    }
 
     scan_t new_scan = scan_t::get(scan_w.insert_row());
 
@@ -433,7 +441,7 @@ void message_callback(const std::string &topic, const std::string &payload)
     {
         gaia_log::app().debug("Received topic: {} | payload: {}", topic, payload);
     }
-    
+
     if (topic_vector.size() < 2 || topic_vector.at(1) != "access_control")
     {
         gaia_log::app().error("Unexpected topic: {}", topic);
