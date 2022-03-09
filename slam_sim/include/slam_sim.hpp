@@ -13,6 +13,9 @@
 namespace slam_sim
 {
 
+// TODO remove this
+void create_new_path();
+
 // Flags to indicate state of Alice's movement. This information is
 //  stored in the present path.
 //      'done' indicates that path has been completed.
@@ -28,6 +31,10 @@ constexpr int32_t PATH_STATE_DONE = 8;
 
 // How near to the destination we have to be to say "close enough".
 constexpr double DESTINATION_RADIUS_METERS = 0.5;
+
+// How close to a landmark we need to be to be able to use it as a
+//  position fix.
+constexpr double LANDMARK_DISTANCE_METERS = 1.0;
 
 ////////////////////////////////////////////////
 // Going places
@@ -70,7 +77,7 @@ void create_observation();
 // Given position fixes at the start and end point of the path, estimate
 //  DR error and update DR error estimate.
 // Updates error_correction record.
-void calc_path_error(gaia::slam::path_t& path);
+void calc_path_error(gaia::slam::paths_t& path);
 
 // Generates a low-res map off the area with path information to destination.
 // Stores in 'area_map' record.
