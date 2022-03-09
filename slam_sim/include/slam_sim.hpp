@@ -1,4 +1,13 @@
+////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////
+
 #pragma once
+
 #include "gaia_slam.h"
 
 namespace slam_sim
@@ -11,7 +20,7 @@ void create_new_path();
 //  stored in the present path.
 //      'done' indicates that path has been completed.
 //      'starting' indicates that path is just started.
-//      'active' indicates that Alice is moving away from a landmark and 
+//      'active' indicates that Alice is moving away from a landmark and
 //          toward a destination.
 //      'find_landmark' indicaates that exploration is over and Alice is
 //          looking for a landmark to get a position fix.
@@ -42,7 +51,7 @@ void select_landmark_destination();
 
 // Called in unusual situations, such as if Alice detects a collision or
 //  senses that one is imminent. Brings the bot to a halt and performs
-//  no further actions. If called when bot is already stopped then 
+//  no further actions. If called when bot is already stopped then
 //  request is ignored.
 void full_stop();
 
@@ -74,8 +83,8 @@ void calc_path_error(gaia::slam::paths_t& path);
 // Stores in 'area_map' record.
 void build_area_map();
 
-// Generates a high-res map of the area, based on previously acquired 
-//  and calibrated data. 
+// Generates a high-res map of the area, based on previously acquired
+//  and calibrated data.
 // Stores output in 'local_map' record.
 void build_local_map();
 
@@ -86,6 +95,4 @@ void build_local_map();
 // Updates working_map record.
 void build_working_map();
 
-
 } // namespace slam_sim
-
