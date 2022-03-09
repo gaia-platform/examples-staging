@@ -30,6 +30,9 @@ using gaia::slam::destination_t;
 
 ruleset observation_ruleset
 {
+    ////////////////////////////////////////////
+    // Change of path state
+
     on_update(path.state)
     {
         if (state == slam_sim::PATH_STATE_STARTING)
@@ -44,7 +47,11 @@ ruleset observation_ruleset
             create_observation();
             path.state = slam_sim::PATH_STATE_ACTIVE;
         }
-        else if (path.state == slam_sim::PATH_STATE_DONE)
+    }
+
+    on_update(path.state)
+    {
+        if (path.state == slam_sim::PATH_STATE_DONE)
         {
             // Path just completed. Calculate error and store results
             //  in error_correction. There should be no transaction
@@ -56,6 +63,9 @@ ruleset observation_ruleset
     }
 
 
+    ////////////////////////////////////////////
+    // Creating observations
+
     on_insert(o: observations)
     {
         // An observation of the surroundings was made. Now we need to
@@ -64,58 +74,72 @@ ruleset observation_ruleset
         //  record will trigger a rebuilding of the local maps, which will
         //  in turn have Alice move toward the destination.
 
-        pending_destination_t new_dest = pending_destination_t::list::begin();
-        if (new_dest)
-        {
+        for (/pending_destination) {
             // If there's a new destination request pending, set that as the
             //  destination.
 
             // TODO modify destination record
+            
+            return;
         }
-        else if (o.path->path.num_observations == 0)
+
+        if (o.path->path.num_observations == 0)
         {
             // This is a newly created path. Select a destination.
             select_destination();
+            return;
         }
-        else if ((state == slam_sim::PATH_STATE_ACTIVE) && 
+
+        if ((state == slam_sim::PATH_STATE_ACTIVE) && 
             (num_observations > expected_arrival))
         {
             // We're exploring and should have reached our destination
             //  already. Give up and go back to a landmark.
             select_landmark_destination();
+            return;
         }
 
 
 // TODO if we're close enough to a landmark right now, terminate the path
 
 
-        else
+        // If position is sufficiently close to destination then stop
+        //  exploring and go find a landmark (or if we arrived where one
+        //  should be, go look for another one).
+//        estimated_position_t pos = estimated_position_t::list()::begin();
+//        destination_t dest = destination::list()::begin();
+
+        // Try this -- it might work.
+        // The destination table has exactly one entry, so we can 
+        //  safely access that record's fields using /
+        // (akin to: 'hold my beer, let me show you something')
+        double dx = 0.0;
+        double dy = 0.0;
+        dx = /destination.x_meters - /estimated_position.x_meters;
+        dy = /destination.y_meters - /estimated_position.y_meters;
+
+
+//        double dx = dest.x_meters - pos.x_meters;
+//        double dy = dest.y_meters - pos.y_meters;
+        double dist_2 = dx*dx + dy*dy;
+        double radius_2 = slam_sim::DESTINATION_RADIUS_METERS
+            * slam_sim::DESTINATION_RADIUS_METERS;
+        if (dist_2 < radius_2)
         {
-            // If position is sufficiently close to destination then stop
-            //  exploring and go find a landmark (or if we arrived where one
-            //  should be, go look for another one).
-            estimated_position_t pos = estimated_position_t::list()::begin();
-            destination_t dest = desination::list()::begin();
-            assert(exists(pos));
-            assert(exists(dest));
-            double dx = dest.x_meters - pos.x_meters;
-            double dy = dest.y_meters - pos.y_meters;
-            double dist = sqrt(dx*dx + dy*dy);
-            if (dist < slam_sim::DESTINATION_RADIUS_METERS)
-            {
-                // Arrived at destination. Find a landmark to calibrate
-                //  position and then update map.
-                select_landmark_destination();
-            }
-            else
-            {
-                // Destination hasn't changed. Rebuild the working map
-                //  and proceed.
-                build_working_map();
-            }
+            // Arrived at destination. Find a landmark to calibrate
+            //  position and then update map.
+            select_landmark_destination();
+            return;
         }
+
+        // Destination hasn't changed. Rebuild the working map
+        //  and proceed.
+        build_working_map();
     }
 
+
+    ////////////////////////////////////////////
+    // Setting destination and error correction
 
     on_update(d: destination)
     {
@@ -128,16 +152,30 @@ ruleset observation_ruleset
         //  being in map. Coarse path can be inheritted from low-res map.
         //  This should save time generating local high-res map.
 
-        build_local_map();
+        build_area_map();
     }
 
+    on_update(e: error_correction)
+    {
+        // Build a new map w/ our latest error estimate.
+        create_new_path();
+    }
+
+
+    ////////////////////////////////////////////
+    // Map updates
+
+    on_update(a: area_map)
+    {
+        // Local map was updated. Now rebuild working map.
+        build_local_map();
+    }
 
     on_update(m: local_map)
     {
         // Local map was updated. Now rebuild working map.
         build_working_map();
     }
-
 
     on_update(w: working_map)
     {
@@ -151,27 +189,15 @@ ruleset observation_ruleset
     }
 
 
+    ////////////////////////////////////////////
+    // Async events
+
     on_insert(c: collision_event)
     {
         // A collision was detected, or the range sensor detected something
         //  closer than it's supposed to be. Initiate a stop, which will
         //  in turn create a new observation.
         full_stop();
-    }
-
-
-
-    on_update(e: error_correction)
-    {
-        // Build a new map w/ our latest error estimate.
-        build_area_map();
-    }
-
-
-    on_update(m: area_map)
-    {
-        // When the area map is updated it's time to create a new path.
-        create_new_path();
     }
 }
 
