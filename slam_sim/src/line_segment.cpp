@@ -1,3 +1,11 @@
+////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////
+
 #include <iostream>
 #include <cmath>
 
@@ -37,7 +45,7 @@ double unwrap_compass(double theta)
     {
         degs += 360.0;
     }
-    while (degs >= 360.0) 
+    while (degs >= 360.0)
     {
         degs -= 360.0;
     }
@@ -151,7 +159,7 @@ int main()
     errs += check_distance(c.intersect_range(0.0, 0.0, 60.0), -1.0);
     errs += check_distance(c.intersect_range(0.0, 0.0, 150.0), -1.0);
     errs += check_distance(c.intersect_range(0.0, 0.0, 270.0), -1.0);
-    // 
+    //
     if (errs > 0) {
         fprintf(stderr, "********************************\n");
         fprintf(stderr, "Encountered %d errors\n", errs);
@@ -163,4 +171,3 @@ int main()
 }
 
 #endif // TEST_LINE_SEGMENT
-

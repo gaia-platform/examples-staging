@@ -1,3 +1,11 @@
+////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////
+
 #include <assert.h>
 #include <math.h>
 
@@ -42,7 +50,7 @@ ruleset observation_ruleset
             n = path.num_observations;
             assert(n == 0);
 
-            // Create first observation. That will trigger the sequence 
+            // Create first observation. That will trigger the sequence
             //  of events moving toward the destination.
             create_observation();
             path.state = slam_sim::PATH_STATE_ACTIVE;
@@ -89,7 +97,6 @@ ruleset observation_ruleset
             select_destination();
             return;
         }
-
         if ((state == slam_sim::PATH_STATE_ACTIVE) && 
             (num_observations > expected_arrival))
         {
@@ -146,7 +153,7 @@ ruleset observation_ruleset
         // make sure destination and location are w/in map......
         // TODO FIXME using high-res map good for collision avoidance
         //  but it's not sufficient for navigation, e.g., it cannot
-        //  guide around long penninsula. 
+        //  guide around long penninsula.
         // Maybe have high-res map that's very local to Alice and
         //  build that from low-res map. Don't worry about destination
         //  being in map. Coarse path can be inheritted from low-res map.
@@ -200,4 +207,3 @@ ruleset observation_ruleset
         full_stop();
     }
 }
-
