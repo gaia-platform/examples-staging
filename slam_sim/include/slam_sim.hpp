@@ -1,14 +1,26 @@
+////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////
+
 #pragma once
+
 #include "gaia_slam.h"
 
 namespace slam_sim
 {
 
+// TODO remove this
+void create_new_path();
+
 // Flags to indicate state of Alice's movement. This information is
 //  stored in the present path.
 //      'done' indicates that path has been completed.
 //      'starting' indicates that path is just started.
-//      'active' indicates that Alice is moving away from a landmark and 
+//      'active' indicates that Alice is moving away from a landmark and
 //          toward a destination.
 //      'find_landmark' indicaates that exploration is over and Alice is
 //          looking for a landmark to get a position fix.
@@ -19,6 +31,10 @@ constexpr int32_t PATH_STATE_DONE = 8;
 
 // How near to the destination we have to be to say "close enough".
 constexpr double DESTINATION_RADIUS_METERS = 0.5;
+
+// How close to a landmark we need to be to be able to use it as a
+//  position fix.
+constexpr double LANDMARK_DISTANCE_METERS = 1.0;
 
 ////////////////////////////////////////////////
 // Going places
@@ -35,7 +51,7 @@ void select_landmark_destination();
 
 // Called in unusual situations, such as if Alice detects a collision or
 //  senses that one is imminent. Brings the bot to a halt and performs
-//  no further actions. If called when bot is already stopped then 
+//  no further actions. If called when bot is already stopped then
 //  request is ignored.
 void full_stop();
 
@@ -61,14 +77,14 @@ void create_observation();
 // Given position fixes at the start and end point of the path, estimate
 //  DR error and update DR error estimate.
 // Updates error_correction record.
-void calc_path_error(gaia::slam::path_t& path);
+void calc_path_error(gaia::slam::paths_t& path);
 
 // Generates a low-res map off the area with path information to destination.
 // Stores in 'area_map' record.
 void build_area_map();
 
-// Generates a high-res map of the area, based on previously acquired 
-//  and calibrated data. 
+// Generates a high-res map of the area, based on previously acquired
+//  and calibrated data.
 // Stores output in 'local_map' record.
 void build_local_map();
 
@@ -79,6 +95,4 @@ void build_local_map();
 // Updates working_map record.
 void build_working_map();
 
-
 } // namespace slam_sim
-

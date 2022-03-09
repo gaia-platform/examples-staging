@@ -19,11 +19,13 @@
 
 #include "slam_sim.hpp"
 
+
 using slam_sim::select_destination;
 using slam_sim::select_landmark_destination;
 using slam_sim::full_stop;
 using slam_sim::move_toward_destination;
 
+using slam_sim::create_new_path;
 using slam_sim::create_observation;
 
 using slam_sim::calc_path_error;
@@ -41,32 +43,33 @@ ruleset observation_ruleset
     ////////////////////////////////////////////
     // Change of path state
 
-    on_update(path.state)
+    on_update(paths.state)
     {
         if (state == slam_sim::PATH_STATE_STARTING)
         {
             // Sanity check. A new path should have no observations.
             uint32_t n = 0xffffffff;
-            n = path.num_observations;
+            n = paths.num_observations;
             assert(n == 0);
 
             // Create first observation. That will trigger the sequence
             //  of events moving toward the destination.
             create_observation();
-            path.state = slam_sim::PATH_STATE_ACTIVE;
+            paths.state = slam_sim::PATH_STATE_ACTIVE;
         }
     }
 
-    on_update(path.state)
+
+    on_update(paths.state)
     {
-        if (path.state == slam_sim::PATH_STATE_DONE)
+        if (paths.state == slam_sim::PATH_STATE_DONE)
         {
             // Path just completed. Calculate error and store results
             //  in error_correction. There should be no transaction
             //  conflicts as this is the only code path altering
             //  the record in that table. Once error is calculated
             //  a new area map can be created.
-            calc_path_error(path);
+            calc_path_error(paths);
         }
     }
 
@@ -87,47 +90,48 @@ ruleset observation_ruleset
             //  destination.
 
             // TODO modify destination record
+            assert(1 == 0); // induce a fault until this is supported
             
             return;
         }
 
-        if (o.path->path.num_observations == 0)
+        if (o.path->paths.num_observations == 0)
         {
             // This is a newly created path. Select a destination.
             select_destination();
             return;
         }
-        if ((state == slam_sim::PATH_STATE_ACTIVE) && 
-            (num_observations > expected_arrival))
+
+        if (o.path->paths.state == slam_sim::PATH_STATE_ACTIVE)
         {
-            // We're exploring and should have reached our destination
-            //  already. Give up and go back to a landmark.
-            select_landmark_destination();
-            return;
+            if (o.path->paths.num_observations > expected_arrival)
+            {
+                // We're exploring and should have reached our destination
+                //  already. Give up and go back to a landmark.
+                select_landmark_destination();
+                return;
+            }
         }
 
-
-// TODO if we're close enough to a landmark right now, terminate the path
-
+        // If we're close enought to a landmark right now, terminate
+        //  the path.
+        for (o.landmark_sightings->ls:landmark_sightings) {
+            if (ls.range_meters < slam_sim::LANDMARK_DISTANCE_METERS) {
+                o.path->paths.state = slam_sim::PATH_STATE_DONE;
+                return;
+            }
+        }
 
         // If position is sufficiently close to destination then stop
         //  exploring and go find a landmark (or if we arrived where one
         //  should be, go look for another one).
-//        estimated_position_t pos = estimated_position_t::list()::begin();
-//        destination_t dest = destination::list()::begin();
-
-        // Try this -- it might work.
-        // The destination table has exactly one entry, so we can 
-        //  safely access that record's fields using /
-        // (akin to: 'hold my beer, let me show you something')
+        // Both destination and estimated position tables have exactly
+        //  on record, so we can use a shortcut to access the fields
+        //  in these records directly.
         double dx = 0.0;
         double dy = 0.0;
         dx = /destination.x_meters - /estimated_position.x_meters;
         dy = /destination.y_meters - /estimated_position.y_meters;
-
-
-//        double dx = dest.x_meters - pos.x_meters;
-//        double dy = dest.y_meters - pos.y_meters;
         double dist_2 = dx*dx + dy*dy;
         double radius_2 = slam_sim::DESTINATION_RADIUS_METERS
             * slam_sim::DESTINATION_RADIUS_METERS;
@@ -162,9 +166,11 @@ ruleset observation_ruleset
         build_area_map();
     }
 
+
     on_update(e: error_correction)
     {
-        // Build a new map w/ our latest error estimate.
+        // TODO decide what to do next.
+        // For now, start a new path and keep exploring.
         create_new_path();
     }
 
@@ -178,11 +184,13 @@ ruleset observation_ruleset
         build_local_map();
     }
 
+
     on_update(m: local_map)
     {
         // Local map was updated. Now rebuild working map.
         build_working_map();
     }
+
 
     on_update(w: working_map)
     {
