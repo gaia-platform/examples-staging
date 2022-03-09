@@ -21,7 +21,7 @@ database slam;
 table ego
 (
   current_path_id int32,
-  current_path references path where ego.current_path_id=path.id,
+  current_path references paths where ego.current_path_id=paths.id,
 
   -- Explicitly created references.
   -- Keep most of ego data in different tables so that updates to
@@ -136,7 +136,7 @@ table collision_event
 
 -- A sequence of observations between a known start and end point.
 --  Start/end points are at distinguishable landmarks.
-table path
+table paths
 (
   id int32 unique,
 
@@ -149,10 +149,10 @@ table path
   start_obs_id int32,
   latest_obs_id int32,
   first_observation references observations
-    where path.start_obs_id = observations.id,
+    where paths.start_obs_id = observations.id,
   latest_observation references observations
-    where path.latest_obs_id = observations.id
-
+    where paths.latest_obs_id = observations.id
+--  observations references observations[]
 )
 
 
@@ -178,8 +178,10 @@ table observations
   dx_meters float,
   dy_meters float,
 
-  path references path[] using first_observation,
-  path_dup references path[] using latest_observation,
+  path references paths[] using first_observation,
+  path_dup references paths[] using latest_observation,
+
+--  path references paths[],
 
   ------------------------------
   -- Sensing
@@ -197,9 +199,22 @@ table observations
 --  next references observations,
 --  prev references observations
 
-  next references observations,
-  prev references observations,
-  landmark_sightings references landmark_sightings[]
+--  next references observations,
+--  prev references observations,
+
+  landmark_sightings references landmark_sightings[],
+
+  next_edge references edge,
+  prev_edge references edge
+)
+
+
+table edge
+(
+  id int32, -- record must have a field, not just references
+
+  next references observations using prev_edge,
+  prev references observations using next_edge
 )
 
 

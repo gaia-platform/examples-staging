@@ -19,6 +19,9 @@
 
 #include "slam_sim.hpp"
 
+using slam_sim::create_new_path;
+
+
 using slam_sim::select_destination;
 using slam_sim::select_landmark_destination;
 using slam_sim::full_stop;
@@ -41,32 +44,32 @@ ruleset observation_ruleset
     ////////////////////////////////////////////
     // Change of path state
 
-    on_update(path.state)
+    on_update(paths.state)
     {
         if (state == slam_sim::PATH_STATE_STARTING)
         {
             // Sanity check. A new path should have no observations.
             uint32_t n = 0xffffffff;
-            n = path.num_observations;
+            n = paths.num_observations;
             assert(n == 0);
 
             // Create first observation. That will trigger the sequence
             //  of events moving toward the destination.
             create_observation();
-            path.state = slam_sim::PATH_STATE_ACTIVE;
+            paths.state = slam_sim::PATH_STATE_ACTIVE;
         }
     }
 
-    on_update(path.state)
+    on_update(paths.state)
     {
-        if (path.state == slam_sim::PATH_STATE_DONE)
+        if (paths.state == slam_sim::PATH_STATE_DONE)
         {
             // Path just completed. Calculate error and store results
             //  in error_correction. There should be no transaction
             //  conflicts as this is the only code path altering
             //  the record in that table. Once error is calculated
             //  a new area map can be created.
-            calc_path_error(path);
+            calc_path_error(paths);
         }
     }
 
@@ -91,19 +94,21 @@ ruleset observation_ruleset
             return;
         }
 
-        if (o.path->path.num_observations == 0)
+        if (o.path->paths.num_observations == 0)
         {
             // This is a newly created path. Select a destination.
             select_destination();
             return;
         }
-        if ((state == slam_sim::PATH_STATE_ACTIVE) && 
-            (num_observations > expected_arrival))
+        if (o.path->paths.state == slam_sim::PATH_STATE_ACTIVE)
         {
-            // We're exploring and should have reached our destination
-            //  already. Give up and go back to a landmark.
-            select_landmark_destination();
-            return;
+            if (o.path->paths.num_observations > expected_arrival)
+            {
+                // We're exploring and should have reached our destination
+                //  already. Give up and go back to a landmark.
+                select_landmark_destination();
+                return;
+            }
         }
 
 

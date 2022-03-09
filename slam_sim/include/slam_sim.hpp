@@ -4,6 +4,9 @@
 namespace slam_sim
 {
 
+// TODO remove this
+void create_new_path();
+
 // Flags to indicate state of Alice's movement. This information is
 //  stored in the present path.
 //      'done' indicates that path has been completed.
@@ -61,7 +64,7 @@ void create_observation();
 // Given position fixes at the start and end point of the path, estimate
 //  DR error and update DR error estimate.
 // Updates error_correction record.
-void calc_path_error(gaia::slam::path_t& path);
+void calc_path_error(gaia::slam::paths_t& path);
 
 // Generates a low-res map off the area with path information to destination.
 // Stores in 'area_map' record.
