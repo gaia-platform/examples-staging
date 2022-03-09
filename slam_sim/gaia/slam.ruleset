@@ -15,9 +15,9 @@
 #include "gaia/common.hpp"
 #include "gaia/rules/rules.hpp"
 
-#include "slam/gaia_slam.h"
+#include "gaia_slam.h"
 
-#include "slam_sim.hpp"
+#include "../include/slam_sim.hpp"
 
 using slam_sim::select_destination;
 using slam_sim::select_landmark_destination;
@@ -72,7 +72,7 @@ ruleset observation_ruleset
         //  record will trigger a rebuilding of the local maps, which will
         //  in turn have Alice move toward the destination.
 
-        pending_destination_t new_dest = pending_destination_t::list::begin();
+        pending_destination_t new_dest = *(pending_destination_t::list().begin());
         if (new_dest)
         {
             // If there's a new destination request pending, set that as the
@@ -102,12 +102,12 @@ ruleset observation_ruleset
             // If position is sufficiently close to destination then stop
             //  exploring and go find a landmark (or if we arrived where one
             //  should be, go look for another one).
-            estimated_position_t pos = estimated_position_t::list()::begin();
-            destination_t dest = desination::list()::begin();
-            assert(exists(pos));
-            assert(exists(dest));
-            double dx = dest.x_meters - pos.x_meters;
-            double dy = dest.y_meters - pos.y_meters;
+            estimated_position_t pos = *(estimated_position_t::list().begin());
+            destination_t dest = *(destination_t::list().begin());
+            //assert(exists(pos));
+            //assert(exists(dest));
+            double dx = dest.x_meters() - pos.x_meters();
+            double dy = dest.y_meters() - pos.y_meters();
             double dist = sqrt(dx*dx + dy*dy);
             if (dist < slam_sim::DESTINATION_RADIUS_METERS)
             {
@@ -179,6 +179,6 @@ ruleset observation_ruleset
     on_update(m: area_map)
     {
         // When the area map is updated it's time to create a new path.
-        create_new_path();
+        //create_new_path();
     }
 }
