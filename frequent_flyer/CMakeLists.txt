@@ -1,10 +1,10 @@
-###################################################
-# Copyright (c) Gaia Platform LLC
+#############################################
+# Copyright (c) 2022 Gaia Platform LLC
 #
-# Use of this source code is governed by the MIT
+# Use of this source code is governed by an MIT-style
 # license that can be found in the LICENSE.txt file
 # or at https://opensource.org/licenses/MIT.
-###################################################
+#############################################
 
 cmake_minimum_required(VERSION 3.16)
 
