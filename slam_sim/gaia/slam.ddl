@@ -5,6 +5,7 @@
 -- license that can be found in the LICENSE.txt file
 -- or at https://opensource.org/licenses/MIT.
 ----------------------------------------------------
+
 database slam;
 
 -- unit suffixes
@@ -180,7 +181,7 @@ table paths
 --  an individual position only. It is not linked together to form
 --  a graph of an arbitrary number of nearby pose points, only the
 --  previous and next observations. In future iterations, a generic 'node'
---  will be defined, based on their typical definition. It is expected 
+--  will be defined, based on their typical definition. It is expected
 --  that the node will be similar to an observation.
 table observations
 (
@@ -260,6 +261,3 @@ table landmark_sightings
   landmark references landmarks
     where landmark_sightings.landmark_id = landmarks.landmark_id
 )
-
-;
-
