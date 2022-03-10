@@ -22,7 +22,8 @@ constexpr double DESTINATION_RADIUS_METERS = 0.5;
 
 // How close to a landmark we need to be to be able to use it as a
 //  position fix.
-constexpr double LANDMARK_DISTANCE_METERS = 1.0;
+constexpr double LANDMARK_DISTANCE_METERS = 2.0;
+
 
 ////////////////////////////////////////////////
 // Going places
@@ -51,6 +52,9 @@ void move_toward_destination();
 // Start a new path. This creates an initial observation and links it
 //  to a path.
 void create_new_path();
+
+// Initialize a new path and assign it its first observation.
+void init_path(const gaia::slam::observations_t&);
 
 
 ////////////////////////////////////////////////

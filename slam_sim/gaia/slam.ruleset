@@ -27,6 +27,7 @@ using slam_sim::move_toward_destination;
 
 using slam_sim::create_new_path;
 using slam_sim::create_observation;
+using slam_sim::init_path;
 
 using slam_sim::calc_path_error;
 using slam_sim::build_area_map;
@@ -36,6 +37,9 @@ using slam_sim::build_working_map;
 using gaia::slam::pending_destination_t;
 using gaia::slam::estimated_position_t;
 using gaia::slam::destination_t;
+using gaia::slam::paths_t;
+
+using gaia::slam::paths_writer;
 
 
 ruleset observation_ruleset
@@ -69,6 +73,8 @@ ruleset observation_ruleset
             //  conflicts as this is the only code path altering
             //  the record in that table. Once error is calculated
             //  a new area map can be created.
+            // TODO make sure this is a full path so that DR errors can
+            //  be estimated from it.
             calc_path_error(paths);
         }
     }
@@ -95,9 +101,16 @@ ruleset observation_ruleset
             return;
         }
 
-        if (o.path->paths.num_observations == 0)
+        if (o.path->paths.state == slam_sim::PATH_STATE_STARTING)
         {
             // This is a newly created path. Select a destination.
+            // Add this observation to the path
+            init_path(o);
+            // Path initization changes the state to active. This change
+            //  doesn't trigger any side actions, so there's nothing to
+            //  worry about if we modify another row that will induce
+            //  a cascade of rule executions.
+            // Select a destination.
             select_destination();
             return;
         }
@@ -118,7 +131,6 @@ ruleset observation_ruleset
         for (o.landmark_sightings->ls:landmark_sightings) {
             if (ls.range_meters < slam_sim::LANDMARK_DISTANCE_METERS) {
                 o.path->paths.state = slam_sim::PATH_STATE_DONE;
-                return;
             }
         }
 
