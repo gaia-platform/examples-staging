@@ -17,7 +17,6 @@ database slam;
 ------------------------------------------------------------------------
 -- Tables with single records (i.e., exactly one)
 
--- Table with a single entry, describing SLAM state.
 table ego
 (
   current_path_id int32,
