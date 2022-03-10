@@ -15,8 +15,6 @@
 #include "gaia/common.hpp"
 #include "gaia/rules/rules.hpp"
 
-#include "gaia_slam.h"
-
 #include "slam_sim.hpp"
 
 

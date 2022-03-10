@@ -1,3 +1,11 @@
+////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////
+
 #include <assert.h>
 
 #include <iostream>
@@ -69,7 +77,7 @@ void select_landmark_destination()
             paths_writer writer = path.writer();
             writer.state = PATH_STATE_FIND_LANDMARK;
             writer.update_row();
-        } 
+        }
 
         for (destination_t& d: destination_t::list())
         {
@@ -137,4 +145,3 @@ void request_new_destination(double x_meters, double y_meters)
 }
 
 } // namespace slam_sim
-
