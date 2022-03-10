@@ -15,9 +15,9 @@
 #include "gaia/common.hpp"
 #include "gaia/rules/rules.hpp"
 
-#include "slam/gaia_slam.h"
+#include "gaia_slam.h"
 
-#include "slam_sim.hpp"
+#include "../include/slam_sim.hpp"
 
 
 using slam_sim::select_destination;
