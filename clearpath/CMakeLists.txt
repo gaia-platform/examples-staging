@@ -29,6 +29,7 @@ process_schema(
 translate_ruleset(
   RULESET_FILE ${PROJECT_SOURCE_DIR}/gaia/clearpath.ruleset
   DATABASE_NAME clearpath
+  CLANG_PARAMS
     -I ${PROJECT_SOURCE_DIR}/include
 )
 
