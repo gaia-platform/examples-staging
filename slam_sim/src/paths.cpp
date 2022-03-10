@@ -36,38 +36,48 @@ using gaia::slam::destination_writer;
 
 void select_destination()
 {
-    // If exploring, move 5 meters east.
-    // If returning to landmark, move back to start.
+    // Move to predesignated position.
     for (ego_t& e: ego_t::list())
     {
         paths_t path = e.current_path();
+        assert(path.state() == PATH_STATE_ACTIVE);
+        for (destination_t& d: destination_t::list())
+        {
+            destination_writer writer = d.writer();
+            writer.x_meters = X1_METERS;
+            writer.y_meters = Y1_METERS;
+            writer.update_row();
+            break;
+        }
+        break;
+    }
+}
+
+
+void select_landmark_destination()
+{
+    // Move to (return to) predesignated position.
+    for (ego_t& e: ego_t::list())
+    {
+        paths_t path = e.current_path();
+        assert((path.state() & PATH_STATE_STARTING) == 0);
+        assert((path.state() & PATH_STATE_DONE) == 0);
+
+        // Set find-landmark state if it's not already set.
         if (path.state() == PATH_STATE_ACTIVE)
         {
-            for (destination_t& d: destination_t::list())
-            {
-                destination_writer writer = d.writer();
-                writer.x_meters = X1_METERS;
-                writer.y_meters = Y1_METERS;
-                writer.update_row();
-                break;
-            }
+            paths_writer writer = path.writer();
+            writer.state = PATH_STATE_FIND_LANDMARK;
+            writer.update_row();
         } 
-        else if (path.state() == PATH_STATE_FIND_LANDMARK)
+
+        for (destination_t& d: destination_t::list())
         {
-            for (destination_t& d: destination_t::list())
-            {
-                destination_writer writer = d.writer();
-                writer.x_meters = X0_METERS;
-                writer.y_meters = Y0_METERS;
-                writer.update_row();
-                break;
-            }
-        }
-        else
-        {
-            // Destination should only be set when active (i.e., outbound
-            //  or returning).
-            assert(false);
+            destination_writer writer = d.writer();
+            writer.x_meters = X0_METERS;
+            writer.y_meters = Y0_METERS;
+            writer.update_row();
+            break;
         }
         break;
     }
@@ -113,6 +123,7 @@ void create_new_path()
     writer.state = PATH_STATE_STARTING;
     writer.insert_row();
 }
+
 
 
 ////////////////////////////////////////////////////////////////////////

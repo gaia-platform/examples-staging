@@ -15,7 +15,7 @@
 #include "gaia/common.hpp"
 #include "gaia/rules/rules.hpp"
 
-#include "slam/gaia_slam.h"
+#include "gaia_slam.h"
 
 #include "slam_sim.hpp"
 
@@ -131,6 +131,7 @@ ruleset observation_ruleset
         for (o.landmark_sightings->ls:landmark_sightings) {
             if (ls.range_meters < slam_sim::LANDMARK_DISTANCE_METERS) {
                 o.path->paths.state = slam_sim::PATH_STATE_DONE;
+                return;
             }
         }
 
