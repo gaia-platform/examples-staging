@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <math.h>
 
 #include <iostream>
 
@@ -23,10 +24,12 @@ using gaia::slam::observations_t;
 using gaia::slam::ego_t;
 using gaia::slam::paths_t;
 using gaia::slam::destination_t;
+using gaia::slam::estimated_position_t;
 
 using gaia::slam::ego_writer;
 using gaia::slam::paths_writer;
 using gaia::slam::destination_writer;
+using gaia::slam::estimated_position_writer;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -124,6 +127,59 @@ void create_new_path()
     writer.insert_row();
 }
 
+
+void full_stop()
+{
+    // Unimplemented.
+    // When a stop is requested we need to stop the wheels and then
+    //  update our position. The simulated robot doesn't actually update
+    //  its position in a smooth manner presently, instead jumping ahead
+    //  to an interim destination. Once motion tracking is done smoothly
+    //  over time then fill out this function.
+    assert(false);
+}
+
+
+// Update estimated position. This will trigger creation of a new
+//  observation.
+// In a real robot, this would engage the wheels and drive a specified
+//  distance, in turn updating the estimated position. Here we just jump
+//  ahead to estimating the position.
+void move_toward_destination()
+{
+    // TODO Consult map and find new checkpoint to move to.
+    // For now, move in the direction of the present destination.
+    double dest_x_meters, dest_y_meters;
+    for (destination_t& d: destination_t::list())
+    {
+        dest_x_meters = d.x_meters();
+        dest_y_meters = d.y_meters();
+        break;
+    }
+    double pos_x_meters, pos_y_meters;
+    estimated_position_writer writer;
+    for (estimated_position_t& ep: estimated_position_t::list())
+    {
+        pos_x_meters = ep.x_meters();
+        pos_y_meters = ep.y_meters();
+        writer = ep.writer();
+        break;
+    }
+    double dx = dest_x_meters - pos_x_meters;
+    double dy = dest_y_meters - pos_y_meters;
+    double dist = sqrt(dx*dx + dy*dy);
+    // Number of steps to get to destination.
+    double hops = dist / INTER_OBSERVATION_DIST_METERS;
+    if (hops < 1.0)
+    {
+        hops = 1.0;
+    }
+    dx /= hops;
+    dy /= hops;
+    writer.x_meters = pos_x_meters + dx;
+    writer.y_meters = pos_y_meters + dy;
+    writer.update_row();
+}
 
 
 ////////////////////////////////////////////////////////////////////////

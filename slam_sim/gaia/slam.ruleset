@@ -83,6 +83,15 @@ ruleset observation_ruleset
     ////////////////////////////////////////////
     // Creating observations
 
+    // When our position is updated a new observation will be created.
+    // Note that this is a relatively slow operation so hopefully there's
+    //  no transaction conflict.
+    on_update(ep: estimated_position)
+    {
+        create_observation();
+    }
+
+
     on_insert(o: observations)
     {
         // An observation of the surroundings was made. Now we need to
@@ -97,7 +106,7 @@ ruleset observation_ruleset
 
             // TODO modify destination record
             assert(1 == 0); // induce a fault until this is supported
-
+            
             return;
         }
 

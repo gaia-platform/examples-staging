@@ -20,6 +20,9 @@ constexpr int32_t PATH_STATE_DONE = 8;
 // How near to the destination we have to be to say "close enough".
 constexpr double DESTINATION_RADIUS_METERS = 0.5;
 
+//
+constexpr double INTER_OBSERVATION_DIST_METERS = 0.5;
+
 // How close to a landmark we need to be to be able to use it as a
 //  position fix.
 constexpr double LANDMARK_DISTANCE_METERS = 2.0;

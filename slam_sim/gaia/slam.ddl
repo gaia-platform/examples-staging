@@ -45,6 +45,12 @@ table area_map
   right_meters float,
   top_meters float,
   bottom_meters float,
+
+  -- An on_change rule needs a field to change to fire the rule. Use this
+  --  field to guarantee that a change is made so the rule is fired. Note
+  --  that a record being "touched" is not sufficient to trigger a change
+  --  rule as an actual value change is required.
+  change_counter int32,
   ----------------------------
   ego references ego
 )
@@ -59,6 +65,12 @@ table local_map
   right_meters float,
   top_meters float,
   bottom_meters float,
+
+  -- An on_change rule needs a field to change to fire the rule. Use this
+  --  field to guarantee that a change is made so the rule is fired. Note
+  --  that a record being "touched" is not sufficient to trigger a change
+  --  rule as an actual value change is required.
+  change_counter int32,
   ----------------------------
   ego references ego,
   working_map references working_map
@@ -68,6 +80,12 @@ table local_map
 table working_map
 (
   working_map_blob_id uint32,
+
+  -- An on_change rule needs a field to change to fire the rule. Use this
+  --  field to guarantee that a change is made so the rule is fired. Note
+  --  that a record being "touched" is not sufficient to trigger a change
+  --  rule as an actual value change is required.
+  change_counter int32,
   ----------------------------
   local_map references local_map
 )
