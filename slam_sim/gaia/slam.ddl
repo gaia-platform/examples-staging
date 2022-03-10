@@ -152,7 +152,6 @@ table paths
     where paths.start_obs_id = observations.id,
   latest_observation references observations
     where paths.latest_obs_id = observations.id
---  observations references observations[]
 )
 
 
@@ -162,10 +161,10 @@ table paths
 -- This is more typically known as a 'Node' in SLAM. The
 --  name difference is because this represents the sensor data from
 --  an individual position only. It is not linked together to form
---  a graph of nearby pose points. In future iterations, both 'node'
---  and 'edge' tables will be defined, based on their typical
---  definitions. It is expected that the node will refer to this
---  observation.
+--  a graph of an arbitrary number of nearby pose points, only the
+--  previous and next observations. In future iterations, a generic 'node'
+--  will be defined, based on their typical definition. It is expected 
+--  that the node will be similar to an observation.
 table observations
 (
   id int32 unique,
@@ -181,26 +180,12 @@ table observations
   path references paths[] using first_observation,
   path_dup references paths[] using latest_observation,
 
---  path references paths[],
-
   ------------------------------
   -- Sensing
 
   -- Range finder
   num_radials int32,
   distance_meters float[],
-
---  -- Anchors
---  anchor_sightings references anchor_sightings[],
---
---  ------------------------------
---  -- Links for form observation linked list.
---  -- These references are explicitly formed when an observtion is created..
---  next references observations,
---  prev references observations
-
---  next references observations,
---  prev references observations,
 
   landmark_sightings references landmark_sightings[],
 
