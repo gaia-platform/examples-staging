@@ -31,17 +31,20 @@ process_schema(
 )
 
 # -- Translate ruleset into CPP --
-# translate_ruleset(
-#   RULESET_FILE ${PROJECT_SOURCE_DIR}/gaia/slam.ruleset
-#   DATABASE_NAME slam
-#     -I ${PROJECT_SOURCE_DIR}/include
-# )
+translate_ruleset(
+  RULESET_FILE ${PROJECT_SOURCE_DIR}/gaia/slam.ruleset
+  DATABASE_NAME slam
+  CLANG_PARAMS
+    -I ${PROJECT_SOURCE_DIR}/include
+)
 
 #
 # Application
 #
 # add_executable(slam_sim
+#   src/blob_cache.cpp
 #   src/line_segment.cpp
+#   src/mapping.cpp
 # )
 
 # target_add_gaia_generated_sources(slam_sim)
