@@ -4,6 +4,12 @@
 namespace slam_sim
 {
 
+// Flag to indicate app should exit. Normally this is 0. When it's time
+//  to quit it's set to 1.
+extern int32_t g_quit;
+// 
+constexpr int32_t EXIT_AFTER_X_PATHS = 10;
+
 // Flags to indicate state of Alice's movement. This information is
 //  stored in the present path.
 //      'done' indicates that path has been completed.

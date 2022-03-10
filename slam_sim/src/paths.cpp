@@ -125,6 +125,12 @@ void create_new_path()
     writer.id = next_path_id;
     writer.state = PATH_STATE_STARTING;
     writer.insert_row();
+
+    // See if it's time to quit.
+    if (next_path_id >= EXIT_AFTER_X_PATHS)
+    {
+        g_quit = 1;
+    }
 }
 
 

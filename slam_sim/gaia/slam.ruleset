@@ -49,7 +49,7 @@ ruleset observation_ruleset
 
     on_update(paths.state)
     {
-        if (state == slam_sim::PATH_STATE_STARTING)
+        if ((state == slam_sim::PATH_STATE_STARTING) && (slam_sim::g_quit == 0))
         {
             // Sanity check. A new path should have no observations.
             uint32_t n = 0xffffffff;
