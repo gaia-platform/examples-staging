@@ -91,7 +91,7 @@ ruleset observation_ruleset
 
             // TODO modify destination record
             assert(1 == 0); // induce a fault until this is supported
-            
+
             return;
         }
 
