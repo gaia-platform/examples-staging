@@ -34,6 +34,7 @@ process_schema(
 translate_ruleset(
   RULESET_FILE ${PROJECT_SOURCE_DIR}/gaia/slam.ruleset
   DATABASE_NAME slam
+  CLANG_PARAMS
     -I ${PROJECT_SOURCE_DIR}/include
 )
 
