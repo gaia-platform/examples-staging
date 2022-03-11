@@ -7,7 +7,6 @@ namespace slam_sim
 // Flag to indicate app should exit. Normally this is 0. When it's time
 //  to quit it's set to 1.
 extern int32_t g_quit;
-// 
 constexpr int32_t EXIT_AFTER_X_PATHS = 10;
 
 // Flags to indicate state of Alice's movement. This information is
@@ -31,7 +30,11 @@ constexpr double INTER_OBSERVATION_DIST_METERS = 0.5;
 
 // How close to a landmark we need to be to be able to use it as a
 //  position fix.
-constexpr double LANDMARK_DISTANCE_METERS = 2.0;
+constexpr double LANDMARK_DISTANCE_METERS = 1.0;
+// How close Alice has to be to see the landmark.
+constexpr double LANDMARK_VISIBILITY_METERS = 3.0;
+
+constexpr const char* DEFAULT_WORLD_MAP_PATH = "../data/world_map.json";
 
 
 ////////////////////////////////////////////////
@@ -73,7 +76,7 @@ void init_path(const gaia::slam::observations_t&);
 //  in the 'observations' table.
 // First brings Alice to a halt if not already stopped.
 // Creates observations record, updates estimated_position record.
-void create_observation();
+void create_observation(gaia::slam::paths_t&);
 
 
 ////////////////////////////////////////////////

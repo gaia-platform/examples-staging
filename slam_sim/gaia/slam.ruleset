@@ -56,7 +56,7 @@ ruleset observation_ruleset
 
             // Create first observation. That will trigger the sequence
             //  of events moving toward the destination.
-            create_observation();
+            create_observation(paths);
             paths.state = slam_sim::PATH_STATE_ACTIVE;
         }
     }
@@ -71,8 +71,9 @@ ruleset observation_ruleset
             //  conflicts as this is the only code path altering
             //  the record in that table. Once error is calculated
             //  a new area map can be created.
-            // TODO make sure this is a full path so that DR errors can
-            //  be estimated from it.
+            // TODO make sure this is a complete path (i.e., w/ landmark
+            //  at beginning and end) so that DR errors can be estimated
+            //  from it.
             calc_path_error(paths);
         }
     }
@@ -86,7 +87,7 @@ ruleset observation_ruleset
     //  no transaction conflict.
     on_update(ep: estimated_position)
     {
-        create_observation();
+        create_observation(/ego.current_path->paths);
     }
 
 

@@ -207,17 +207,20 @@ table observations
 
   landmark_sightings references landmark_sightings[],
 
-  next_edge references edge,
-  prev_edge references edge
+  -- As noted, an observation is only connected to two other observations.
+  -- A node would be instead have a single 'references edges[]'
+  forward_edge references edges,
+  reverse_edge references edges
 )
 
 
-table edge
+table edges
 (
-  id int32, -- record must have a field, not just references
+  -- ID is the same as that of target (next) observation.
+  id int32,
 
-  next references observations using prev_edge,
-  prev references observations using next_edge
+  next references observations using reverse_edge,
+  prev references observations using forward_edge
 )
 
 

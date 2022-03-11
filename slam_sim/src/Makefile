@@ -4,7 +4,7 @@ TARGET = slam_sim
 
 TEST_TARGETS = test_line_segment 
 
-OBJS = line_segment.o paths.o mapping.o
+OBJS = line_segment.o paths.o mapping.o landmark_description.o analyze.o
 EXT_OBJS = ../gaia/slam_rules.o ../gaia/gaia_slam.o
 
 LIBS = /usr/local/lib/libgaia.so -lcurl -pthread

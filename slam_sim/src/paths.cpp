@@ -1,11 +1,3 @@
-////////////////////////////////////////////////////
-// Copyright (c) Gaia Platform LLC
-//
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE.txt file
-// or at https://opensource.org/licenses/MIT.
-////////////////////////////////////////////////////
-
 #include <assert.h>
 #include <math.h>
 
@@ -21,23 +13,27 @@ namespace slam_sim
 
 // Dev code. Hardcode destinations during development.
 
-constexpr double X0_METERS = 1.0;
-constexpr double Y0_METERS = 1.0;
+constexpr double X0_METERS = 4.0;
+constexpr double Y0_METERS = 0.6;
 
-constexpr double X1_METERS = 3.5;
-constexpr double Y1_METERS = 6.0;
+constexpr double X1_METERS = 5.5;
+constexpr double Y1_METERS = 7.5;
 
+
+using gaia::common::gaia_id_t;
 
 using gaia::slam::observations_t;
 using gaia::slam::ego_t;
 using gaia::slam::paths_t;
 using gaia::slam::destination_t;
 using gaia::slam::estimated_position_t;
+using gaia::slam::edges_t;
 
 using gaia::slam::ego_writer;
 using gaia::slam::paths_writer;
 using gaia::slam::destination_writer;
 using gaia::slam::estimated_position_writer;
+using gaia::slam::edges_writer;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -196,6 +192,39 @@ void move_toward_destination()
 }
 
 
+void create_observation(paths_t& path)
+{
+    // Do a sensor sweep.
+    // Create an observation record, storing sensor data.
+    int32_t id = 0;
+    observations_t new_obs;
+    gaia_id_t new_obs_id;
+    observations_t prev_obs;
+    gaia_id_t prev_obs_id;
+
+    // Connect observation to path and to previous observation, if present.
+    paths_writer writer = path.writer();
+    if (path.num_observations() == 0)
+    {
+        // First observation.
+        writer.start_obs_id = id;
+        writer.latest_obs_id = id;
+    }
+    else
+    {
+        writer.latest_obs_id = id;
+        // Build an edge to connect to the previous observation.
+        gaia_id_t edge_id = edges_t::insert_row(id);
+        edges_t edge = edges_t::get(edge_id);
+        // Now link the records.
+        new_obs.reverse_edge().connect(edge_id);
+        prev_obs.forward_edge().connect(edge_id);
+    }
+    writer.num_observations = path.num_observations() + 1;
+    writer.update_row();
+}
+
+
 ////////////////////////////////////////////////////////////////////////
 // Non-rule API
 // The functions here must manage their own transactions.
@@ -207,3 +236,4 @@ void request_new_destination(double x_meters, double y_meters)
 }
 
 } // namespace slam_sim
+
