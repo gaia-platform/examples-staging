@@ -16,6 +16,7 @@
 
 #include "gaia_clearpath.h"
 #include "graph.hpp"
+#include "prefix_logger.hpp"
 #include "vertex_types.hpp"
 
 using namespace gaia::direct_access;
@@ -26,6 +27,9 @@ using std::this_thread::sleep_for;
 
 constexpr size_t c_num_data_events = 5;
 constexpr uint32_t c_rule_wait_millis = 100;
+
+// Initialize the extern pointer to empty. The instance will be set in main().
+std::shared_ptr<gaia::clearpath::prefix_logger_t> g_prefix_log{};
 
 /**
  * Wait an arbitrary amount of time for rule execution to terminate.
@@ -39,6 +43,10 @@ void wait_for_rules()
 int main()
 {
     gaia::system::initialize();
+
+    // Set the shared_pointer value, from now on the pointer can be used in rules.
+    auto* prefix_logger = new prefix_logger_t{"LOG PREFIX: "};
+    g_prefix_log.reset(prefix_logger);
 
     // We explicitly handle the transactions with begin_transaction() and commit_transaction()
     // to trigger the rules.
@@ -103,6 +111,13 @@ int main()
     {
         gaia_log::app().info("Vertex(id:{} type:{} pose_x:{} pose_y:{})", v.id(), v.type(), v.pose_x(), v.pose_y());
     }
+    gaia::db::commit_transaction();
+
+    wait_for_rules();
+
+    // Sends a log message.
+    gaia::db::begin_transaction();
+    log_record_t::insert_row("Hello World from main!");
     gaia::db::commit_transaction();
 
     ///

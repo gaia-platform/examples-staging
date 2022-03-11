@@ -14,11 +14,15 @@
 
 #include "gaia_clearpath.h"
 #include "graph.hpp"
+#include "prefix_logger.hpp"
 #include "vertex_types.hpp"
 
 using namespace gaia::direct_access;
 using namespace gaia::clearpath;
 using namespace gaia::clearpath::graph;
+
+// Make the linker happy since the rules are compiled against direct_access target as well.
+std::shared_ptr<gaia::clearpath::prefix_logger_t> g_prefix_log{};
 
 int main()
 {
