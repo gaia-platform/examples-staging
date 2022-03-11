@@ -46,6 +46,8 @@ public:
   static void publish_neck_pose(float rotation, float lift);
 
 private:
+  static constexpr std::chrono::milliseconds c_ego_time_update_interval = std::chrono::milliseconds(50);
+
   rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr m_joint_trajectory_pub{};
 
   rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr m_battery_state_sub{};
@@ -53,6 +55,11 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::Illuminance>::SharedPtr m_right_light_sub{};
   rclcpp::Subscription<sensor_msgs::msg::Range>::SharedPtr m_range_sub{};
   rclcpp::Subscription<vision_msgs::msg::Detection3D>::SharedPtr m_face_detection_sub{};
+
+  static bool s_running;
+
+  /// \brief Periodically update ego time.
+  static void ego_time_update();
 
   /// \brief Handle incoming messages.
   void left_light_callback(const sensor_msgs::msg::Illuminance::ConstSharedPtr msg);

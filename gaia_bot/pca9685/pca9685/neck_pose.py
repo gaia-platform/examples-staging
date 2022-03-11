@@ -25,7 +25,7 @@ class Servo:
         self.PwmServo.setServoPulse(9,1500)
 
     def setServoPwm(self,channel,angle,error=10):
-        angle=int(angle)
+        angle=int(angle * 90.0) + 90
         if channel=='rotation':
             self.PwmServo.setServoPulse(8,2500-int((angle+error)/0.09))
         elif channel=='lift':

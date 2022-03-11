@@ -32,3 +32,8 @@
 *.app
 
 .vscode/
+
+build/
+
+checks.json
+

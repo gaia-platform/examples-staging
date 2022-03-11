@@ -1,3 +1,11 @@
+////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////
+
 #include <sstream>
 #include <memory>
 
@@ -102,7 +110,7 @@ ruleset clearpath_rule_examples
         gaia_log::app().info("Vertex {} is part of graph {}", v.id, v->graph.uuid);
     }
 
-   
+
     ////////////////////
     // Iterating through a 1:n relationship
     //
@@ -200,7 +208,6 @@ ruleset event_rule_example : serial_group()
         );
     }
 }
-
 
 ruleset shared_objects
 {

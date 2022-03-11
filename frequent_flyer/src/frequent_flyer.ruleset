@@ -1,19 +1,15 @@
-/////////////////////////////////////////////
-// Copyright (c) 2022 Gaia Platform LLC
+////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
 //
-// Use of this source code is governed by an MIT-style
+// Use of this source code is governed by the MIT
 // license that can be found in the LICENSE.txt file
 // or at https://opensource.org/licenses/MIT.
-/////////////////////////////////////////////
+////////////////////////////////////////////////////
 
 #include "gaia/logger.hpp"
 
 ruleset frequent_flyer
 {
-    {
-        trip_miles += @flight_miles;
-    }
-
     {
         lifetime_miles += @flight_miles;
     }
