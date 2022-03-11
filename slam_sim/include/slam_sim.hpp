@@ -1,5 +1,6 @@
 #pragma once
 #include "gaia_slam.h"
+#include "sensor_data.hpp"
 
 namespace slam_sim
 {
@@ -77,6 +78,10 @@ void init_path(const gaia::slam::observations_t&);
 // First brings Alice to a halt if not already stopped.
 // Creates observations record, updates estimated_position record.
 void create_observation(gaia::slam::paths_t&);
+
+// Do a sensor sweep from at the stated position.
+void perform_sensor_sweep(double pos_x_meters, double pos_y_meters, 
+    utils::sensor_data_t& data);
 
 
 ////////////////////////////////////////////////

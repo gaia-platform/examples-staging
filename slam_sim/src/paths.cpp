@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "slam_sim.hpp"
+#include "line_segment.hpp"
 
 #include "gaia/direct_access/auto_transaction.hpp"
 
@@ -18,6 +19,8 @@ constexpr double Y0_METERS = 0.6;
 
 constexpr double X1_METERS = 5.5;
 constexpr double Y1_METERS = 7.5;
+
+static int32_t next_observation_id = 1;
 
 
 using gaia::common::gaia_id_t;
@@ -35,6 +38,7 @@ using gaia::slam::destination_writer;
 using gaia::slam::estimated_position_writer;
 using gaia::slam::edges_writer;
 
+using utils::sensor_data_t;
 
 ////////////////////////////////////////////////////////////////////////
 // Rule API
@@ -188,18 +192,60 @@ void move_toward_destination()
     dy /= hops;
     writer.x_meters = pos_x_meters + dx;
     writer.y_meters = pos_y_meters + dy;
+    writer.dx_meters = dx;
+    writer.dy_meters = dy;
     writer.update_row();
 }
 
 
 void create_observation(paths_t& path)
 {
-    // Do a sensor sweep.
+    // Get position and do a sensor sweep.
+    double pos_x_meters = -1.0;
+    double pos_y_meters = -1.0;
+    double dx_meters = -1.0;
+    double dy_meters = -1.0;
+    for (estimated_position_t& ep: estimated_position_t::list())
+    {
+        pos_x_meters = ep.x_meters();
+        pos_y_meters = ep.y_meters();
+        dx_meters = ep.dx_meters();
+        dy_meters = ep.dy_meters();
+        break;
+    }
+    double heading_degs = utils::R2D * atan2(pos_x_meters, pos_y_meters);
+    double range_meters = sqrt(dx_meters*dx_meters + dy_meters*dy_meters);
+    sensor_data_t data;
+    perform_sensor_sweep(pos_x_meters, pos_y_meters, data);
+
     // Create an observation record, storing sensor data.
-    int32_t id = 0;
+    // This is the ID of the new observation. Call it 'num' here so to not
+    //  get confused with gaia IDs.
+    int32_t obs_num = next_observation_id++;
+    if (path.num_observations() == 0)
+    {
+        // For first observation, don't store position delta.
+        dx_meters = 0.0;
+        dy_meters = 0.0;
+        heading_degs = 0.0;
+        range_meters = 0.0;
+    }
+    gaia_id_t new_obs_id = observations_t::insert_row(
+        obs_num,              // id
+        pos_x_meters,         // pos_x_meters
+        pos_y_meters,         // pos_y_meters
+        dx_meters,            // dx_meters
+        dy_meters,            // dy_meters
+        heading_degs,         // heading_degs
+        range_meters,         // dist_meters
+        data.num_radials,     // num_radials
+        data.range_meters     // distance_meters
+    );
+
+
+    observations_t prev_obs = path.latest_observation().reverse_edge().prev();
+
     observations_t new_obs;
-    gaia_id_t new_obs_id;
-    observations_t prev_obs;
     gaia_id_t prev_obs_id;
 
     // Connect observation to path and to previous observation, if present.
@@ -207,15 +253,19 @@ void create_observation(paths_t& path)
     if (path.num_observations() == 0)
     {
         // First observation.
-        writer.start_obs_id = id;
-        writer.latest_obs_id = id;
+        writer.start_obs_id = obs_num;
+        writer.latest_obs_id = obs_num;
+        // For first observation, don't store position delta.
+        dx_meters = 0.0;
+        dy_meters = 0.0;
+        heading_degs = 0.0;
+        range_meters = 0.0;
     }
     else
     {
-        writer.latest_obs_id = id;
+        writer.latest_obs_id = obs_num;
         // Build an edge to connect to the previous observation.
-        gaia_id_t edge_id = edges_t::insert_row(id);
-        edges_t edge = edges_t::get(edge_id);
+        gaia_id_t edge_id = edges_t::insert_row(obs_num);
         // Now link the records.
         new_obs.reverse_edge().connect(edge_id);
         prev_obs.forward_edge().connect(edge_id);

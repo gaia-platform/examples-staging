@@ -14,6 +14,7 @@ using gaia::slam::paths_t;
 
 void calc_path_error(paths_t& path)
 {
+#warning "Need to iterate through observations in path"
 }
 
 void build_area_map()

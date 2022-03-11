@@ -113,6 +113,11 @@ table estimated_position
   -- Uses world coordinates, with increasing X,Y being rightward/upward
   x_meters float,
   y_meters float,
+
+  -- Intended/believed motion
+  dx_meters float,
+  dy_meters float,
+
   ----------------------------
   ego references ego
 )
@@ -187,13 +192,19 @@ table observations
 (
   id int32 unique,
 
+  -- Estimated position. This is the latest best guess. It may be modified
+  --  in the future when we have better error estimates.
+  pos_x_meters float,
+  pos_y_meters float,
+
   -- DR motion from previous observation
+  dx_meters float,
+  dy_meters float,
+
+  -- DR motion in polar coordinates.
   heading_degs float,
   dist_meters float,
 
-  -- Sensor localization/alignment
-  dx_meters float,
-  dy_meters float,
 
   path references paths[] using first_observation,
   path_dup references paths[] using latest_observation,
