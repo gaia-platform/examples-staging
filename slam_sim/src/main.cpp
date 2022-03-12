@@ -54,6 +54,9 @@ void clear_table()
 
 void clear_data()
 {
+    // TODO refresh the database and delete all old records.
+    // At present the only way to do this is 'make refresh_db' or to
+    //  go into gaia/ and 'make'.
 }
 
 
