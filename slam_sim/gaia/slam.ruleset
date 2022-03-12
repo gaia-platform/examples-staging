@@ -16,8 +16,9 @@
 #include <iostream>
 #include <string>
 
-#include "gaia/common.hpp"
-#include "gaia/rules/rules.hpp"
+#include <gaia/common.hpp>
+#include <gaia/logger.hpp>
+#include <gaia/rules/rules.hpp>
 
 #include "slam_sim.hpp"
 
@@ -49,10 +50,12 @@ ruleset observation_ruleset
     ////////////////////////////////////////////
     // Change of path state
 
-    on_update(paths.state)
+    on_change(paths.state)
     {
         if ((state == slam_sim::PATH_STATE_STARTING) && (slam_sim::g_quit == 0))
         {
+            gaia_log::app().info("Path changed state to STARTING. "
+                "Creating initial observation");
             // Sanity check. A new path should have no observations.
             uint32_t n = 0xffffffff;
             n = paths.num_observations;
@@ -70,6 +73,8 @@ ruleset observation_ruleset
     {
         if (paths.state == slam_sim::PATH_STATE_DONE)
         {
+            gaia_log::app().info("Path changed state to DONE. "
+                "Calculating path error");
             // Path just completed. Calculate error and store results
             //  in error_correction. There should be no transaction
             //  conflicts as this is the only code path altering
@@ -91,6 +96,8 @@ ruleset observation_ruleset
     //  no transaction conflict.
     on_update(ep: estimated_position)
     {
+        gaia_log::app().info("Estimated position changed. Creating new "
+            "observation");
         create_observation(/ego.current_path->paths);
     }
 
@@ -106,6 +113,8 @@ ruleset observation_ruleset
         for (/pending_destination) {
             // If there's a new destination request pending, set that as the
             //  destination.
+            gaia_log::app().info("Observation found pending destination "
+                "change request");
 
             // TODO modify destination record
             assert(1 == 0); // induce a fault until this is supported
@@ -115,6 +124,8 @@ ruleset observation_ruleset
 
         if (o.path->paths.state == slam_sim::PATH_STATE_STARTING)
         {
+            gaia_log::app().info("Observation created in new path. "
+                "Selecting destination");
             // This is a newly created path. Select a destination.
             // Add this observation to the path
             init_path(o);
@@ -131,6 +142,8 @@ ruleset observation_ruleset
         {
             if (o.path->paths.num_observations > expected_arrival)
             {
+                gaia_log::app().info("Observation made beyond expected "
+                    "arrival time at destination. Returning to landmark");
                 // We're exploring and should have reached our destination
                 //  already. Give up and go back to a landmark.
                 select_landmark_destination();
@@ -142,6 +155,8 @@ ruleset observation_ruleset
         //  the path.
         for (o.landmark_sightings->ls:landmark_sightings) {
             if (ls.range_meters < slam_sim::LANDMARK_DISTANCE_METERS) {
+                gaia_log::app().info("Observation made made near "
+                    "landmark. Terminating path");
                 o.path->paths.state = slam_sim::PATH_STATE_DONE;
                 return;
             }
@@ -162,6 +177,8 @@ ruleset observation_ruleset
             * slam_sim::DESTINATION_RADIUS_METERS;
         if (dist_2 < radius_2)
         {
+            gaia_log::app().info("Observation made at destination. "
+                "Returning to landmark.");
             // Arrived at destination. Find a landmark to calibrate
             //  position and then update map.
             select_landmark_destination();
@@ -170,6 +187,7 @@ ruleset observation_ruleset
 
         // Destination hasn't changed. Rebuild the working map
         //  and proceed.
+        gaia_log::app().info("Observation made. Building new local map.");
         build_working_map();
     }
 
@@ -188,6 +206,7 @@ ruleset observation_ruleset
         //  being in map. Coarse path can be inheritted from low-res map.
         //  This should save time generating local high-res map.
 
+        gaia_log::app().info("Destination has changed. Rebuilding area map.");
         build_area_map();
     }
 
@@ -196,6 +215,7 @@ ruleset observation_ruleset
     {
         // TODO decide what to do next.
         // For now, start a new path and keep exploring.
+        gaia_log::app().info("Error has been updated. Start a new path.");
         create_new_path();
     }
 
@@ -206,6 +226,7 @@ ruleset observation_ruleset
     on_update(a: area_map)
     {
         // Local map was updated. Now rebuild working map.
+        gaia_log::app().info("Area map built. Rebuilding local map.");
         build_local_map();
     }
 
@@ -213,6 +234,7 @@ ruleset observation_ruleset
     on_update(m: local_map)
     {
         // Local map was updated. Now rebuild working map.
+        gaia_log::app().info("Local map built. Rebuilding working map.");
         build_working_map();
     }
 
@@ -225,6 +247,7 @@ ruleset observation_ruleset
         //  direction setting, forward motion, and distance travelled
         //  managed at procedural level. When Alice has moved far enough
         //  forward, an observation record will be made.
+        gaia_log::app().info("Working map built. Moving toward destination.");
         move_toward_destination();
     }
 
@@ -237,6 +260,7 @@ ruleset observation_ruleset
         // A collision was detected, or the range sensor detected something
         //  closer than it's supposed to be. Initiate a stop, which will
         //  in turn create a new observation.
+        gaia_log::app().info("Collision detected. Stopping bot");
         full_stop();
     }
 }

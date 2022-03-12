@@ -7,9 +7,10 @@ OBJS = slam_rules.o slam/gaia_slam.o
 
 all: rules all_procedure_subshell
 
-
-rules: 
+gaiac:
 	gaiac slam.ddl -g --db-name $(DB_NAME) -o $(DB_NAME)
+
+rules: gaiac
 	gaiat slam.ruleset -output $(RULES_CPP) -- -I/usr/lib/clang/10/include $(INC)
 
 # when freshly making, rules.cpp may not exist (e.g., if 'make clean'

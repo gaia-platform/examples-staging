@@ -95,8 +95,10 @@ void init_sim()
 {
     // Seed database and then create first path.
     // Seeding function manages its own transaction.
+    gaia_log::app().info("Seeding the database");
     seed_database();
 
+    gaia_log::app().info("Creating initial path");
     gaia::db::begin_transaction();
     create_new_path();
     gaia::db::commit_transaction();
