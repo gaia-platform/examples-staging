@@ -4,7 +4,7 @@ TARGET = slam_sim
 
 TEST_TARGETS = test_analyze 
 
-OBJS = paths.o navigation.o analyze.o main.o
+OBJS = main.o paths.o navigation.o analyze.o
 EXT_OBJS = $(ROOT)/gaia/slam_rules.o $(ROOT)/gaia/gaia_slam.o
 
 LIBS = $(LIB_SLAM_UTILS) /usr/local/lib/libgaia.so -lcurl -pthread

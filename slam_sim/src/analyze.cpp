@@ -79,7 +79,7 @@ static void set_map(const char* map)
 }
 
 
-void load_default_map(const char* world_map)
+void load_world_map(const char* world_map)
 {
     FILE* fp = fopen(world_map, "r");
     if (!fp)
@@ -218,7 +218,7 @@ int main(int argc, char** argv)
     (void) argv;
     uint32_t errs = 0;
     ////////////////////////////////////////////////////////////////////
-    load_default_map(WORLD_MAP_FILE);
+    load_world_map(WORLD_MAP_FILE);
     std::string response;
     sensor_data_t data;
     perform_sensor_sweep(4.0, 0.6, data);

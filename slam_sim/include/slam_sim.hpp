@@ -37,7 +37,6 @@ constexpr int32_t EXIT_AFTER_X_PATHS = 2;
 //          toward a destination.
 //      'find_landmark' indicaates that exploration is over and Alice is
 //          looking for a landmark to get a position fix.
-constexpr int32_t PATH_STATE_NULL = 1;
 constexpr int32_t PATH_STATE_STARTING = 1;
 constexpr int32_t PATH_STATE_ACTIVE = 2;
 constexpr int32_t PATH_STATE_FIND_LANDMARK = 4;
@@ -91,6 +90,8 @@ void create_new_path();
 // Initialize a new path and assign it its first observation.
 void init_path(const gaia::slam::observations_t&);
 
+// Loads a .json file that describes the environment.
+void load_world_map(const char*);
 
 ////////////////////////////////////////////////
 // Seeing people

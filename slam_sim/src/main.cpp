@@ -6,6 +6,9 @@
 // or at https://opensource.org/licenses/MIT.
 ////////////////////////////////////////////////////
 
+#include <unistd.h>
+#include <getopt.h>
+
 #include <chrono>
 
 #include <thread>
@@ -37,6 +40,7 @@ void wait_for_rules()
     }
 }
 
+
 template <typename T_type>
 void clear_table()
 {
@@ -47,9 +51,45 @@ void clear_table()
     }
 }
 
+
 void clear_data()
 {
 }
+
+
+static void usage(int argc, char** argv)
+{
+    printf("Gaia SLAM simulator\n\n");
+    printf("Usage: %s -m <map.json>\n", argv[0]);
+    exit(1);
+}
+
+
+void parse_command_line(int argc, char** argv)
+{
+    int opt;
+    const char* map_file = NULL;
+    while ((opt = getopt(argc, argv, "hm:")) != -1)
+    {
+        switch(opt)
+        {
+            case 'm':
+                map_file = optarg;
+                break;
+            case 'h':
+                usage(argc, argv);
+                break;
+            default:
+                usage(argc, argv);
+        }
+    }
+    if (map_file == NULL)
+    {
+        usage(argc, argv);
+    }
+    load_world_map(map_file);
+}
+
 
 void init_sim()
 {
@@ -65,8 +105,10 @@ void init_sim()
 } // namespace slam_sim;
 
 
-int main()
+int main(int argc, char** argv)
 {
+    slam_sim::parse_command_line(argc, argv);
+
     gaia::system::initialize();
 
     // We explicitly handle the transactions with begin_transaction() and commit_transaction()
