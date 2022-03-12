@@ -14,6 +14,8 @@
 #include <gaia/logger.hpp>
 #include <gaia/system.hpp>
 
+#include "slam_sim.hpp"
+
 using std::this_thread::sleep_for;
 
 namespace slam_sim
@@ -49,6 +51,17 @@ void clear_data()
 {
 }
 
+void init_sim()
+{
+    // Seed database and then create first path.
+    // Seeding function manages its own transaction.
+    seed_database();
+
+    gaia::db::begin_transaction();
+    create_new_path();
+    gaia::db::commit_transaction();
+}
+
 } // namespace slam_sim;
 
 
@@ -64,6 +77,7 @@ int main()
 
     gaia_log::app().info("=== Creates a new Graph and observe the corresponding rules triggered ===");
 
+    slam_sim::init_sim();
     slam_sim::wait_for_rules();
 
     gaia::system::shutdown();
