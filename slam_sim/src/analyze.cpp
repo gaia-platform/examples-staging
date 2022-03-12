@@ -1,19 +1,32 @@
+////////////////////////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////////////////////////
+//
+// A very simple environment simulation interface.
+// 
+// This file calculates the sensor view of the environment. The 
+//  environment is made up of a 2D map (flatland) that has walls and
+//  explicit landmarks. In SLAM, landmarks will typically be calculated
+//  based on aligning salient features between different observations.
+//  In this case, such alignment is assumed to have been done, as the
+//  point of the example here is what to do when you find a landmark,
+//  not feature extraction and mapping. A more intuitive way to think 
+//  about landmarks in this example, as its implemented, is that 
+//  they're QR codes on a wall.
+//
+////////////////////////////////////////////////////////////////////////
 #include <iostream>
 #include <string>
 #include <mutex>
 #include <vector>
 
-#include "gaia/system.hpp"
-#include <gaia/db/db.hpp>
-#include <gaia/logger.hpp>
-#include <gaia/exceptions.hpp>
-
-#include "slam/gaia_slam.h"
-
 #include "json.hpp"
 #include "line_segment.hpp"
 #include "sensor_data.hpp"
-#include "slam_sim.hpp"
 
 namespace slam_sim
 {
@@ -31,10 +44,6 @@ constexpr int32_t NUM_RANGE_RADIALS = 180;
 // Line segments describing outline of all objects in the world.
 vector<line_segment_t> g_world_lines;
 vector<landmark_description_t> g_landmarks;
-
-
-// for main.cpp or high-level utils
-////////////////////////////////////////////////////////////////////////
 
 
 // Parse json map data and copy to vectors describing the world. Assume 
@@ -70,12 +79,12 @@ static void set_map(const char* map)
 }
 
 
-void load_default_map()
+void load_default_map(const char* world_map)
 {
-    FILE* fp = fopen(DEFAULT_WORLD_MAP_PATH, "r");
+    FILE* fp = fopen(world_map, "r");
     if (!fp)
     {
-        fprintf(stderr, "Failed to open %s\n", DEFAULT_WORLD_MAP_PATH);
+        fprintf(stderr, "Failed to open %s\n", world_map);
         exit(1);
     }
     fseek(fp, 0, SEEK_END);
@@ -84,8 +93,7 @@ void load_default_map()
     char* buf = new char[len+1]; 
     if (fread(buf, len, 1, fp) != 1)
     {
-        fprintf(stderr, "Failed to read world map %s\n", 
-            DEFAULT_WORLD_MAP_PATH);
+        fprintf(stderr, "Failed to read world map %s\n", world_map);
         exit(1);
     }
     fclose(fp);
@@ -121,6 +129,10 @@ static void calculate_ranges(double x_meters, double y_meters,
                 }
             }
         }
+        if (min_meters > utils::RANGE_SENSOR_MAX_METERS)
+        {
+            min_meters = -1.0;
+        }
         data.range_meters.push_back(min_meters);
     }
 }
@@ -139,7 +151,7 @@ static void calculate_landmarks(double x_meters, double y_meters,
         double dx = x_meters - landmark.x_meters;
         double dy = y_meters - landmark.y_meters;
         double range_meters = sqrt(dx*dx + dy*dy);
-        if (range_meters <= LANDMARK_VISIBILITY_METERS)
+        if (range_meters <= utils::LANDMARK_VISIBILITY_METERS)
         {
             data.landmarks_visible.push_back(landmark);
         }
@@ -161,21 +173,42 @@ void perform_sensor_sweep(double x_meters, double y_meters, sensor_data_t& data)
 
 } // namespace slam_sim
 
+
 #if defined(TEST_ANALYZE)
+
+constexpr const char* WORLD_MAP_FILE = "../data/map.json";
 
 using namespace slam_sim;
 using namespace utils;
 
 void print_sensor_data(sensor_data_t& data)
 {
-    for (uint32_t i=0; i<data.radials.length(); i++)
+    double step_degs = 360.0 / (double) data.num_radials;
+    for (uint32_t i=0; i<data.range_meters.size(); i++)
     {
-        int32_t n = data.landmark_num[i];
         double range = data.range_meters[i];
-        double theta = data.range_meters[i];
-        printf("%3d   %.3d   %6.2f    %s\n", i, (int32_t) round(theta),
-            range, n<0 ? "" : "*");
+        double theta = (double) i * step_degs;
+        printf("%3d   %.3d   %6.2f\n", i, (int32_t) round(theta), range);
     }
+    for (landmark_description_t& lm: data.landmarks_visible)
+    {
+        printf("Landmark %d (%s) at %.2f,%.2f\n", lm.id, lm.name.c_str(),
+            lm.x_meters, lm.y_meters);
+    }
+}
+
+
+static uint32_t check_radial(uint32_t num, double expected,
+    const sensor_data_t& data)
+{
+    uint32_t errs = 0;
+    if (fabs(data.range_meters[num] - expected) > 0.01)
+    {
+        fprintf(stderr, "Radial %d has range of %.3f, expected %.3f\n",
+            num, data.range_meters[num], expected);
+        errs++;
+    }
+    return errs;
 }
 
 
@@ -183,23 +216,52 @@ int main(int argc, char** argv)
 {
     (void) argc;
     (void) argv;
-    load_default_map();
+    uint32_t errs = 0;
+    ////////////////////////////////////////////////////////////////////
+    load_default_map(WORLD_MAP_FILE);
     std::string response;
     sensor_data_t data;
-    calculate_sensors(4.0, 0.6, data);
-    print_sensor_data(data);
-
-//    
-//    std::cout << response << std::endl;
-//    move_robot(30.0, 1.0);
-//    calculate_sensors(response);
-//    std::cout << response << std::endl;
-//    move_robot(5.0, 1.0);
-//    move_robot(5.0, 1.0);
-//    move_robot(5.0, 1.0);
-//    calculate_sensors(response);
-//    std::cout << response << std::endl;
-    return 0;
+    perform_sensor_sweep(4.0, 0.6, data);
+    // wall distances
+    errs += check_radial(0, 0.5, data);
+    errs += check_radial(22, 0.7, data);
+    errs += check_radial(45, -1.0, data);
+    errs += check_radial(90, -1.0, data);
+    errs += check_radial(134, 3.9, data);
+    // table distances
+    // 190 degs. Strikes vertical edge of table near bottom.
+    //    sqrt(0.5^2 + (0.5/tan(10))^2)
+    errs += check_radial(95, 2.879, data);
+    // 196 degs. Strikes horizontal edge of table near right edge.
+    //    sqrt(1.9^2 + (1.9*tan(16))^2)
+    errs += check_radial(98, 1.977, data);
+    // 216 degs. Strikes horizontal edge of table near left edge.
+    //    sqrt(1.9^2 + (1.9*tan(36))^2)
+    errs += check_radial(108, 2.349, data);
+    // Check landmarks.
+    if (data.landmarks_visible.size() != 1)
+    {
+        fprintf(stderr, "Expected seeing 1 landmark but saw %d\n",
+            (int32_t) data.landmarks_visible.size());
+        errs++;
+    }
+    else
+    {
+        if (data.landmarks_visible[0].id != 1)
+        {
+            fprintf(stderr, "Expected seeing landmark #1 but saw %d\n",
+                data.landmarks_visible[0].id);
+            errs++;
+        }
+    }
+    ////////////////////////////////////////////////////////////////////
+    if (errs > 0) {
+        fprintf(stderr, "********************************\n");
+        fprintf(stderr, "Encountered %d errors\n", errs);
+    } else {
+        fprintf(stderr, "All tests pass\n");
+    }
+    return (int32_t) errs;
 }
 
 #endif // TEST_ANALYZE

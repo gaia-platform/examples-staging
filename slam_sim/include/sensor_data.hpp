@@ -1,3 +1,14 @@
+////////////////////////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////////////////////////
+//
+// Sensor data of the bot's environment.
+//
+////////////////////////////////////////////////////////////////////////
 #pragma once
 #include <vector>
 
@@ -5,6 +16,12 @@
 
 namespace utils
 {
+
+// How close Alice has to be to see the landmark.
+constexpr double LANDMARK_VISIBILITY_METERS = 3.0;
+
+// Max range of range sensor.
+constexpr double RANGE_SENSOR_MAX_METERS = 4.0;
 
 struct sensor_data_t
 {

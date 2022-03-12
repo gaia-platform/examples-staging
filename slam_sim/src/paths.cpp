@@ -1,16 +1,29 @@
+////////////////////////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////////////////////////
+// 
+// Primary API for rules relating to path generation.
+// 
+////////////////////////////////////////////////////////////////////////
 #include <assert.h>
 #include <math.h>
 
 #include <iostream>
 
+#include "gaia/db/db.hpp"
+
 #include "slam_sim.hpp"
 #include "line_segment.hpp"
 
-#include "gaia/direct_access/auto_transaction.hpp"
 
 namespace slam_sim
 {
 
+extern int32_t g_quit;
 
 // Dev code. Hardcode destinations during development.
 
@@ -31,6 +44,10 @@ using gaia::slam::paths_t;
 using gaia::slam::destination_t;
 using gaia::slam::estimated_position_t;
 using gaia::slam::edges_t;
+using gaia::slam::error_correction_t;
+using gaia::slam::area_map_t;
+using gaia::slam::local_map_t;
+using gaia::slam::working_map_t;
 
 using gaia::slam::ego_writer;
 using gaia::slam::paths_writer;
@@ -48,15 +65,31 @@ using utils::sensor_data_t;
 void select_destination()
 {
     // Move to predesignated position.
+    const double dest_x_meters = X1_METERS;
+    const double dest_y_meters = Y1_METERS;
     for (ego_t& e: ego_t::list())
     {
+        // Estimate how long it should take to get to the destination.
+        estimated_position_t pos = e.position();
+        double dx_meters = pos.x_meters() - dest_x_meters;
+        double dy_meters = pos.y_meters() - dest_y_meters;
+        double dist_meters = sqrt(dx_meters*dx_meters + dy_meters*dy_meters);
+        if (dist_meters < INTER_OBSERVATION_DIST_METERS)
+        {
+            dist_meters = INTER_OBSERVATION_DIST_METERS;
+        }
+        double hops = ceil(dist_meters / INTER_OBSERVATION_DIST_METERS);
+        // Pad the arrival time in case we have to take a non-direct route.
+        hops *= 1.5;
+
         paths_t path = e.current_path();
         assert(path.state() == PATH_STATE_ACTIVE);
         for (destination_t& d: destination_t::list())
         {
             destination_writer writer = d.writer();
-            writer.x_meters = X1_METERS;
-            writer.y_meters = Y1_METERS;
+            writer.x_meters = dest_x_meters;
+            writer.y_meters = dest_y_meters;
+            writer.expected_arrival = (int32_t) ceil(hops);
             writer.update_row();
             break;
         }
@@ -241,12 +274,8 @@ void create_observation(paths_t& path)
         data.num_radials,     // num_radials
         data.range_meters     // distance_meters
     );
-
-
+    observations_t new_obs = observations_t::get(new_obs_id);
     observations_t prev_obs = path.latest_observation().reverse_edge().prev();
-
-    observations_t new_obs;
-    gaia_id_t prev_obs_id;
 
     // Connect observation to path and to previous observation, if present.
     paths_writer writer = path.writer();
@@ -283,6 +312,72 @@ void request_new_destination(double x_meters, double y_meters)
 {
     // Not implemented yet.
     assert(false);
+}
+
+
+void seed_database()
+{
+    // There shouldn't be any transaction conflicts as this is the first
+    //  operation on the database, so ignore the try/catch block.
+    gaia::db::begin_transaction();
+    //
+    gaia_id_t ego_id = ego_t::insert_row(0);  // current_path_id
+    ego_t ego = ego_t::get(ego_id);
+
+    ////////////////////////////////////////////
+    // Position and destination
+    gaia_id_t destination_id = destination_t::insert_row(
+        X0_METERS,    // x_meters
+        Y0_METERS,    // y_meters
+        0             // expected_arrival
+    );
+    gaia_id_t position_id = estimated_position_t::insert_row(
+        X0_METERS,    // x_meters
+        Y0_METERS,    // y_meters
+        0.0,          // x_meters
+        0.0           // y_meters
+    );
+    gaia_id_t error_correction_id = error_correction_t::insert_row(
+        0.0,          // drift_correction
+        0.0,          // forward_correction
+        0.0           // correction_weight
+    );
+
+    ////////////////////////////////////////////
+    // Maps
+    gaia_id_t area_map_id = area_map_t::insert_row(
+        0,        // blob_id
+        0.0,      // left_meters
+        0.0,      // right_meters
+        0.0,      // top_meters
+        0.0,      // bottom_meters
+        0         // change_counter
+    );
+    gaia_id_t local_map_id = local_map_t::insert_row(
+        0,        // blob_id
+        0.0,      // left_meters
+        0.0,      // right_meters
+        0.0,      // top_meters
+        0.0,      // bottom_meters
+        0         // change_counter
+    );
+    gaia_id_t working_map_id = working_map_t::insert_row(
+        0,        // blob_id
+        0         // change_counter
+    );
+
+    ////////////////////////////////////////////
+    // Establish relationships
+    ego.position().connect(position_id);
+    ego.destination().connect(destination_id);
+    ego.error().connect(error_correction_id);
+    ego.low_res_map().connect(area_map_id);
+    ego.high_res_map().connect(local_map_id);
+    ego.working_map().connect(working_map_id);
+
+    ////////////////////////////////////////////
+    // All done
+    gaia::db::commit_transaction();
 }
 
 } // namespace slam_sim

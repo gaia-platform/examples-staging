@@ -1,11 +1,22 @@
-////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 // Copyright (c) Gaia Platform LLC
 //
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE.txt file
 // or at https://opensource.org/licenses/MIT.
-////////////////////////////////////////////////////
-
+///////////////////////////////////////////////////////////////////////
+//
+// Mechanism for memory 'blobs' to be accessed by the database.
+//
+// These blobs are on the heap. A reference number (ID) is stored in
+//  a database table and that ID is used to fetch a blob. Blobs are
+//  not persistent and their content must be regenerated from database
+//  content if they are not available.
+//
+// Blob creation and destruction is designed to be resistant to
+//  transaction rollbacks and retries. See the README.
+//
+///////////////////////////////////////////////////////////////////////
 #pragma once
 
 #include <cstddef>

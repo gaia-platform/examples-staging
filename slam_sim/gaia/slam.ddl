@@ -1,10 +1,27 @@
-----------------------------------------------------
+------------------------------------------------------------------------
 -- Copyright (c) Gaia Platform LLC
 --
 -- Use of this source code is governed by the MIT
 -- license that can be found in the LICENSE.txt file
 -- or at https://opensource.org/licenses/MIT.
-----------------------------------------------------
+------------------------------------------------------------------------
+--
+-- Schema for SLAM simulation.
+--
+-- Schema is split into 3 parts. 
+-- The first are tables that have individual records in them. For 
+--  example, the 'ego', the 'position', and maps that represent the 
+--  area (used for path finding).
+-- 
+-- The second are tables storing event data. This includes destination
+--  requests pushed in externally (e.g., an external request for Alice
+--  to go to a particular position) or if Alice senses a collision.
+--
+-- The third is the main elements of the SLAM algorithm. This includes
+--  observations (more commonly called poses) and sequences of
+--  observations here called paths (akin to simplified pose graphs).
+--
+------------------------------------------------------------------------
 
 database slam;
 
@@ -29,8 +46,11 @@ table ego
   --  to another.
   position references estimated_position,
   destination references destination,
+  error references error_correction,
+
   low_res_map references area_map,
-  high_res_map references local_map
+  high_res_map references local_map,
+  working_map references working_map
 )
 
 
@@ -39,7 +59,7 @@ table ego
 --  manage concurrent access manually.
 table area_map
 (
-  low_res_map_blob_id uint32,
+  blob_id uint32,
   -- Bounding polygon
   -- Uses world coordinates, with increasing X,Y being rightward/upward
   left_meters float,
@@ -59,7 +79,7 @@ table area_map
 
 table local_map
 (
-  high_res_map_blob_id uint32,
+  blob_id uint32,
   -- Bounding polygon
   -- Uses world coordinates, with increasing X,Y being rightward/upward
   left_meters float,
@@ -80,7 +100,7 @@ table local_map
 
 table working_map
 (
-  working_map_blob_id uint32,
+  blob_id uint32,
 
   -- An on_change rule needs a field to change to fire the rule. Use this
   --  field to guarantee that a change is made so the rule is fired. Note
@@ -88,7 +108,8 @@ table working_map
   --  rule as an actual value change is required.
   change_counter int32,
   ----------------------------
-  local_map references local_map
+  local_map references local_map,
+  ego references ego
 )
 
 
@@ -129,7 +150,10 @@ table error_correction
 (
   drift_correction float,
   forward_correction float,
-  correction_weight float
+  correction_weight float,
+
+  ----------------------------
+  ego references ego
 )
 
 

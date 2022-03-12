@@ -16,7 +16,12 @@
 
 using std::this_thread::sleep_for;
 
+namespace slam_sim
+{
+
 constexpr uint32_t c_rule_wait_millis = 100;
+
+int32_t g_quit = 0;
 
 /**
  * Wait an arbitrary amount of time for rule execution to terminate.
@@ -24,7 +29,10 @@ constexpr uint32_t c_rule_wait_millis = 100;
  */
 void wait_for_rules()
 {
-    sleep_for(std::chrono::milliseconds(c_rule_wait_millis));
+    while (g_quit == 0)
+    {
+        sleep_for(std::chrono::milliseconds(c_rule_wait_millis));
+    }
 }
 
 template <typename T_type>
@@ -41,6 +49,9 @@ void clear_data()
 {
 }
 
+} // namespace slam_sim;
+
+
 int main()
 {
     gaia::system::initialize();
@@ -48,12 +59,12 @@ int main()
     // We explicitly handle the transactions with begin_transaction() and commit_transaction()
     // to trigger the rules.
     gaia::db::begin_transaction();
-    clear_data();
+    slam_sim::clear_data();
     gaia::db::commit_transaction();
 
     gaia_log::app().info("=== Creates a new Graph and observe the corresponding rules triggered ===");
 
-    wait_for_rules();
+    slam_sim::wait_for_rules();
 
     gaia::system::shutdown();
 }

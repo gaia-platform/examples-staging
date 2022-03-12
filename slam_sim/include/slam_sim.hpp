@@ -1,3 +1,22 @@
+////////////////////////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////////////////////////
+//
+// Main header and API for SLAM simulation.
+//
+// The SLAM simulator represents a simplified SLAM implementation to
+//  provide an example of doing SLAM in Gaia. Sensor observations are
+//  stored in the database and records are linked to form graphs. 
+//  Graph traversal is done by just following these links.
+//
+// The simulated environment is 2D. The bot ("Alice") has range sensors
+//  that scan 360 degrees and a camera to identify landmarks.
+//
+////////////////////////////////////////////////////////////////////////
 #pragma once
 #include "gaia_slam.h"
 #include "sensor_data.hpp"
@@ -8,7 +27,7 @@ namespace slam_sim
 // Flag to indicate app should exit. Normally this is 0. When it's time
 //  to quit it's set to 1.
 extern int32_t g_quit;
-constexpr int32_t EXIT_AFTER_X_PATHS = 10;
+constexpr int32_t EXIT_AFTER_X_PATHS = 2;
 
 // Flags to indicate state of Alice's movement. This information is
 //  stored in the present path.
@@ -32,10 +51,12 @@ constexpr double INTER_OBSERVATION_DIST_METERS = 0.5;
 // How close to a landmark we need to be to be able to use it as a
 //  position fix.
 constexpr double LANDMARK_DISTANCE_METERS = 1.0;
-// How close Alice has to be to see the landmark.
-constexpr double LANDMARK_VISIBILITY_METERS = 3.0;
 
-constexpr const char* DEFAULT_WORLD_MAP_PATH = "../data/world_map.json";
+
+////////////////////////////////////////////////
+// Initialization
+
+void seed_database();
 
 
 ////////////////////////////////////////////////
