@@ -5,19 +5,23 @@
 // license that can be found in the LICENSE.txt file
 // or at https://opensource.org/licenses/MIT.
 ////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////
 //
 // Main header and API for SLAM simulation.
 //
 // The SLAM simulator represents a simplified SLAM implementation to
 //  provide an example of doing SLAM in Gaia. Sensor observations are
-//  stored in the database and records are linked to form graphs. 
+//  stored in the database and records are linked to form graphs.
 //  Graph traversal is done by just following these links.
 //
 // The simulated environment is 2D. The bot ("Alice") has range sensors
 //  that scan 360 degrees and a camera to identify landmarks.
 //
 ////////////////////////////////////////////////////////////////////////
+
 #pragma once
+
 #include "gaia_slam.h"
 #include "sensor_data.hpp"
 
@@ -33,7 +37,7 @@ constexpr int32_t EXIT_AFTER_X_PATHS = 2;
 //  stored in the present path.
 //      'done' indicates that path has been completed.
 //      'starting' indicates that path is just started.
-//      'active' indicates that Alice is moving away from a landmark and 
+//      'active' indicates that Alice is moving away from a landmark and
 //          toward a destination.
 //      'find_landmark' indicaates that exploration is over and Alice is
 //          looking for a landmark to get a position fix.
@@ -74,7 +78,7 @@ void select_landmark_destination();
 
 // Called in unusual situations, such as if Alice detects a collision or
 //  senses that one is imminent. Brings the bot to a halt and performs
-//  no further actions. If called when bot is already stopped then 
+//  no further actions. If called when bot is already stopped then
 //  request is ignored.
 void full_stop();
 
@@ -103,7 +107,7 @@ void load_world_map(const char*);
 void create_observation(gaia::slam::paths_t&);
 
 // Do a sensor sweep from at the stated position.
-void perform_sensor_sweep(double pos_x_meters, double pos_y_meters, 
+void perform_sensor_sweep(double pos_x_meters, double pos_y_meters,
     utils::sensor_data_t& data);
 
 
@@ -119,8 +123,8 @@ void calc_path_error(gaia::slam::paths_t& path);
 // Stores in 'area_map' record.
 void build_area_map();
 
-// Generates a high-res map of the area, based on previously acquired 
-//  and calibrated data. 
+// Generates a high-res map of the area, based on previously acquired
+//  and calibrated data.
 // Stores output in 'local_map' record.
 void build_local_map();
 
@@ -133,4 +137,3 @@ void build_working_map();
 
 
 } // namespace slam_sim
-
