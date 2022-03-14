@@ -24,6 +24,9 @@ find_package(Threads REQUIRED)
 
 include("/opt/gaia/cmake/gaia.cmake")
 
+# Default compiler/linker flags.
+add_compile_options(-c -Wall -Wextra -ggdb)
+
 # --- Generate Direct Access classes from DDL---
 process_schema(
   DDL_FILE ${PROJECT_SOURCE_DIR}/gaia/slam.ddl
@@ -38,33 +41,33 @@ translate_ruleset(
     -I ${PROJECT_SOURCE_DIR}/include
 )
 
-
 # Application
 
 add_executable(slam_sim
-  # src/blob_cache.cpp
-  # src/line_segment.cpp
+  src/analyze.cpp
   src/main.cpp
-  # src/mapping.cpp
+  src/navigation.cpp
+  src/paths.cpp
+  src/utils/blob_cache.cpp
+  src/utils/landmark_description.cpp
+  src/utils/line_segment.cpp
 )
 
-# target_add_gaia_generated_sources(slam_sim)
+target_add_gaia_generated_sources(slam_sim)
 
 target_include_directories(slam_sim PRIVATE
   ${GAIA_INC}
   ${PROJECT_SOURCE_DIR}/include
 )
 
-target_link_libraries(slam_sim PRIVATE
-  ${GAIA_LIB}
-  Threads::Threads
-)
+target_link_directories(slam_sim PRIVATE ${GAIA_LIB_DIR})
+target_link_libraries(slam_sim PRIVATE ${GAIA_LIB} rt Threads::Threads)
 
 # Tests
 
 add_executable(test_blob_cache
   tests/test_blob_cache.cpp
-  src/blob_cache.cpp
+  src/utils/blob_cache.cpp
 )
 
 set_target_properties(test_blob_cache PROPERTIES COMPILE_FLAGS "${GAIA_COMPILE_FLAGS}")
