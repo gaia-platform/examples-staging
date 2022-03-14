@@ -31,12 +31,12 @@ sudo make install
 ## Install AWS IoT certificates
 * [Create a thing](https://aws.amazon.com/iot/), a certificate for your thing, and a policy to attach it to.
 * Download the new certificate, private key, and Amazon root CA1 certificate.
-* Create a new folder named `certs` in your mqtt directory and copy the downloaded files there.
+* Create a new folder named `certs` in your `mqtt` directory and copy the downloaded files there.
 * Rename the certificate and private key respectively to: `certificate.pem.crt` and `private.pem.key`
 * Leave the Amazon root certificate name unchanged, namely: `AmazonRootCA1.pem`
 
 ## Build MQTT example
-Create build directory within mqtt example directory, run cmake and then make.
+Create build directory within `mqtt` example directory, run `cmake` and then make.
 ```bash
 cd {mqtt_example_root_directory}
 mkdir build
