@@ -38,26 +38,29 @@ translate_ruleset(
     -I ${PROJECT_SOURCE_DIR}/include
 )
 
-#
+
 # Application
-#
-# add_executable(slam_sim
-#   src/blob_cache.cpp
-#   src/line_segment.cpp
-#   src/mapping.cpp
-# )
+
+add_executable(slam_sim
+  # src/blob_cache.cpp
+  # src/line_segment.cpp
+  src/main.cpp
+  # src/mapping.cpp
+)
 
 # target_add_gaia_generated_sources(slam_sim)
 
-# target_include_directories(slam_sim PRIVATE
-#   ${GAIA_INC}
-#   ${PROJECT_SOURCE_DIR}/include
-# )
+target_include_directories(slam_sim PRIVATE
+  ${GAIA_INC}
+  ${PROJECT_SOURCE_DIR}/include
+)
 
-# target_link_libraries(slam_sim PRIVATE
-#   ${GAIA_LIB}
-#   Threads::Threads
-# )
+target_link_libraries(slam_sim PRIVATE
+  ${GAIA_LIB}
+  Threads::Threads
+)
+
+# Tests
 
 add_executable(test_blob_cache
   tests/test_blob_cache.cpp
