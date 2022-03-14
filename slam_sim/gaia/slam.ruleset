@@ -63,8 +63,10 @@ ruleset observation_ruleset
 
             // Create first observation. That will trigger the sequence
             //  of events moving toward the destination.
+std::cout << "Number of observations: " << paths.num_observations << std::endl;
             create_observation(paths);
             paths.state = slam_sim::PATH_STATE_ACTIVE;
+            gaia_log::app().info("DONE Path changed state to STARTING.");
         }
     }
 
@@ -84,6 +86,7 @@ ruleset observation_ruleset
             //  at beginning and end) so that DR errors can be estimated
             //  from it.
             calc_path_error(paths);
+            gaia_log::app().info("DONE Path changed state to DONE.");
         }
     }
 

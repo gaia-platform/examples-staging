@@ -15,8 +15,11 @@ all: $(OBJS)
 	cd utils && make
 	$(CXX) $(OBJS) $(EXT_OBJS) -o $(TARGET) $(LIBS)
 
-run:
+run: refresh_db
 	./slam_sim -m ../data/map.json
+
+drun: refresh_db
+	gdb --args ./slam_sim -m ../data/map.json
 
 # At present there's no method to delete the contents of the database
 #   from w/in the program, so add a way to do so outside.

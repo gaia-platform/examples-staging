@@ -14,7 +14,8 @@
 
 #include <iostream>
 
-#include "gaia/db/db.hpp"
+#include <gaia/db/db.hpp>
+#include <gaia/logger.hpp>
 
 #include "slam_sim.hpp"
 #include "line_segment.hpp"
@@ -252,6 +253,9 @@ void create_observation(paths_t& path)
     perform_sensor_sweep(pos_x_meters, pos_y_meters, data);
 
     // Create an observation record, storing sensor data.
+    // Make a copy of the number of observations.
+    int32_t number_of_observations = path.num_observations();
+printf("There are %d observataions in the path\n", number_of_observations);
     // This is the ID of the new observation. Call it 'num' here so to not
     //  get confused with gaia IDs.
     int32_t obs_num = next_observation_id++;
@@ -275,15 +279,14 @@ void create_observation(paths_t& path)
         data.range_meters     // distance_meters
     );
     observations_t new_obs = observations_t::get(new_obs_id);
-    observations_t prev_obs = path.latest_observation().reverse_edge().prev();
 
     // Connect observation to path and to previous observation, if present.
     paths_writer writer = path.writer();
-    if (path.num_observations() == 0)
+    writer.latest_obs_id = obs_num;
+    if (number_of_observations == 0)
     {
         // First observation.
         writer.start_obs_id = obs_num;
-        writer.latest_obs_id = obs_num;
         // For first observation, don't store position delta.
         dx_meters = 0.0;
         dy_meters = 0.0;
@@ -292,12 +295,24 @@ void create_observation(paths_t& path)
     }
     else
     {
-        writer.latest_obs_id = obs_num;
         // Build an edge to connect to the previous observation.
         gaia_id_t edge_id = edges_t::insert_row(obs_num);
-        // Now link the records.
+        // Now link observations to the edge.
         new_obs.reverse_edge().connect(edge_id);
-        prev_obs.forward_edge().connect(edge_id);
+        if (number_of_observations == 1)
+        {
+            // Second observation so this is the first edge. Get 
+            //  connection info directly from
+            observations_t prev_obs = path.first_observation();
+            prev_obs.forward_edge().connect(edge_id);
+        }
+        else
+        {
+            // Get connection info from previous edge.
+            observations_t prev_obs = 
+                path.latest_observation().reverse_edge().prev();
+            prev_obs.forward_edge().connect(edge_id);
+        }
     }
     writer.num_observations = path.num_observations() + 1;
     writer.update_row();

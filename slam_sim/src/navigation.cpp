@@ -49,6 +49,7 @@ void calc_path_error(paths_t& path)
             next.pos_x_meters(), next.pos_y_meters());
         next = next.forward_edge().next();
     }
+exit(1);
 }
 
 void build_area_map()
