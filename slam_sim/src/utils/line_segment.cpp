@@ -1,10 +1,19 @@
-////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 // Copyright (c) Gaia Platform LLC
 //
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE.txt file
 // or at https://opensource.org/licenses/MIT.
-////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+//
+// The simulator relies on "ray tracing" in a 2D world, with walls
+//  being represented as line segments. If a radial from the bot
+//  intersects a line segment (wall) then the intersection of that
+//  radial with the wall determines the range of an object on that
+//  radial. The nearest line segment on each radial is selected which
+//  will correspond to the nearest wall. 
+//
+////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
 #include <cmath>
@@ -166,8 +175,7 @@ int main()
     } else {
         fprintf(stderr, "All tests pass\n");
     }
-
-    return 0;
+    return (int32) errs;
 }
 
 #endif // TEST_LINE_SEGMENT

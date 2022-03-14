@@ -1,8 +1,33 @@
+////////////////////////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////////////////////////
+//
+// Main header and API for SLAM simulation.
+//
+// The SLAM simulator represents a simplified SLAM implementation to
+//  provide an example of doing SLAM in Gaia. Sensor observations are
+//  stored in the database and records are linked to form graphs. 
+//  Graph traversal is done by just following these links.
+//
+// The simulated environment is 2D. The bot ("Alice") has range sensors
+//  that scan 360 degrees and a camera to identify landmarks.
+//
+////////////////////////////////////////////////////////////////////////
 #pragma once
 #include "gaia_slam.h"
+#include "sensor_data.hpp"
 
 namespace slam_sim
 {
+
+// Flag to indicate app should exit. Normally this is 0. When it's time
+//  to quit it's set to 1.
+extern int32_t g_quit;
+constexpr int32_t EXIT_AFTER_X_PATHS = 2;
 
 // Flags to indicate state of Alice's movement. This information is
 //  stored in the present path.
@@ -20,9 +45,19 @@ constexpr int32_t PATH_STATE_DONE = 8;
 // How near to the destination we have to be to say "close enough".
 constexpr double DESTINATION_RADIUS_METERS = 0.5;
 
+//
+constexpr double INTER_OBSERVATION_DIST_METERS = 0.5;
+
 // How close to a landmark we need to be to be able to use it as a
 //  position fix.
 constexpr double LANDMARK_DISTANCE_METERS = 1.0;
+
+
+////////////////////////////////////////////////
+// Initialization
+
+void seed_database();
+
 
 ////////////////////////////////////////////////
 // Going places
@@ -52,6 +87,11 @@ void move_toward_destination();
 //  to a path.
 void create_new_path();
 
+// Initialize a new path and assign it its first observation.
+void init_path(const gaia::slam::observations_t&);
+
+// Loads a .json file that describes the environment.
+void load_world_map(const char*);
 
 ////////////////////////////////////////////////
 // Seeing people
@@ -60,7 +100,11 @@ void create_new_path();
 //  in the 'observations' table.
 // First brings Alice to a halt if not already stopped.
 // Creates observations record, updates estimated_position record.
-void create_observation();
+void create_observation(gaia::slam::paths_t&);
+
+// Do a sensor sweep from at the stated position.
+void perform_sensor_sweep(double pos_x_meters, double pos_y_meters, 
+    utils::sensor_data_t& data);
 
 
 ////////////////////////////////////////////////
