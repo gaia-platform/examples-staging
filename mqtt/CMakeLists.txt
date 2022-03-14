@@ -64,4 +64,4 @@ target_include_directories(mqtt
     ${GAIA_INC}
 )
 target_link_directories(mqtt PRIVATE ${GAIA_LIB})
-target_link_libraries(mqtt PRIVATE AWS::aws-crt-cpp gaia Threads::Threads)
+target_link_libraries(mqtt PRIVATE ${GAIA_LIB} AWS::aws-crt-cpp Threads::Threads)

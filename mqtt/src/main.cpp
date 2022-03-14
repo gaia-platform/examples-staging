@@ -37,7 +37,7 @@ auto g_on_publish_complete = [](Mqtt::MqttConnection&, uint16_t packet_id, int e
 {
     if (packet_id)
     {
-        gaia_log::app().debug("Operation on packetId {} succeeded", packet_id);
+        gaia_log::app().debug("Operation on packet ID {} succeeded", packet_id);
     }
     else
     {
