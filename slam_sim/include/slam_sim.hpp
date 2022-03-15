@@ -121,19 +121,19 @@ void calc_path_error(gaia::slam::paths_t& path);
 
 // Generates a low-res map off the area with path information to destination.
 // Stores in 'area_map' record.
-void build_area_map();
+void build_area_map(gaia::slam::area_map_t&);
 
 // Generates a high-res map of the area, based on previously acquired
 //  and calibrated data.
 // Stores output in 'local_map' record.
-void build_local_map();
+void build_local_map(gaia::slam::local_map_t&);
 
 // Generates a high-res map of the area using recently acquired sensor data,
 //  aligned as best as possible. Builds a path map to destination, using
 //  area map to provide boundary conditions, and obstacle information from
 //  local map to supplement recently acquired sensor data.
 // Updates working_map record.
-void build_working_map();
+void build_working_map(gaia::slam::working_map_t&);
 
 
 } // namespace slam_sim

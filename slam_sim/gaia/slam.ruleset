@@ -110,8 +110,6 @@ ruleset observation_ruleset
         //  record will trigger a rebuilding of the local maps, which will
         //  in turn have Alice move toward the destination.
 
-gaia_log::app().info("on_insert(observation);");
-gaia_log::app().info("  state={}", o.path->paths.state);
         for (/pending_destination) {
             // If there's a new destination request pending, set that as the
             //  destination.
@@ -195,7 +193,7 @@ gaia_log::app().info("Landmark sighting. Range {}", ls.range_meters);
         // Destination hasn't changed. Rebuild the working map
         //  and proceed.
         gaia_log::app().info("Observation made. Building new local map.");
-        build_working_map();
+        build_working_map(/working_map);
     }
 
 
@@ -214,7 +212,7 @@ gaia_log::app().info("Landmark sighting. Range {}", ls.range_meters);
         //  This should save time generating local high-res map.
 
         gaia_log::app().info("Destination has changed. Rebuilding area map.");
-        build_area_map();
+        build_area_map(/area_map);
     }
 
 
@@ -234,7 +232,7 @@ gaia_log::app().info("Landmark sighting. Range {}", ls.range_meters);
     {
         // Local map was updated. Now rebuild working map.
         gaia_log::app().info("Area map built. Rebuilding local map.");
-        build_local_map();
+        build_local_map(/local_map);
     }
 
 
@@ -242,7 +240,7 @@ gaia_log::app().info("Landmark sighting. Range {}", ls.range_meters);
     {
         // Local map was updated. Now rebuild working map.
         gaia_log::app().info("Local map built. Rebuilding working map.");
-        build_working_map();
+        build_working_map(/working_map);
     }
 
 

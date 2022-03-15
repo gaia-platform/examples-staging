@@ -192,7 +192,7 @@ table paths
   state int32,
 
   -- Observations that are part of this path.
-  num_observations uint32,
+  num_observations int32,
   start_obs_id int32,
   latest_obs_id int32,
   first_observation references observations
@@ -304,3 +304,18 @@ table landmark_sightings
   landmark references landmarks
     where landmark_sightings.landmark_id = landmarks.landmark_id
 )
+
+
+------------------------------------------------------------------------
+-- Used by simulator shell
+
+-- Alice's initial position in the world is 0,0. This is the coordinate
+--  mapping to get from 0,0 to the physical start point.
+table sim_position_offset
+(
+  dx_meters float,
+  dy_meters float
+)
+
+
+

@@ -68,55 +68,34 @@ gaia_log::app().info("Error calc start at {},{}", head.pos_x_meters(), head.pos_
     }
 }
 
-void build_area_map()
+void build_area_map(area_map_t& am)
 {
-    for (area_map_t& m: area_map_t::list())
-    {
-        // TODO rebuild the area map
-        // In the meantime, just 'touch' the record by updating the
-        //  change counter.
-        area_map_writer writer = m.writer();
-        writer.change_counter = m.change_counter() + 1;
-        writer.update_row();
-
-        // This isn't necessary as there's only one record, but it does
-        //  help keep the code more clear.
-        break;  
-    }
+    // TODO rebuild the area map
+    // In the meantime, just 'touch' the record by updating the
+    //  change counter.
+    area_map_writer writer = am.writer();
+    writer.change_counter = am.change_counter() + 1;
+    writer.update_row();
 }
 
-void build_local_map()
+void build_local_map(local_map_t& lm)
 {
-    for (local_map_t& m: local_map_t::list())
-    {
-        // TODO rebuild the local map
-        // In the meantime, just 'touch' the record by updating the
-        //  change counter.
-        local_map_writer writer = m.writer();
-        writer.change_counter = m.change_counter() + 1;
-        writer.update_row();
-
-        // This isn't necessary as there's only one record, but it does
-        //  help keep the code more clear.
-        break;  
-    }
+    // TODO rebuild the local map
+    // In the meantime, just 'touch' the record by updating the
+    //  change counter.
+    local_map_writer writer = lm.writer();
+    writer.change_counter = lm.change_counter() + 1;
+    writer.update_row();
 }
 
-void build_working_map()
+void build_working_map(working_map_t& wm)
 {
-    for (working_map_t& m: working_map_t::list())
-    {
-        // TODO rebuild the working map
-        // In the meantime, just 'touch' the record by updating the
-        //  change counter.
-        working_map_writer writer = m.writer();
-        writer.change_counter = m.change_counter() + 1;
-        writer.update_row();
-
-        // This isn't necessary as there's only one record, but it does
-        //  help keep the code more clear.
-        break;  
-    }
+    // TODO rebuild the working map
+    // In the meantime, just 'touch' the record by updating the
+    //  change counter.
+    working_map_writer writer = wm.writer();
+    writer.change_counter = wm.change_counter() + 1;
+    writer.update_row();
 }
 
 } // namespace slam_sim

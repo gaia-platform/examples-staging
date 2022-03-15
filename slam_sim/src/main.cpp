@@ -6,8 +6,9 @@
 // or at https://opensource.org/licenses/MIT.
 ////////////////////////////////////////////////////
 
-#include <unistd.h>
 #include <getopt.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include <chrono>
 
@@ -31,6 +32,9 @@ namespace slam_sim
 constexpr uint32_t c_rule_wait_millis = 100;
 
 int32_t g_quit = 0;
+
+static float initial_x_meters = -1.0;
+static float initial_y_meters = -1.0;
 
 /**
  * Wait an arbitrary amount of time for rule execution to terminate.
@@ -73,13 +77,19 @@ void clear_data()
     clear_table<local_map_t>();
     clear_table<area_map_t>();
     clear_table<ego_t>();
+    clear_table<sim_position_offset_t>();
 }
 
 
 static void usage(int, char** argv)
 {
     printf("Gaia SLAM simulator\n\n");
-    printf("Usage: %s -m <map.json>\n", argv[0]);
+    printf("Usage: %s -m <file path> -x <coord> -y <coord>\n", argv[0]);
+    printf("  where\n");
+    printf("    -m    the json file describing the world (e.g., "
+        "data/map.json)\n");
+    printf("    -x    starting X coordinate of bot (must be >0)\n");
+    printf("    -y    starting Y coordinate of bot (must be >0)\n");
     exit(1);
 }
 
@@ -88,12 +98,34 @@ void parse_command_line(int argc, char** argv)
 {
     int opt;
     const char* map_file = NULL;
-    while ((opt = getopt(argc, argv, "hm:")) != -1)
+    double initial_x_meters = -1.0;
+    double initial_y_meters = -1.0;
+    while ((opt = getopt(argc, argv, "hm:x:y:")) != -1)
     {
         switch(opt)
         {
             case 'm':
                 map_file = optarg;
+                break;
+            case 'x':
+                try
+                {
+                    initial_x_meters = std::stod(optarg, NULL);
+                }
+                catch (std::invalid_argument& e)
+                {
+                    usage(argc, argv);
+                }
+                break;
+            case 'y':
+                try
+                {
+                    initial_y_meters = std::stod(optarg, NULL);
+                }
+                catch (std::invalid_argument& e)
+                {
+                    usage(argc, argv);
+                }
                 break;
             case 'h':
                 usage(argc, argv);
@@ -102,7 +134,8 @@ void parse_command_line(int argc, char** argv)
                 usage(argc, argv);
         }
     }
-    if (map_file == NULL)
+    if ((map_file == NULL) || (initial_x_meters <= 0.0) || 
+        (initial_y_meters < 0.0))
     {
         usage(argc, argv);
     }
@@ -119,7 +152,10 @@ void init_sim()
 
     gaia_log::app().info("Creating initial path");
     gaia::db::begin_transaction();
+    gaia::slam::sim_position_offset_t::insert_row(initial_x_meters, 
+        initial_y_meters);
     create_new_path();
+
     gaia::db::commit_transaction();
 }
 

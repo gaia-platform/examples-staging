@@ -175,7 +175,7 @@ int main()
     } else {
         fprintf(stderr, "All tests pass\n");
     }
-    return (int32) errs;
+    return (int) errs;
 }
 
 #endif // TEST_LINE_SEGMENT

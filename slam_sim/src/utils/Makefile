@@ -2,11 +2,6 @@ include ../../Makefile.inc
 
 TEST_TARGETS = test_line_segment 
 
-OBJS = line_segment.o landmark_description.o blob_cache.o
-
-
-all: $(OBJS) 
-	ar rcs $(LIB_SLAM_UTILS) *.o
 
 test: $(TEST_TARGETS)
 
@@ -17,7 +12,7 @@ test_line_segment: line_segment.cpp
 %.o: %.cpp 
 	$(CXX) $(INC) -c $(CPPFLAGS) $< 
 
-refresh: clean all
+refresh: clean test
 
 clean:
 	rm -f *.o *.a $(TEST_TARGETS)
