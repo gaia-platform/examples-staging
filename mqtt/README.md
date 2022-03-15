@@ -3,23 +3,19 @@ A Gaia application to demonstrate communicating via MQTT.
 
 # MQTT example development setup
 ## Prerequisites
-You'll need to
+You'll need to:
 
 * Install Gaia
-* Install aws-iot-device-sdk-cpp
+* Install [aws-iot-device-sdk-cpp](https://github.com/aws/aws-iot-device-sdk-cpp-v2)
 
 ### Installing Gaia
 Follow instructions [here](https://gaia-platform.github.io/gaia-platform-docs.io/articles/getting-started-with-gaia.html) to install Gaia.
 
 ### Installing aws-iot-device-sdk-cpp
-From inside the root sandbox directory clone the [aws-iot-device-sdk-cpp](https://github.com/aws/aws-iot-device-sdk-cpp-v2) and build using clang. May also work with gcc but so far only tested with clang.
+Clone the [aws-iot-device-sdk-cpp](https://github.com/aws/aws-iot-device-sdk-cpp-v2) and build.
+
 ```bash
-export CC=/usr/bin/clang-10
-export CPP=/usr/bin/clang-cpp-10
-export CXX=/usr/bin/clang++-10
-export LDFLAGS=-fuse-ld=lld-10
-cd {mqtt_example_root_directory}
-git clone --recursive https://github.com/aws/aws-iot-device-sdk-cpp-v2.git
+git clone --recursive --branch v1.14.2 https://github.com/aws/aws-iot-device-sdk-cpp-v2.git
 cd aws-iot-device-sdk-cpp-v2
 mkdir build
 cd build
@@ -49,3 +45,11 @@ make
 ```bash
 ./mqtt
 ```
+
+## Send test MQTT messages
+
+The AWS Console provides a convenient MQTT test client.
+
+You can find the instructions here: https://docs.aws.amazon.com/iot/latest/developerguide/view-mqtt-messages.html
+
+You can publish to the topic `my_thing_name/`.

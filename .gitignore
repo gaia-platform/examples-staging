@@ -37,3 +37,6 @@ build/
 
 checks.json
 
+cmake-*
+mqtt/certs
+.idea

@@ -29,12 +29,14 @@ using namespace gaia::mqtt;
 using namespace gaia::rules;
 using namespace gaia::mqtt::utils;
 
+// When connecting to an AWS endpoint, use the ATS endpoint.
+// Use this command to find it:
+// $ aws iot describe-endpoint --endpoint-type iot:Data-ATS
 #define ENDPOINT "replace_with_your_mqtt_endpoint"
 
 std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> g_connection;
 
-auto g_on_publish_complete = [](Mqtt::MqttConnection&, uint16_t packet_id, int error_code)
-{
+auto g_on_publish_complete = [](Mqtt::MqttConnection&, uint16_t packet_id, int error_code) {
     if (packet_id)
     {
         gaia_log::app().debug("Operation on packet ID {} succeeded", packet_id);
@@ -86,7 +88,6 @@ void on_message(Mqtt::MqttConnection&, const String& topic, const ByteBuf& paylo
     messages_t::insert_row(topic.c_str(), payload_str.c_str());
     commit_transaction();
 }
-
 
 int main()
 {
@@ -157,8 +158,7 @@ int main()
     std::promise<bool> connection_completed_promise;
     std::promise<void> connection_closed_promise;
 
-    auto on_connection_completed = [&connection_completed_promise](Mqtt::MqttConnection&, int error_code, Mqtt::ReturnCode returnCode, bool)
-    {
+    auto on_connection_completed = [&connection_completed_promise](Mqtt::MqttConnection&, int error_code, Mqtt::ReturnCode returnCode, bool) {
         if (error_code)
         {
             fprintf(stdout, "Connection failed with error %s\n", ErrorDebugString(error_code));
@@ -180,16 +180,15 @@ int main()
         }
     };
 
-    auto on_interrupted = [&](Mqtt::MqttConnection&, int error)
-    {
+    auto on_interrupted = [&](Mqtt::MqttConnection&, int error) {
         fprintf(stdout, "Connection interrupted with error %s\n", ErrorDebugString(error));
     };
 
-    auto on_resumed = [&](Mqtt::MqttConnection&, Mqtt::ReturnCode, bool)
-    { fprintf(stdout, "Connection resumed\n"); };
+    auto on_resumed = [&](Mqtt::MqttConnection&, Mqtt::ReturnCode, bool) {
+        fprintf(stdout, "Connection resumed\n");
+    };
 
-    auto on_disconnect = [&connection_closed_promise](Mqtt::MqttConnection&)
-    {
+    auto on_disconnect = [&connection_closed_promise](Mqtt::MqttConnection&) {
         {
             fprintf(stdout, "Disconnect completed\n");
             gaia::system::shutdown();
@@ -213,34 +212,32 @@ int main()
     {
         std::promise<void> subscribe_finished_promise;
         auto on_sub_ack =
-            [&subscribe_finished_promise](Mqtt::MqttConnection&, uint16_t packet_id, const String& topic, Mqtt::QOS QoS, int errorCode)
-        {
-            if (errorCode)
-            {
-                fprintf(stderr, "Subscribe failed with error %s\n", aws_error_debug_str(errorCode));
-                exit(-1);
-            }
-            else
-            {
-                if (!packet_id || QoS == AWS_MQTT_QOS_FAILURE)
+            [&subscribe_finished_promise](Mqtt::MqttConnection&, uint16_t packet_id, const String& topic, Mqtt::QOS QoS, int errorCode) {
+                if (errorCode)
                 {
-                    fprintf(stderr, "Subscribe rejected by the broker.");
+                    fprintf(stderr, "Subscribe failed with error %s\n", aws_error_debug_str(errorCode));
                     exit(-1);
                 }
                 else
                 {
-                    fprintf(stdout, "Subscribe on topic %s on packetId %d Succeeded\n", topic.c_str(), packet_id);
+                    if (!packet_id || QoS == AWS_MQTT_QOS_FAILURE)
+                    {
+                        fprintf(stderr, "Subscribe rejected by the broker.");
+                        exit(-1);
+                    }
+                    else
+                    {
+                        fprintf(stdout, "Subscribe on topic %s on packetId %d Succeeded\n", topic.c_str(), packet_id);
+                    }
                 }
-            }
-            subscribe_finished_promise.set_value();
-        };
+                subscribe_finished_promise.set_value();
+            };
 
-        string topic = "my_thing_name";
-        topic += "/#";
+        string topic = "my_thing_name/#";
         g_connection->Subscribe(topic.c_str(), AWS_MQTT_QOS_AT_LEAST_ONCE, on_message, on_sub_ack);
         subscribe_finished_promise.get_future().wait();
 
-        String input = "";
+        String input;
         while (input != "x")
         {
             fprintf(stdout, "Enter to see database. Enter 'x' to exit this program.\n");
@@ -256,8 +253,7 @@ int main()
         std::promise<void> unsubscribe_finished_promise;
         g_connection->Unsubscribe(
             "#",
-            [&unsubscribe_finished_promise](Mqtt::MqttConnection&, uint16_t, int)
-            { unsubscribe_finished_promise.set_value(); });
+            [&unsubscribe_finished_promise](Mqtt::MqttConnection&, uint16_t, int) { unsubscribe_finished_promise.set_value(); });
         unsubscribe_finished_promise.get_future().wait();
     }
 
