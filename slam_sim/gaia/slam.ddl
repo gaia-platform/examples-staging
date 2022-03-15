@@ -37,7 +37,7 @@ database slam;
 
 table ego
 (
-  current_path_id int32,
+  current_path_id uint32,
   current_path references paths where ego.current_path_id=paths.id,
 
   -- Explicitly created references.
@@ -185,7 +185,7 @@ table collision_event
 --  Start/end points are at distinguishable landmarks.
 table paths
 (
-  id int32 unique,
+  id uint32 unique,
 
   ego references ego[],
 
@@ -214,7 +214,7 @@ table paths
 --  that the node will be similar to an observation.
 table observations
 (
-  id int32 unique,
+  id uint32 unique,
 
   -- Estimated position. This is the latest best guess. It may be modified
   --  in the future when we have better error estimates.
@@ -258,7 +258,7 @@ table observations
 table edges
 (
   -- ID is the same as that of target (next) observation.
-  id int32,
+  id uint32,
 
   -- For sequential observations O1 and O2, this edge attaches to 
   --  O1.forward_edge and O2.reverse_edge, so 'next' is O2.reverse_edge
@@ -272,7 +272,7 @@ table edges
 --  that can be used to generate a position fix.
 table landmarks
 (
-  landmark_id int32 unique,
+  landmark_id uint32 unique,
   description string unique,
 
   -- Position of landmark. If this is not supplied externally then it is
