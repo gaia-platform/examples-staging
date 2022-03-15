@@ -90,7 +90,7 @@ void init_storage()
     segment_t::insert_row(2, 3, 1);
     segment_t::insert_row(1, 4, 1);
 
-    trip_t::insert_row(3, 2, "Warf's trip", 0, 0, "LAX", "SEA");
+    trip_t::insert_row(3, 2, "Worf's trip", 0, 0, "LAX", "SEA");
     segment_t::insert_row(1, 3, 3);
 
     commit_transaction();
@@ -216,7 +216,7 @@ public:
                     std::cout << "Flight already landed.\n";
                 }
                 commit_transaction();
-                std::cout << "Press enter to continue.";
+                std::cout << "Press Enter to continue.";
                 read_input();
                 return true;
             }
