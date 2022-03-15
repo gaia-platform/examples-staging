@@ -17,6 +17,8 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+#include <gaia/logger.hpp>
+
 #include "slam_sim.hpp"
 
 namespace slam_sim
@@ -24,32 +26,46 @@ namespace slam_sim
 
 using gaia::slam::paths_t;
 using gaia::slam::observations_t;
+using gaia::slam::edges_t;
 using gaia::slam::area_map_t;
 using gaia::slam::local_map_t;
 using gaia::slam::working_map_t;
+using gaia::slam::error_correction_t;
 
 using gaia::slam::area_map_writer;
 using gaia::slam::local_map_writer;
 using gaia::slam::working_map_writer;
+using gaia::slam::error_correction_writer;
 
 
 void calc_path_error(paths_t& path)
 {
-    printf("Path %d complete\n", path.id());
+gaia_log::app().info("Calculating error");
     observations_t head = path.first_observation();
-    printf("Start at %.1f,%.1f\n", head.pos_x_meters(), head.pos_y_meters());
-    observations_t next = head.forward_edge().next();
+gaia_log::app().info("Error calc start at {},{}", head.pos_x_meters(), head.pos_y_meters());
+    edges_t e = head.forward_edge();
+    observations_t next = e.next();
     while (next)
     {
         // TODO do something to estimate error
         // For now, just iterate through the observations in the path.
-
-        printf("  Move %.2f,%.2f to %.1f,%.1f\n", 
-            next.dx_meters(), next.dy_meters(),
+        gaia_log::app().info("Error obs {} at {},{}", next.id(), 
             next.pos_x_meters(), next.pos_y_meters());
+
+        if (!next.forward_edge()) {
+            break;
+        }
         next = next.forward_edge().next();
     }
-exit(1);
+
+    // Updated error correction table.
+    for (error_correction_t& ec: error_correction_t::list())
+    {
+        error_correction_writer writer = ec.writer();
+        writer.correction_weight = ec.correction_weight() + 1.0;
+        writer.update_row();
+        break;
+    }
 }
 
 void build_area_map()

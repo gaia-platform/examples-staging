@@ -230,8 +230,8 @@ table observations
   dist_meters float,
 
 
-  path references paths[] using first_observation,
-  path_dup references paths[] using latest_observation,
+  path references paths[] using latest_observation,
+  path_dup references paths[] using first_observation,
 
   ------------------------------
   -- Sensing
@@ -244,6 +244,8 @@ table observations
 
   -- As noted, an observation is only connected to two other observations.
   -- A node would be instead have a single 'references edges[]'
+  -- Forward is the edge connecting this observation to the next one, and
+  --  reverse connects this observation to the previous.
   forward_edge references edges,
   reverse_edge references edges
 )
@@ -254,6 +256,9 @@ table edges
   -- ID is the same as that of target (next) observation.
   id int32,
 
+  -- For sequential observations O1 and O2, this edge attaches to 
+  --  O1.forward_edge and O2.reverse_edge, so 'next' is O2.reverse_edge
+  --  and 'prev' is O1.forward_edge.
   next references observations using reverse_edge,
   prev references observations using forward_edge
 )
@@ -287,7 +292,7 @@ table landmarks
 table landmark_sightings
 (
   range_meters float,
-  heading_degs float,
+  bearing_degs float,
 
   -- Observation corresponding to this sighting.
   observation_id int32,

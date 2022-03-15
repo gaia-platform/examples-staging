@@ -153,6 +153,7 @@ static void calculate_landmarks(double x_meters, double y_meters,
         double range_meters = sqrt(dx*dx + dy*dy);
         if (range_meters <= utils::LANDMARK_VISIBILITY_METERS)
         {
+//printf("Close to landmark %.3f\n", range_meters);
             data.landmarks_visible.push_back(landmark);
         }
     }

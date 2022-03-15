@@ -63,10 +63,7 @@ ruleset observation_ruleset
 
             // Create first observation. That will trigger the sequence
             //  of events moving toward the destination.
-std::cout << "Number of observations: " << paths.num_observations << std::endl;
             create_observation(paths);
-            paths.state = slam_sim::PATH_STATE_ACTIVE;
-            gaia_log::app().info("DONE Path changed state to STARTING.");
         }
     }
 
@@ -99,8 +96,8 @@ std::cout << "Number of observations: " << paths.num_observations << std::endl;
     //  no transaction conflict.
     on_update(ep: estimated_position)
     {
-        gaia_log::app().info("Estimated position changed. Creating new "
-            "observation");
+        gaia_log::app().info("Estimated position changed. {},{}", ep.x_meters,
+            ep.y_meters);
         create_observation(/ego.current_path->paths);
     }
 
@@ -113,6 +110,8 @@ std::cout << "Number of observations: " << paths.num_observations << std::endl;
         //  record will trigger a rebuilding of the local maps, which will
         //  in turn have Alice move toward the destination.
 
+gaia_log::app().info("on_insert(observation);");
+gaia_log::app().info("  state={}", o.path->paths.state);
         for (/pending_destination) {
             // If there's a new destination request pending, set that as the
             //  destination.
@@ -143,7 +142,11 @@ std::cout << "Number of observations: " << paths.num_observations << std::endl;
 
         if (o.path->paths.state == slam_sim::PATH_STATE_ACTIVE)
         {
-            if (o.path->paths.num_observations > expected_arrival)
+            // First observation in path made before a destination is selected.
+            // Defer check for expected arrival until we have a [new]
+            //  destination.
+            if ((o.path->paths.num_observations > 1) &&
+                (o.path->paths.num_observations > expected_arrival))
             {
                 gaia_log::app().info("Observation made beyond expected "
                     "arrival time at destination. Returning to landmark");
@@ -157,6 +160,7 @@ std::cout << "Number of observations: " << paths.num_observations << std::endl;
         // If we're close enought to a landmark right now, terminate
         //  the path.
         for (o.landmark_sightings->ls:landmark_sightings) {
+gaia_log::app().info("Landmark sighting. Range {}", ls.range_meters);
             if (ls.range_meters < slam_sim::LANDMARK_DISTANCE_METERS) {
                 gaia_log::app().info("Observation made made near "
                     "landmark. Terminating path");
