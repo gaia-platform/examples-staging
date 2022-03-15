@@ -19,6 +19,7 @@
 
 #include "slam_sim.hpp"
 #include "line_segment.hpp"
+#include "landmark_description.hpp"
 
 
 namespace slam_sim
@@ -49,6 +50,7 @@ using gaia::slam::error_correction_t;
 using gaia::slam::area_map_t;
 using gaia::slam::local_map_t;
 using gaia::slam::working_map_t;
+using gaia::slam::landmark_sightings_t;
 
 using gaia::slam::ego_writer;
 using gaia::slam::paths_writer;
@@ -57,6 +59,7 @@ using gaia::slam::estimated_position_writer;
 using gaia::slam::edges_writer;
 
 using utils::sensor_data_t;
+using utils::landmark_description_t;
 
 ////////////////////////////////////////////////////////////////////////
 // Rule API
@@ -104,6 +107,7 @@ void select_landmark_destination()
     // Move to (return to) predesignated position.
     for (ego_t& e: ego_t::list())
     {
+gaia_log::app().info("Selecting landmark destination");
         paths_t path = e.current_path();
         assert((path.state() & PATH_STATE_STARTING) == 0);
         assert((path.state() & PATH_STATE_DONE) == 0);
@@ -114,6 +118,7 @@ void select_landmark_destination()
             paths_writer writer = path.writer();
             writer.state = PATH_STATE_FIND_LANDMARK;
             writer.update_row();
+gaia_log::app().info("  reset path state");
         }
 
         for (destination_t& d: destination_t::list())
@@ -249,13 +254,13 @@ void create_observation(paths_t& path)
     }
     double heading_degs = utils::R2D * atan2(pos_x_meters, pos_y_meters);
     double range_meters = sqrt(dx_meters*dx_meters + dy_meters*dy_meters);
+    gaia_log::app().info("Performing observation at {},{}", pos_x_meters, pos_y_meters);
     sensor_data_t data;
     perform_sensor_sweep(pos_x_meters, pos_y_meters, data);
 
     // Create an observation record, storing sensor data.
     // Make a copy of the number of observations.
     int32_t number_of_observations = path.num_observations();
-printf("There are %d observataions in the path\n", number_of_observations);
     // This is the ID of the new observation. Call it 'num' here so to not
     //  get confused with gaia IDs.
     int32_t obs_num = next_observation_id++;
@@ -279,14 +284,32 @@ printf("There are %d observataions in the path\n", number_of_observations);
         data.range_meters     // distance_meters
     );
     observations_t new_obs = observations_t::get(new_obs_id);
+    
+    // Create landmark sighted records.
+    for (landmark_description_t& ld: data.landmarks_visible)
+    {
+        double dx = ld.x_meters - pos_x_meters;
+        double dy = ld.y_meters - pos_y_meters;
+        double range = sqrt(dx*dx + dy*dy);
+        double bearing = utils::R2D * atan2(dx, dy);
+        if (bearing < 0.0)
+        {
+            bearing += 360.0;
+        }
+        landmark_sightings_t::insert_row(
+            range,            // range_meters
+            bearing,          // bearing_degs
+            obs_num,          // observaation_id
+            ld.id             // landmark_id
+        );
+    }
 
     // Connect observation to path and to previous observation, if present.
-    paths_writer writer = path.writer();
-    writer.latest_obs_id = obs_num;
+    paths_writer p_writer = path.writer();
     if (number_of_observations == 0)
     {
         // First observation.
-        writer.start_obs_id = obs_num;
+        p_writer.start_obs_id = obs_num;
         // For first observation, don't store position delta.
         dx_meters = 0.0;
         dy_meters = 0.0;
@@ -309,13 +332,14 @@ printf("There are %d observataions in the path\n", number_of_observations);
         else
         {
             // Get connection info from previous edge.
-            observations_t prev_obs = 
-                path.latest_observation().reverse_edge().prev();
+            observations_t prev_obs = path.latest_observation();
             prev_obs.forward_edge().connect(edge_id);
         }
+
     }
-    writer.num_observations = path.num_observations() + 1;
-    writer.update_row();
+    p_writer.latest_obs_id = obs_num;
+    p_writer.num_observations = path.num_observations() + 1;
+    p_writer.update_row();
 }
 
 
@@ -325,6 +349,8 @@ printf("There are %d observataions in the path\n", number_of_observations);
 
 void request_new_destination(double x_meters, double y_meters)
 {
+    (void) x_meters;
+    (void) y_meters;
     // Not implemented yet.
     assert(false);
 }

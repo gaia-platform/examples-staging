@@ -10,15 +10,24 @@ EXT_OBJS = $(ROOT)/gaia/slam_rules.o $(ROOT)/gaia/gaia_slam.o
 LIBS = $(LIB_SLAM_UTILS) /usr/local/lib/libgaia.so -lcurl -pthread
 
 
-all: $(OBJS) 
-	echo $(ROOT)
+all:
+	mkdir -p ../build && cd ../build/ && cmake .. && make
+
+run: refresh_db
+	../build/slam_sim -m ../data/map.json
+
+drun: refresh_db
+	gdb --args ../build/slam_sim -m ../data/map.json
+
+
+all_old: $(OBJS)
 	cd utils && make
 	$(CXX) $(OBJS) $(EXT_OBJS) -o $(TARGET) $(LIBS)
 
-run: refresh_db
+run_old: refresh_db
 	./slam_sim -m ../data/map.json
 
-drun: refresh_db
+drun_old: refresh_db
 	gdb --args ./slam_sim -m ../data/map.json
 
 # At present there's no method to delete the contents of the database
