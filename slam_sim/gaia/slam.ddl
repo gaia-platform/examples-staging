@@ -221,7 +221,11 @@ table observations
   pos_x_meters float,
   pos_y_meters float,
 
-  -- DR motion from previous observation
+  -- Actual position data.
+  actual_x_meters float,
+  actual_y_meters float,
+
+  -- DR motion from previous observation.
   dx_meters float,
   dy_meters float,
 
@@ -311,11 +315,21 @@ table landmark_sightings
 
 -- Alice's initial position in the world is 0,0. This is the coordinate
 --  mapping to get from 0,0 to the physical start point.
+-- There is exactly one record in this table.
 table sim_position_offset
 (
+  -- Based on world coordinates, with increasing X,Y being rightward/upward
   dx_meters float,
   dy_meters float
 )
 
 
+-- Alice's actual position in Alice's reference frame.
+-- There is exactly one record in this table.
+table sim_actual_position
+(
+  -- World coordinates, with increasing X,Y being rightward/upward
+  x_meters float,
+  y_meters float
+)
 

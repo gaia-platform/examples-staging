@@ -33,8 +33,8 @@ constexpr uint32_t c_rule_wait_millis = 100;
 
 int32_t g_quit = 0;
 
-static float initial_x_meters = -1.0;
-static float initial_y_meters = -1.0;
+static float g_initial_x_meters = -1.0;
+static float g_initial_y_meters = -1.0;
 
 /**
  * Wait an arbitrary amount of time for rule execution to terminate.
@@ -98,8 +98,8 @@ void parse_command_line(int argc, char** argv)
 {
     int opt;
     const char* map_file = NULL;
-    double initial_x_meters = -1.0;
-    double initial_y_meters = -1.0;
+    double g_initial_x_meters = -1.0;
+    double g_initial_y_meters = -1.0;
     while ((opt = getopt(argc, argv, "hm:x:y:")) != -1)
     {
         switch(opt)
@@ -110,7 +110,7 @@ void parse_command_line(int argc, char** argv)
             case 'x':
                 try
                 {
-                    initial_x_meters = std::stod(optarg, NULL);
+                    g_initial_x_meters = std::stod(optarg, NULL);
                 }
                 catch (std::invalid_argument& e)
                 {
@@ -120,7 +120,7 @@ void parse_command_line(int argc, char** argv)
             case 'y':
                 try
                 {
-                    initial_y_meters = std::stod(optarg, NULL);
+                    g_initial_y_meters = std::stod(optarg, NULL);
                 }
                 catch (std::invalid_argument& e)
                 {
@@ -134,8 +134,8 @@ void parse_command_line(int argc, char** argv)
                 usage(argc, argv);
         }
     }
-    if ((map_file == NULL) || (initial_x_meters <= 0.0) || 
-        (initial_y_meters < 0.0))
+    if ((map_file == NULL) || (g_initial_x_meters <= 0.0) || 
+        (g_initial_y_meters < 0.0))
     {
         usage(argc, argv);
     }
@@ -148,14 +148,11 @@ void init_sim()
     // Seed database and then create first path.
     // Seeding function manages its own transaction.
     gaia_log::app().info("Seeding the database");
-    seed_database();
+    seed_database(g_initial_x_meters, g_initial_y_meters);
 
     gaia_log::app().info("Creating initial path");
     gaia::db::begin_transaction();
-    gaia::slam::sim_position_offset_t::insert_row(initial_x_meters, 
-        initial_y_meters);
     create_new_path();
-
     gaia::db::commit_transaction();
 }
 

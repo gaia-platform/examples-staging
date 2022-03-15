@@ -70,6 +70,21 @@ gaia_log::app().info("Error calc start at {},{}", head.pos_x_meters(), head.pos_
 
 void build_area_map(area_map_t& am)
 {
+    for (paths_t& p: paths_t::list())
+    {
+        observations_t obs = p.first_observation();
+        while (obs)
+        {
+            // TODO do something with observation data.
+            gaia_log::app().info("Pulling sensor data from {}:{}", 
+                p.id(), obs.id());
+            if (!obs.forward_edge()) {
+                break;
+            }
+            obs = obs.forward_edge().next();
+        }
+    }
+
     // TODO rebuild the area map
     // In the meantime, just 'touch' the record by updating the
     //  change counter.

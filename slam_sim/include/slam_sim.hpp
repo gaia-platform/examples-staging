@@ -60,7 +60,8 @@ constexpr double LANDMARK_DISTANCE_METERS = 1.0;
 ////////////////////////////////////////////////
 // Initialization
 
-void seed_database();
+// Params are Alice's starting point.
+void seed_database(double initial_x_meters, double iniital_y_meters);
 
 
 ////////////////////////////////////////////////

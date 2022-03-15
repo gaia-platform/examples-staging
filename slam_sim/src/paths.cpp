@@ -51,12 +51,16 @@ using gaia::slam::area_map_t;
 using gaia::slam::local_map_t;
 using gaia::slam::working_map_t;
 using gaia::slam::landmark_sightings_t;
+using gaia::slam::sim_position_offset_t;
+using gaia::slam::sim_actual_position_t;
 
 using gaia::slam::ego_writer;
 using gaia::slam::paths_writer;
 using gaia::slam::destination_writer;
 using gaia::slam::estimated_position_writer;
 using gaia::slam::edges_writer;
+using gaia::slam::sim_position_offset_writer;
+using gaia::slam::sim_actual_position_writer;
 
 using utils::sensor_data_t;
 using utils::landmark_description_t;
@@ -202,6 +206,10 @@ void move_toward_destination()
 {
     // TODO Consult map and find new checkpoint to move to.
     // For now, move in the direction of the present destination.
+    // Update actual movement and perceived movement.
+    // For now these are one and the same .
+    // TODO Introduce error
+
     double dest_x_meters, dest_y_meters;
     for (destination_t& d: destination_t::list())
     {
@@ -234,12 +242,55 @@ void move_toward_destination()
     writer.dx_meters = dx;
     writer.dy_meters = dy;
     writer.update_row();
+
+    for (sim_actual_position_t& sap: sim_actual_position_t::list())
+    {
+        sim_actual_position_writer sapw = sap.writer();
+        sapw.x_meters = pos_x_meters + dx;
+        sapw.y_meters = pos_y_meters + dy;
+        sapw.update_row();
+    }
+}
+
+
+// There are 2 positional reference frames for Alice, that of the world
+//  and that relative to Alice's starting point. The map is in world
+//  coordinates while Alice doesn't know the world coordinates and so
+//  uses the starting position as 0,0. This function returns the offset
+//  from Alice's coordinate frame to the world coordinate frame.
+static void load_position_offset(double& dx_meters, double& dy_meters)
+{
+    // The positional offset doesn't change. Keep a cache of the offset
+    //  to avoid having to look it up each time.
+    // Initial position must be positive as world map doesn't have
+    //  any negative coords.
+    static double s_dx_meters = -1.0;
+    static double s_dy_meters = -1.0;
+    // 
+    if (s_dx_meters < 0.0)
+    {
+        for (sim_position_offset_t& spo: sim_position_offset_t::list())
+        {
+            s_dx_meters = spo.dx_meters();
+            s_dy_meters = spo.dy_meters();
+        }
+    }
+    dx_meters = s_dx_meters;
+    dy_meters = s_dy_meters;
 }
 
 
 void create_observation(paths_t& path)
 {
     // Get position and do a sensor sweep.
+    double actual_x_meters = -1.0;
+    double actual_y_meters = -1.0;
+    for (sim_actual_position_t& sap: sim_actual_position_t::list())
+    {
+        actual_x_meters = sap.x_meters();
+        actual_y_meters = sap.y_meters();
+        break;
+    }
     double pos_x_meters = -1.0;
     double pos_y_meters = -1.0;
     double dx_meters = -1.0;
@@ -254,9 +305,13 @@ void create_observation(paths_t& path)
     }
     double heading_degs = utils::R2D * atan2(pos_x_meters, pos_y_meters);
     double range_meters = sqrt(dx_meters*dx_meters + dy_meters*dy_meters);
-    gaia_log::app().info("Performing observation at {},{}", pos_x_meters, pos_y_meters);
+    gaia_log::app().info("Performing observation at {},{}", 
+        pos_x_meters, pos_y_meters);
     sensor_data_t data;
-    perform_sensor_sweep(pos_x_meters, pos_y_meters, data);
+    double x_offset_meters, y_offset_meters;
+    load_position_offset(x_offset_meters, y_offset_meters);
+    perform_sensor_sweep(x_offset_meters + actual_x_meters, 
+        y_offset_meters + actual_y_meters, data);
 
     // Create an observation record, storing sensor data.
     // Make a copy of the number of observations.
@@ -276,6 +331,8 @@ void create_observation(paths_t& path)
         obs_num,              // id
         pos_x_meters,         // pos_x_meters
         pos_y_meters,         // pos_y_meters
+        actual_x_meters,      // actual_x_meters
+        actual_y_meters,      // actual_y_meters
         dx_meters,            // dx_meters
         dy_meters,            // dy_meters
         heading_degs,         // heading_degs
@@ -356,7 +413,7 @@ void request_new_destination(double x_meters, double y_meters)
 }
 
 
-void seed_database()
+void seed_database(double initial_x_meters, double initial_y_meters)
 {
     // There shouldn't be any transaction conflicts as this is the first
     //  operation on the database, so ignore the try/catch block.
@@ -406,6 +463,19 @@ void seed_database()
         0,        // blob_id
         0         // change_counter
     );
+
+    ////////////////////////////////////////////
+    // Simulation interface
+    sim_actual_position_t::insert_row(
+        initial_x_meters,   // x_meters
+        initial_y_meters    // y_meters
+    );
+
+    sim_actual_position_t::insert_row(
+        initial_x_meters,   // x_meters
+        initial_y_meters    // y_meters
+    );
+
 
     ////////////////////////////////////////////
     // Establish relationships
