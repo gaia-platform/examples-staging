@@ -40,7 +40,6 @@ add_executable(mqtt
 )
 
 find_package(aws-crt-cpp REQUIRED)
-find_package(cpprestsdk REQUIRED)
 
 target_add_gaia_generated_sources(mqtt)
 add_dependencies(mqtt translate_mqtt_ruleset)
@@ -51,4 +50,4 @@ target_include_directories(mqtt
     ${GAIA_INC}
 )
 target_link_directories(mqtt PRIVATE ${GAIA_LIB})
-target_link_libraries(mqtt PRIVATE ${GAIA_LIB} AWS::aws-crt-cpp cpprestsdk::cpprest Threads::Threads)
+target_link_libraries(mqtt PRIVATE ${GAIA_LIB} AWS::aws-crt-cpp Threads::Threads)
