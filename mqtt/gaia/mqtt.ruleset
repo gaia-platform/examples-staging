@@ -14,6 +14,10 @@ using namespace gaia::mqtt;
 
 void publish_message(const string& topic, const string& payload);
 
-ruleset mqtt_ruleset: serial_group()
+ruleset mqtt_ruleset
 {
+    on_insert(messages)
+    {
+        gaia_log::app().info("Triggered rule on topic: {} payload: {}", topic, payload);
+    }
 }
