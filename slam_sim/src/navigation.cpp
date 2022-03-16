@@ -5,14 +5,16 @@
 // license that can be found in the LICENSE.txt file
 // or at https://opensource.org/licenses/MIT.
 ////////////////////////////////////////////////////////////////////////
-// 
+
+////////////////////////////////////////////////////////////////////////
+//
 // Primary API for rules relating to navigation and error estimation.
 //
 // Maps are meant to provide a means for Alice to determine areas to
 //  explore, for navigating between locations, and for avoiding
 //  obstacles.
 //
-// Maps are generated from the output of the SLAM algorithm, using 
+// Maps are generated from the output of the SLAM algorithm, using
 //  observation data corrected for estimated errors.
 //
 ////////////////////////////////////////////////////////////////////////
@@ -40,19 +42,23 @@ using gaia::slam::error_correction_writer;
 
 void calc_path_error(paths_t& path)
 {
-gaia_log::app().info("Calculating error");
+    gaia_log::app().info("Calculating error");
+
     observations_t head = path.first_observation();
-gaia_log::app().info("Error calc start at {},{}", head.pos_x_meters(), head.pos_y_meters());
+
+    gaia_log::app().info("Error calc start at {},{}", head.pos_x_meters(), head.pos_y_meters());
+
     edges_t e = head.forward_edge();
     observations_t next = e.next();
     while (next)
     {
         // TODO do something to estimate error
         // For now, just iterate through the observations in the path.
-        gaia_log::app().info("Error obs {} at {},{}", next.id(), 
+        gaia_log::app().info("Error obs {} at {},{}", next.id(),
             next.pos_x_meters(), next.pos_y_meters());
 
-        if (!next.forward_edge()) {
+        if (!next.forward_edge())
+        {
             break;
         }
         next = next.forward_edge().next();
@@ -81,7 +87,7 @@ void build_area_map()
 
         // This isn't necessary as there's only one record, but it does
         //  help keep the code more clear.
-        break;  
+        break;
     }
 }
 
@@ -98,7 +104,7 @@ void build_local_map()
 
         // This isn't necessary as there's only one record, but it does
         //  help keep the code more clear.
-        break;  
+        break;
     }
 }
 
@@ -115,7 +121,7 @@ void build_working_map()
 
         // This isn't necessary as there's only one record, but it does
         //  help keep the code more clear.
-        break;  
+        break;
     }
 }
 

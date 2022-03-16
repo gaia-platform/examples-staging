@@ -5,10 +5,13 @@
 // license that can be found in the LICENSE.txt file
 // or at https://opensource.org/licenses/MIT.
 ////////////////////////////////////////////////////////////////////////
-// 
-// Primary API for rules relating to path generation.
-// 
+
 ////////////////////////////////////////////////////////////////////////
+//
+// Primary API for rules relating to path generation.
+//
+////////////////////////////////////////////////////////////////////////
+
 #include <assert.h>
 #include <math.h>
 
@@ -284,7 +287,7 @@ void create_observation(paths_t& path)
         data.range_meters     // distance_meters
     );
     observations_t new_obs = observations_t::get(new_obs_id);
-    
+
     // Create landmark sighted records.
     for (landmark_description_t& ld: data.landmarks_visible)
     {
@@ -324,7 +327,7 @@ void create_observation(paths_t& path)
         new_obs.reverse_edge().connect(edge_id);
         if (number_of_observations == 1)
         {
-            // Second observation so this is the first edge. Get 
+            // Second observation so this is the first edge. Get
             //  connection info directly from
             observations_t prev_obs = path.first_observation();
             prev_obs.forward_edge().connect(edge_id);
@@ -422,4 +425,3 @@ void seed_database()
 }
 
 } // namespace slam_sim
-

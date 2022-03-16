@@ -45,6 +45,7 @@ translate_ruleset(
 
 add_executable(slam_sim
   src/analyze.cpp
+  src/globals.cpp
   src/main.cpp
   src/navigation.cpp
   src/paths.cpp
@@ -76,3 +77,35 @@ target_include_directories(test_blob_cache PRIVATE ${PROJECT_SOURCE_DIR}/include
 target_link_libraries(test_blob_cache PRIVATE rt)
 
 add_test(NAME test_blob_cache COMMAND test_blob_cache)
+
+add_executable(test_line_segment
+  tests/test_line_segment.cpp
+  src/utils/line_segment.cpp
+)
+
+set_target_properties(test_line_segment PROPERTIES COMPILE_FLAGS "${GAIA_COMPILE_FLAGS}")
+set_target_properties(test_line_segment PROPERTIES LINK_FLAGS "${GAIA_LINK_FLAGS}")
+target_include_directories(test_line_segment PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(test_line_segment PRIVATE rt)
+
+add_test(NAME test_line_segment COMMAND test_line_segment)
+
+add_executable(test_analyze
+  tests/test_analyze.cpp
+  src/analyze.cpp
+  src/globals.cpp
+  src/navigation.cpp
+  src/paths.cpp
+  src/utils/line_segment.cpp
+  src/utils/landmark_description.cpp
+)
+
+target_add_gaia_generated_sources(test_analyze)
+
+set_target_properties(test_analyze PROPERTIES COMPILE_FLAGS "${GAIA_COMPILE_FLAGS}")
+set_target_properties(test_analyze PROPERTIES LINK_FLAGS "${GAIA_LINK_FLAGS}")
+target_include_directories(test_analyze PRIVATE ${GAIA_INC})
+target_include_directories(test_analyze PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(test_analyze PRIVATE ${GAIA_LIB} rt)
+
+add_test(NAME test_analyze COMMAND test_analyze)
