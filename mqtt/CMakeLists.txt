@@ -18,7 +18,35 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
+include(FetchContent)
+
+# Checkout lifthttp library (to make HTTP requests).
+FetchContent_Declare(
+  lifthttp
+  GIT_REPOSITORY https://github.com/jbaldwin/liblifthttp.git
+  GIT_TAG        v2021.2
+)
+FetchContent_MakeAvailable(lifthttp)
+
+# Clang-8 (which gaiat is based on) doesn't like noexcept with default.
+# This is a workaround to remove the "noexcept" keyword and make gaiat happy.
+# Reference: https://stackoverflow.com/a/29483269/1214125
+file(READ ${lifthttp_SOURCE_DIR}/inc/lift/response.hpp response_data)
+string(REPLACE "noexcept" "" response_data "${response_data}")
+file(WRITE ${lifthttp_SOURCE_DIR}/inc/lift/response.hpp "${response_data}")
+
+file(READ ${lifthttp_SOURCE_DIR}/inc/lift/request.hpp request_data)
+string(REPLACE "noexcept" "" request_data "${request_data}")
+file(WRITE ${lifthttp_SOURCE_DIR}/inc/lift/request.hpp "${request_data}")
+
+# Checkout JSON library.
+FetchContent_Declare(
+  json
+  URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz)
+FetchContent_MakeAvailable(json)
+
 include("/opt/gaia/cmake/gaia.cmake")
+
 set(MQTT_DDL ${PROJECT_SOURCE_DIR}/gaia/mqtt.ddl)
 set(MQTT_RULESET ${PROJECT_SOURCE_DIR}/gaia/mqtt.ruleset)
 
@@ -31,7 +59,9 @@ process_schema(
 # -- Translate ruleset into CPP --
 translate_ruleset(
   RULESET_FILE ${MQTT_RULESET}
-  DATABASE_NAME mqtt
+  CLANG_PARAMS
+    -I ${lifthttp_SOURCE_DIR}/inc
+    -I ${json_SOURCE_DIR}/include
 )
 
 add_executable(mqtt
@@ -50,4 +80,4 @@ target_include_directories(mqtt
     ${GAIA_INC}
 )
 target_link_directories(mqtt PRIVATE ${GAIA_LIB})
-target_link_libraries(mqtt PRIVATE ${GAIA_LIB} AWS::aws-crt-cpp Threads::Threads)
+target_link_libraries(mqtt PRIVATE ${GAIA_LIB} AWS::aws-crt-cpp lifthttp nlohmann_json::nlohmann_json Threads::Threads)
