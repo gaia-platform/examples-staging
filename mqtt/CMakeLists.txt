@@ -42,7 +42,7 @@ add_executable(mqtt
 find_package(aws-crt-cpp REQUIRED)
 
 target_add_gaia_generated_sources(mqtt)
-add_dependencies(mqtt translate_mqtt_ruleset)
+
 target_include_directories(mqtt
   PUBLIC
     ${PROJECT_SOURCE_DIR}/include
