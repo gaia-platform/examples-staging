@@ -114,9 +114,8 @@ int main()
     Io::EventLoopGroup event_loop_group(1);
     if (!event_loop_group)
     {
-        fprintf(
-            stderr,
-            "Event Loop Group Creation failed with error '%s'.\n", ErrorDebugString(event_loop_group.LastError()));
+        gaia_log::app().error(
+            "Event Loop Group Creation failed with error '{}'.\n", ErrorDebugString(event_loop_group.LastError()));
         exit(-1);
     }
 
@@ -125,7 +124,7 @@ int main()
 
     if (!bootstrap)
     {
-        fprintf(stderr, "ClientBootstrap failed with error '%s'.\n", ErrorDebugString(bootstrap.LastError()));
+        gaia_log::app().error("ClientBootstrap failed with error '{}'.\n", ErrorDebugString(bootstrap.LastError()));
         exit(-1);
     }
 
@@ -139,9 +138,7 @@ int main()
 
     if (!client_config)
     {
-        fprintf(
-            stderr,
-            "Client Configuration initialization failed with error '%s'.\n",
+        gaia_log::app().error("Client Configuration initialization failed with error '{}'.\n",
             ErrorDebugString(client_config.LastError()));
         exit(-1);
     }
@@ -150,9 +147,8 @@ int main()
 
     if (!mqtt_client)
     {
-        fprintf(
-            stderr,
-            "MQTT Client Creation failed with error '%s'.\n", ErrorDebugString(mqtt_client.LastError()));
+        gaia_log::app().error(
+            "MQTT Client Creation failed with error '{}'.\n", ErrorDebugString(mqtt_client.LastError()));
         exit(-1);
     }
 
@@ -160,9 +156,8 @@ int main()
 
     if (!g_connection)
     {
-        fprintf(
-            stderr,
-            "MQTT Connection Creation failed with error '%s'.\n", ErrorDebugString(mqtt_client.LastError()));
+        gaia_log::app().error(
+            "MQTT Connection Creation failed with error '{}'.\n", ErrorDebugString(mqtt_client.LastError()));
         exit(-1);
     }
 
@@ -172,19 +167,19 @@ int main()
     auto on_connection_completed = [&connection_completed_promise](Mqtt::MqttConnection&, int error_code, Mqtt::ReturnCode returnCode, bool) {
         if (error_code)
         {
-            fprintf(stderr, "Connection failed with error '%s'.\n", ErrorDebugString(error_code));
+            gaia_log::app().error("Connection failed with error '{}'.\n", ErrorDebugString(error_code));
             connection_completed_promise.set_value(false);
         }
         else
         {
             if (returnCode != AWS_MQTT_CONNECT_ACCEPTED)
             {
-                fprintf(stderr, "Connection failed with MQTT return code '%d'.\n", static_cast<int>(returnCode));
+                gaia_log::app().error("Connection failed with MQTT return code '{}'.\n", static_cast<int>(returnCode));
                 connection_completed_promise.set_value(false);
             }
             else
             {
-                fprintf(stdout, "Connection completed successfully.\n");
+                gaia_log::app().info("Connection completed successfully.\n");
                 gaia::system::initialize();
                 connection_completed_promise.set_value(true);
             }
@@ -192,16 +187,16 @@ int main()
     };
 
     auto on_interrupted = [&](Mqtt::MqttConnection&, int error) {
-        fprintf(stderr, "Connection interrupted with error '%s'.\n", ErrorDebugString(error));
+        gaia_log::app().error("Connection interrupted with error '{}'.\n", ErrorDebugString(error));
     };
 
     auto on_resumed = [&](Mqtt::MqttConnection&, Mqtt::ReturnCode, bool) {
-        fprintf(stdout, "Connection resumed.\n");
+        gaia_log::app().info("Connection resumed.\n");
     };
 
     auto on_disconnect = [&connection_closed_promise](Mqtt::MqttConnection&) {
         {
-            fprintf(stdout, "Disconnect completed.\n");
+            gaia_log::app().info("Disconnect completed.\n");
             gaia::system::shutdown();
             connection_closed_promise.set_value();
         }
@@ -215,7 +210,8 @@ int main()
     fprintf(stdout, "Connecting...\n");
     if (!g_connection->Connect(client_id.c_str(), false, 1000))
     {
-        fprintf(stderr, "MQTT Connection failed with error '%s'.\n", ErrorDebugString(g_connection->LastError()));
+        gaia_log::app().error(
+            "MQTT Connection failed with error '{}'.\n", ErrorDebugString(g_connection->LastError()));
         exit(-1);
     }
 
@@ -226,21 +222,20 @@ int main()
             [&subscribe_finished_promise](Mqtt::MqttConnection&, uint16_t packet_id, const String& topic, Mqtt::QOS QoS, int errorCode) {
                 if (errorCode)
                 {
-                    fprintf(stderr, "Subscribe failed with error '%s'.\n", aws_error_debug_str(errorCode));
+                    gaia_log::app().error("Subscribe failed with error '{}'.\n", aws_error_debug_str(errorCode));
                     exit(-1);
                 }
                 else
                 {
                     if (!packet_id || QoS == AWS_MQTT_QOS_FAILURE)
                     {
-                        fprintf(stderr, "Subscribe rejected by the broker.");
+                        gaia_log::app().error("Subscribe rejected by the broker.");
                         exit(-1);
                     }
                     else
                     {
-                        fprintf(
-                            stdout,
-                            "Subscribe on topic '%s' on packet ID '%d' succeeded.\n", topic.c_str(), packet_id);
+                        gaia_log::app().info(
+                            "Subscribe on topic '{}' on packet ID '{}' succeeded.\n", topic.c_str(), packet_id);
                     }
                 }
                 subscribe_finished_promise.set_value();
@@ -253,7 +248,7 @@ int main()
         String input;
         while (input != "x")
         {
-            fprintf(stdout, "Press Enter to see database. Enter 'x' to exit this program.\n");
+            gaia_log::app().info("Press Enter to see database. Enter 'x' to exit this program.\n");
             std::getline(std::cin, input);
             if (input != "x")
             {
