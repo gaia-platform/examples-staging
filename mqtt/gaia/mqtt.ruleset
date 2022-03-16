@@ -32,7 +32,7 @@ ruleset mqtt_ruleset
         auto sync_response = sync_request.perform();
 
         // Print the status of the request.
-        gaia_log::app().info("Lift status (sync): {}", lift::to_string(sync_response.lift_status()));
+        gaia_log::app().info("Lift status (sync): '{}'", lift::to_string(sync_response.lift_status()));
 
         // Get the raw body of the response (a JSON string).
         std::string_view raw_data = sync_response.data();
@@ -40,6 +40,8 @@ ruleset mqtt_ruleset
 
         // Parse the body of the data into a JSON object and access one of its attributes.
         json parsed_response = json::parse(raw_data);
-        gaia_log::app().info("Parsed data:\n id: {}\n title: '{}'", parsed_response["id"].get<uint32_t>(), parsed_response["title"].get<std::string>());
+        gaia_log::app().info(
+            "Parsed data:\n id: '{}'\n title: '{}'",
+            parsed_response["id"].get<uint32_t>(), parsed_response["title"].get<std::string>());
     }
 }

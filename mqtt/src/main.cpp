@@ -164,7 +164,7 @@ int main()
     std::promise<bool> connection_completed_promise;
     std::promise<void> connection_closed_promise;
 
-    auto on_connection_completed = [&connection_completed_promise](Mqtt::MqttConnection&, int error_code, Mqtt::ReturnCode returnCode, bool) {
+    auto on_connection_completed = [&connection_completed_promise](Mqtt::MqttConnection&, int error_code, Mqtt::ReturnCode return_code, bool) {
         if (error_code)
         {
             gaia_log::app().error("Connection failed with error '{}'.", ErrorDebugString(error_code));
@@ -172,9 +172,9 @@ int main()
         }
         else
         {
-            if (returnCode != AWS_MQTT_CONNECT_ACCEPTED)
+            if (return_code != AWS_MQTT_CONNECT_ACCEPTED)
             {
-                gaia_log::app().error("Connection failed with MQTT return code '{}'.", static_cast<int>(returnCode));
+                gaia_log::app().error("Connection failed with MQTT return code '{}'.", static_cast<int>(return_code));
                 connection_completed_promise.set_value(false);
             }
             else
@@ -219,15 +219,15 @@ int main()
     {
         std::promise<void> subscribe_finished_promise;
         auto on_sub_ack =
-            [&subscribe_finished_promise](Mqtt::MqttConnection&, uint16_t packet_id, const String& topic, Mqtt::QOS QoS, int errorCode) {
-                if (errorCode)
+            [&subscribe_finished_promise](Mqtt::MqttConnection&, uint16_t packet_id, const String& topic, Mqtt::QOS qos, int error_code) {
+                if (error_code)
                 {
-                    gaia_log::app().error("Subscribe failed with error '{}'.", aws_error_debug_str(errorCode));
+                    gaia_log::app().error("Subscribe failed with error '{}'.", aws_error_debug_str(error_code));
                     exit(-1);
                 }
                 else
                 {
-                    if (!packet_id || QoS == AWS_MQTT_QOS_FAILURE)
+                    if (!packet_id || qos == AWS_MQTT_QOS_FAILURE)
                     {
                         gaia_log::app().error("Subscribe rejected by the broker.");
                         exit(-1);

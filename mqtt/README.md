@@ -57,8 +57,8 @@ You can publish to the topic `my_thing_name/`. This will trigger a Gaia rule whi
 ## Connect to a REST service
 
 We use the following two libraries to connect to a REST service and parse the result:
-- [liblifthttp](https://github.com/jbaldwin/liblifthttp): is a C++17 HTTP client library that provides an easy-to-use API for both synchronous and asynchronous requests. It is built upon the super heavyweight champions libcurl and libuv libraries. 
-- [nlohmann-json](https://github.com/nlohmann/json): header only library that allows manipulating JSON objects.
+- [liblifthttp](https://github.com/jbaldwin/liblifthttp): is a C++ 17 HTTP client library that provides an easy-to-use API for both synchronous and asynchronous requests. It is built upon the super heavyweight champions libcurl and libuv libraries. 
+- [nlohmann-json](https://github.com/nlohmann/json): header-only library that allows manipulating JSON objects.
 
 Both these libraries are automatically downloaded and added to the project from the CMake file.
 
