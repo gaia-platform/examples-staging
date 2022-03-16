@@ -37,9 +37,6 @@ add_executable(pick_and_place
 
 target_add_gaia_generated_sources(pick_and_place)
 
-target_include_directories(pick_and_place
-  PRIVATE
-    ${GAIA_INC}
-)
+target_include_directories(pick_and_place PRIVATE ${GAIA_INC})
 target_link_directories(pick_and_place PRIVATE ${GAIA_LIB})
 target_link_libraries(pick_and_place PRIVATE ${GAIA_LIB} Threads::Threads)
