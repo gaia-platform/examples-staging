@@ -30,8 +30,6 @@ namespace slam_sim
 
 constexpr uint32_t c_rule_wait_millis = 100;
 
-int32_t g_quit = 0;
-
 /**
  * Wait an arbitrary amount of time for rule execution to terminate.
  * Rules are triggered after commit and can take some time to fully execute.
@@ -114,10 +112,10 @@ void init_sim()
 {
     // Seed database and then create first path.
     // Seeding function manages its own transaction.
-    gaia_log::app().info("Seeding the database");
+    gaia_log::app().info("Seeding the database...");
     seed_database();
 
-    gaia_log::app().info("Creating initial path");
+    gaia_log::app().info("Creating initial path...");
     gaia::db::begin_transaction();
     create_new_path();
     gaia::db::commit_transaction();
@@ -138,7 +136,7 @@ int main(int argc, char** argv)
     slam_sim::clear_data();
     gaia::db::commit_transaction();
 
-    gaia_log::app().info("=== Creates a new Graph and observe the corresponding rules triggered ===");
+    gaia_log::app().info("Starting SLAM simulation...");
 
     slam_sim::init_sim();
     slam_sim::wait_for_rules();

@@ -5,11 +5,14 @@
 // license that can be found in the LICENSE.txt file
 // or at https://opensource.org/licenses/MIT.
 ////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////
 //
-// Landmarks are uniqely identifiable locations in the environment. 
+// Landmarks are uniqely identifiable locations in the environment.
 // The description stores their position and an identifier.
 //
 ////////////////////////////////////////////////////////////////////////
+
 #include "landmark_description.hpp"
 
 namespace utils
@@ -33,4 +36,3 @@ landmark_description_t::landmark_description_t(std::string name, int32_t id,
 }
 
 } // namespace utils
-

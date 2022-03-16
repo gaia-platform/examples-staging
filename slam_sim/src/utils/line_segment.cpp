@@ -5,13 +5,15 @@
 // license that can be found in the LICENSE.txt file
 // or at https://opensource.org/licenses/MIT.
 ////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////
 //
 // The simulator relies on "ray tracing" in a 2D world, with walls
 //  being represented as line segments. If a radial from the bot
 //  intersects a line segment (wall) then the intersection of that
 //  radial with the wall determines the range of an object on that
 //  radial. The nearest line segment on each radial is selected which
-//  will correspond to the nearest wall. 
+//  will correspond to the nearest wall.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -24,6 +26,7 @@ using namespace std;
 
 namespace utils
 {
+
 
 line_segment_t::line_segment_t(double x0, double y0, double x1, double y1)
 {
@@ -95,7 +98,8 @@ double line_segment_t::intersect_range(double x, double y, double theta_deg)
     double denom = x1_x2*y3_y4 - y1_y2*x3_x4;
     double dist = -1.0;
     // Before computing px,py, make sure denominator is non-zero.
-    if (fabs(denom) > 1.0e-6) {
+    if (fabs(denom) > 1.0e-6)
+    {
         double px = (xy12 * x3_x4 - xy34 * x1_x2) / denom;
         double py = (xy12 * y3_y4 - xy34 * y1_y2) / denom;
 //printf("  intersect point %.4f,%.4f\n", px, py);
@@ -104,9 +108,12 @@ double line_segment_t::intersect_range(double x, double y, double theta_deg)
         //  expanded, meet at this point.
         double inter_theta = unwrap_compass(R2D * atan2(px-x3, py-y3));
         double delta_degs = inter_theta - theta;
-        if (delta_degs < -180) {
+        if (delta_degs < -180)
+        {
             delta_degs += 360.0;
-        } else if (delta_degs > 1800) {
+        }
+        else if (delta_degs > 1800)
+        {
             delta_degs -= 360.0;
         }
 //printf("    measured theta: %.1f   delta: %.1f\n", inter_theta, delta_degs);
@@ -127,55 +134,3 @@ double line_segment_t::intersect_range(double x, double y, double theta_deg)
 
 
 } // namespace utils
-
-#if defined(TEST_LINE_SEGMENT)
-
-using utils::line_segment_t;
-
-uint32_t check_distance(double len, double expected)
-{
-    if (fabs(len - expected) > 0.001) {
-        fprintf(stderr, "Distance out of range. Got %.3f, expected %.3f\n",
-            len, expected);
-        return 1;
-    }
-    return 0;
-}
-
-int main()
-{
-    uint32_t errs = 0;
-    // horizontal line at y=-10 (i.e., 10 units above the origin)
-    line_segment_t a(-10.0, -10.0, 10.0, -10.0);
-    errs += check_distance(a.intersect_range(0.0, 0.0, 0.0), 10.0);
-    errs += check_distance(a.intersect_range(0.0, 0.0, 30.0), 11.547);
-    errs += check_distance(a.intersect_range(0.0, 0.0, -30.0), 11.547);
-    errs += check_distance(a.intersect_range(0.0, 0.0, 60.0), -1.0);
-    errs += check_distance(a.intersect_range(0.0, 0.0, 150.0), -1.0);
-    errs += check_distance(a.intersect_range(0.0, 0.0, 270.0), -1.0);
-    // diagonal line crossing from 0,-10 to 10,0 (i.e., 1st quadrant)
-    line_segment_t b(0.0, -10.0, 10.0, 0.0);
-    errs += check_distance(b.intersect_range(0.0, 0.0, 0.1), 9.983);
-    errs += check_distance(b.intersect_range(0.0, 0.0, -0.01), -1.0);
-    errs += check_distance(b.intersect_range(0.0, 0.0, 359.99), -1.0);
-    errs += check_distance(b.intersect_range(0.0, 0.0, 45.0), 7.071);
-    errs += check_distance(b.intersect_range(0.0, 0.0, 225.0), -1.0);
-    // opposite orientation horizontal line at y=10
-    line_segment_t c(10.0, -10.0, -10.0, -10.0);
-    errs += check_distance(c.intersect_range(0.0, 0.0, 0.0), 10.0);
-    errs += check_distance(c.intersect_range(0.0, 0.0, 30.0), 11.547);
-    errs += check_distance(c.intersect_range(0.0, 0.0, -30.0), 11.547);
-    errs += check_distance(c.intersect_range(0.0, 0.0, 60.0), -1.0);
-    errs += check_distance(c.intersect_range(0.0, 0.0, 150.0), -1.0);
-    errs += check_distance(c.intersect_range(0.0, 0.0, 270.0), -1.0);
-    //
-    if (errs > 0) {
-        fprintf(stderr, "********************************\n");
-        fprintf(stderr, "Encountered %d errors\n", errs);
-    } else {
-        fprintf(stderr, "All tests pass\n");
-    }
-    return (int32) errs;
-}
-
-#endif // TEST_LINE_SEGMENT
