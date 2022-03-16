@@ -5,8 +5,8 @@ A Gaia application to demonstrate communicating via MQTT.
 ## Prerequisites
 You'll need to:
 
-* Install Gaia
-* Install [aws-iot-device-sdk-cpp](https://github.com/aws/aws-iot-device-sdk-cpp-v2)
+* Install Gaia.
+* Install [aws-iot-device-sdk-cpp](https://github.com/aws/aws-iot-device-sdk-cpp-v2).
 
 ### Installing Gaia
 Follow instructions [here](https://gaia-platform.github.io/gaia-platform-docs.io/articles/getting-started-with-gaia.html) to install Gaia.
@@ -32,7 +32,7 @@ sudo make install
 * Leave the Amazon root certificate name unchanged, namely: `AmazonRootCA1.pem`
 
 ## Build MQTT example
-Create build directory within `mqtt` example directory, run `cmake` and then make.
+Follow these steps:
 ```bash
 cd {mqtt_example_root_directory}
 mkdir build
