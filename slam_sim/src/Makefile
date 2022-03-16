@@ -16,32 +16,3 @@ drun: refresh_db
 refresh_db:
 	gaiac ../gaia/slam.ddl --db-name slam -g -o /tmp/slam
 
-
-########################################################################
-# From original content. Keep this around until building the test
-#   code is migrated to cmake.
-
-include ../Makefile.inc
-
-
-TEST_TARGETS = test_analyze 
-
-
-LIBS = /usr/local/lib/libgaia.so -lcurl -pthread
-
-
-test: $(TEST_TARGETS)
-
-
-test_analyze: analyze.cpp 
-	$(CXX) $(CPPFLAGS) utils/*.cpp analyze.cpp -o test_analyze -DTEST_ANALYZE $(LIBS)
-
-
-%.o: %.cpp 
-	$(CXX) $(INC) -c $(CPPFLAGS) $< 
-
-refresh: clean test
-
-clean:
-	rm -f *.o $(TEST_TARGETS)
-

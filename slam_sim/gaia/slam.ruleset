@@ -110,6 +110,8 @@ ruleset observation_ruleset
         //  record will trigger a rebuilding of the local maps, which will
         //  in turn have Alice move toward the destination.
 
+gaia_log::app().info("on_insert(observation);");
+gaia_log::app().info("  state={}", o.path->paths.state);
         for (/pending_destination) {
             // If there's a new destination request pending, set that as the
             //  destination.

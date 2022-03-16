@@ -5,14 +5,16 @@
 // license that can be found in the LICENSE.txt file
 // or at https://opensource.org/licenses/MIT.
 ////////////////////////////////////////////////////////////////////////
-// 
+
+////////////////////////////////////////////////////////////////////////
+//
 // Primary API for rules relating to navigation and error estimation.
 //
 // Maps are meant to provide a means for Alice to determine areas to
 //  explore, for navigating between locations, and for avoiding
 //  obstacles.
 //
-// Maps are generated from the output of the SLAM algorithm, using 
+// Maps are generated from the output of the SLAM algorithm, using
 //  observation data corrected for estimated errors.
 //
 ////////////////////////////////////////////////////////////////////////
@@ -49,10 +51,11 @@ gaia_log::app().info("Error calc start at {},{}", head.pos_x_meters(), head.pos_
     {
         // TODO do something to estimate error
         // For now, just iterate through the observations in the path.
-        gaia_log::app().info("Error obs {} at {},{}", next.id(), 
+        gaia_log::app().info("Error obs {} at {},{}", next.id(),
             next.pos_x_meters(), next.pos_y_meters());
 
-        if (!next.forward_edge()) {
+        if (!next.forward_edge())
+        {
             break;
         }
         next = next.forward_edge().next();
@@ -64,6 +67,9 @@ gaia_log::app().info("Error calc start at {},{}", head.pos_x_meters(), head.pos_
         error_correction_writer writer = ec.writer();
         writer.correction_weight = ec.correction_weight() + 1.0;
         writer.update_row();
+
+        // This isn't necessary as there's only one record, but it does
+        //  help keep the code more clear.
         break;
     }
 }
@@ -92,6 +98,7 @@ void build_area_map(area_map_t& am)
     writer.change_counter = am.change_counter() + 1;
     writer.update_row();
 }
+
 
 void build_local_map(local_map_t& lm)
 {

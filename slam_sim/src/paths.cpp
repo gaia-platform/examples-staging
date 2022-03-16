@@ -5,10 +5,13 @@
 // license that can be found in the LICENSE.txt file
 // or at https://opensource.org/licenses/MIT.
 ////////////////////////////////////////////////////////////////////////
-// 
-// Primary API for rules relating to path generation.
-// 
+
 ////////////////////////////////////////////////////////////////////////
+//
+// Primary API for rules relating to path generation.
+//
+////////////////////////////////////////////////////////////////////////
+
 #include <assert.h>
 #include <math.h>
 
@@ -361,6 +364,25 @@ void create_observation(paths_t& path)
         );
     }
 
+    // Create landmark sighted records.
+    for (landmark_description_t& ld: data.landmarks_visible)
+    {
+        double dx = ld.x_meters - pos_x_meters;
+        double dy = ld.y_meters - pos_y_meters;
+        double range = sqrt(dx*dx + dy*dy);
+        double bearing = utils::R2D * atan2(dx, dy);
+        if (bearing < 0.0)
+        {
+            bearing += 360.0;
+        }
+        landmark_sightings_t::insert_row(
+            range,            // range_meters
+            bearing,          // bearing_degs
+            obs_num,          // observaation_id
+            ld.id             // landmark_id
+        );
+    }
+
     // Connect observation to path and to previous observation, if present.
     paths_writer p_writer = path.writer();
     if (number_of_observations == 0)
@@ -381,7 +403,7 @@ void create_observation(paths_t& path)
         new_obs.reverse_edge().connect(edge_id);
         if (number_of_observations == 1)
         {
-            // Second observation so this is the first edge. Get 
+            // Second observation so this is the first edge. Get
             //  connection info directly from
             observations_t prev_obs = path.first_observation();
             prev_obs.forward_edge().connect(edge_id);
@@ -492,4 +514,3 @@ void seed_database(double initial_x_meters, double initial_y_meters)
 }
 
 } // namespace slam_sim
-
