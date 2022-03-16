@@ -1,6 +1,6 @@
 
 all:
-	mkdir -p ../build && cd ../build/ && cmake .. && make
+	mkdir -p ../build && cd ../build/ && cmake .. && make -j 4
 
 run: refresh_db
 	../build/slam_sim -m ../data/map.json -x 4.0 -y 0.6

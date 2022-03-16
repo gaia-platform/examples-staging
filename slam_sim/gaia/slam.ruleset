@@ -146,7 +146,7 @@ gaia_log::app().info("  state={}", o.path->paths.state);
             // Defer check for expected arrival until we have a [new]
             //  destination.
             if ((o.path->paths.num_observations > 1) &&
-                (o.path->paths.num_observations > expected_arrival))
+                (o.path->paths.num_observations > (uint32_t) expected_arrival))
             {
                 gaia_log::app().info("Observation made beyond expected "
                     "arrival time at destination. Returning to landmark");

@@ -318,10 +318,10 @@ void create_observation(paths_t& path)
 
     // Create an observation record, storing sensor data.
     // Make a copy of the number of observations.
-    int32_t number_of_observations = path.num_observations();
+    uint32_t number_of_observations = path.num_observations();
     // This is the ID of the new observation. Call it 'num' here so to not
     //  get confused with gaia IDs.
-    int32_t obs_num = next_observation_id++;
+    uint32_t obs_num = next_observation_id++;
     if (path.num_observations() == 0)
     {
         // For first observation, don't store position delta.

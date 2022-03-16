@@ -31,17 +31,16 @@ namespace slam_sim
 
 constexpr uint32_t c_rule_wait_millis = 100;
 
-int32_t g_quit = 0;
-
 static float g_initial_x_meters = -1.0;
 static float g_initial_y_meters = -1.0;
 
 /**
- * Wait an arbitrary amount of time for rule execution to terminate.
- * Rules are triggered after commit and can take some time to fully execute.
+ * Wait for simulation to complete.
  */
-void wait_for_rules()
+void main_loop()
 {
+    // When the simulation completes it will set g_quit to 1. Then we can
+    //  exit. In the meantime, the simulation is being handled by rules.
     while (g_quit == 0)
     {
         sleep_for(std::chrono::milliseconds(c_rule_wait_millis));
@@ -174,7 +173,7 @@ int main(int argc, char** argv)
     gaia_log::app().info("Starting SLAM simulation...");
 
     slam_sim::init_sim();
-    slam_sim::wait_for_rules();
+    slam_sim::main_loop();
 
     gaia::system::shutdown();
 }

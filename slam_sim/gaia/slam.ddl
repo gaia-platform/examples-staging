@@ -196,9 +196,9 @@ table paths
   state int32,
 
   -- Observations that are part of this path.
-  num_observations int32,
-  start_obs_id int32,
-  latest_obs_id int32,
+  num_observations uint32,
+  start_obs_id uint32,
+  latest_obs_id uint32,
   first_observation references observations
     where paths.start_obs_id = observations.id,
   latest_observation references observations
@@ -303,12 +303,12 @@ table landmark_sightings
   bearing_degs float,
 
   -- Observation corresponding to this sighting.
-  observation_id int32,
+  observation_id uint32,
   observation references observations
     where landmark_sightings.observation_id = observations.id,
 
   -- Landmark that was sighted.
-  landmark_id int32,
+  landmark_id uint32,
   landmark references landmarks
     where landmark_sightings.landmark_id = landmarks.landmark_id
 )
