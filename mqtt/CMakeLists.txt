@@ -59,7 +59,6 @@ process_schema(
 # -- Translate ruleset into CPP --
 translate_ruleset(
   RULESET_FILE ${MQTT_RULESET}
-  DATABASE_NAME mqtt
   CLANG_PARAMS
     -I ${lifthttp_SOURCE_DIR}/inc
     -I ${json_SOURCE_DIR}/include
