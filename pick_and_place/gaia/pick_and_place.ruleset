@@ -1,0 +1,42 @@
+////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////
+
+#include "gaia/logger.hpp"
+
+ruleset pick_and_place_ruleset
+{
+    {
+        if (@pick && !@place)
+        {
+            gaia_log::app().info("Trigger pick.");
+            pick_action.insert();
+        }
+    }
+
+    on_insert(pick_action)
+    {
+        gaia_log::app().info("Picking...");
+        /state.pick = false;
+        gaia_log::app().info("Pick completed. Trigger move.");
+        move_action.insert();
+    }
+
+    on_insert(move_action)
+    {
+        gaia_log::app().info("Moving...");
+        /state.place = true;
+        gaia_log::app().info("Move complete.");
+    }
+
+    {
+        if (!@pick && @place)
+        {
+            gaia_log::app().info("Ready for next pick.");
+        }
+    }
+}
