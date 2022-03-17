@@ -7,7 +7,6 @@
 ////////////////////////////////////////////////////
 
 #include "gaia/logger.hpp"
-#include "gaia_pick_and_place.h"
 
 ruleset pick_and_place_ruleset
 {
@@ -22,10 +21,7 @@ ruleset pick_and_place_ruleset
     on_insert(pick_action)
     {
         gaia_log::app().info("Picking...");
-        for (/state)
-        {
-            pick = false;
-        }
+        /state.pick = false;
         gaia_log::app().info("Pick completed. Trigger move.");
         move_action.insert();
     }
@@ -33,10 +29,7 @@ ruleset pick_and_place_ruleset
     on_insert(move_action)
     {
         gaia_log::app().info("Moving...");
-        for (/state)
-        {
-            place = true;
-        }
+        /state.place = true;
         gaia_log::app().info("Move complete.");
     }
 

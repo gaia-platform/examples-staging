@@ -49,7 +49,7 @@ int main()
     state_t state = state_t::get(state_t::insert_row(true, true));
     gaia::db::commit_transaction();
 
-    // Update the state to [pick && ~place] should trigger a rule.
+    // Update the state to [pick && ~place] which should trigger a rule.
     gaia::db::begin_transaction();
     state_writer state_w = state.writer();
     state_w.pick = true;
