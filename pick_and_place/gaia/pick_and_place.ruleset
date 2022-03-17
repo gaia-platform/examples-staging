@@ -14,23 +14,37 @@ ruleset pick_and_place_ruleset
         if (@pick && !@place)
         {
             gaia_log::app().info("Trigger pick.");
-            pick_action.insert();
+            pick_action.insert(done: false);
         }
     }
 
     on_insert(pick_action)
     {
         gaia_log::app().info("Picking...");
-        /state.pick = false;
-        gaia_log::app().info("Pick completed. Trigger move.");
-        move_action.insert();
+        done = true;
+    }
+
+    {
+        if (@pick_action.done)
+        {
+            gaia_log::app().info("Pick completed. Trigger move.");
+            /state.pick = false;
+            move_action.insert(done: false);
+        }
     }
 
     on_insert(move_action)
     {
         gaia_log::app().info("Moving...");
-        /state.place = true;
-        gaia_log::app().info("Move complete.");
+        done = true;
+    }
+
+    {
+        if (@move_action.done)
+        {
+            gaia_log::app().info("Move complete.");
+            /state.place = true;
+        }
     }
 
     {

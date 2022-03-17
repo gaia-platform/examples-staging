@@ -13,6 +13,10 @@ table state (
     place bool
 )
 
-table pick_action ()
+table pick_action (
+    done bool
+)
 
-table move_action ()
+table move_action (
+    done bool
+)
