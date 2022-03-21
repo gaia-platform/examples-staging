@@ -466,7 +466,6 @@ void seed_database(double initial_x_meters, double initial_y_meters)
     ////////////////////////////////////////////
     // Maps
     gaia_id_t area_map_id = area_map_t::insert_row(
-        0,        // blob_id
         0.0,      // left_meters
         0.0,      // right_meters
         0.0,      // top_meters
@@ -474,7 +473,6 @@ void seed_database(double initial_x_meters, double initial_y_meters)
         0         // change_counter
     );
     gaia_id_t local_map_id = local_map_t::insert_row(
-        0,        // blob_id
         0.0,      // left_meters
         0.0,      // right_meters
         0.0,      // top_meters
@@ -482,7 +480,6 @@ void seed_database(double initial_x_meters, double initial_y_meters)
         0         // change_counter
     );
     gaia_id_t working_map_id = working_map_t::insert_row(
-        0,        // blob_id
         0         // change_counter
     );
 

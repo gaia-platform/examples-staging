@@ -8,11 +8,14 @@
 #pragma once
 
 /***********************************************************************
+
 The occupancy grid here is a 2D map that's built form the output from
 a SLAM algorithm. It represents the obstacles observed from a bot's
 sensors and is used for the bot to navigate from one location to another
 using a pathfinding algorithm, a modified dijkstra pathfinding algorithm
 that incorporates additional features to better support exploration.
+
+As elsewhere in the code, positive coordinates are to the up and right.
 
 ***********************************************************************/
 #include <stdint.h>
@@ -27,7 +30,7 @@ namespace slam_sim
 
 // Characteristics of a node in the map, including distance from this node
 //  to a/the destination.
-// Occupancy: how many times the node has been travelled through.
+// Occupied: how many times the node has been travelled through.
 // Observed: how many times the node has been seen.
 // Boundary: how many times the node had an obstruction detection in it.
 // Landmark: how many times the node had landmark reported in it.
@@ -39,11 +42,10 @@ struct map_node_t
     //  X-parents removed (e.g., 5)
     float direction_degs;
 
-    
-    uint32_t occupied;
-    uint32_t observed;
-    uint32_t boundary;
-    uint32_t landmarks;
+    float occupied;
+    float observed;
+    float boundary;
+    float landmarks;
 
     // Cost to traverse this node. This is computed as a function of the
     //  node's characteristics.
@@ -93,6 +95,8 @@ struct world_coordinate_t
 class occupancy_grid_t
 {
 public:
+    // Map center starts at 0,0 so map bounds are at +/- width/2 and 
+    //  +/- height/2.
     occupancy_grid_t(float node_width_meters, float width_meters, 
         float height_meters);
     ~occupancy_grid_t();
@@ -115,6 +119,8 @@ public:
     void apply_sensor_data(utils::sensor_data_t& data, float pos_x_meters,
         float pos_y_meters);
 
+    void export_as_pnm(std::string file_name);
+
 protected:
     uint32_t get_node_index(float pos_x_meters, float pos_y_meters);
     void apply_landmarks(
@@ -126,6 +132,9 @@ protected:
 
     float m_node_size_meters;
     grid_size_t m_size;
+    // Positive coordiantes are rightward and upward.
+    world_coordinate_t m_top_left;
+    world_coordinate_t m_bottom_right;
 
     std::vector<map_node_t> m_grid;
     std::vector<map_node_flags_t> m_grid_flags;
@@ -156,8 +165,6 @@ protected:
 //// Build distances to destination(s) and directional vectors.
 //void compile_map(occupancy_grid_t& map);
 //
-//// Saves an image of the map as a .pnm file.
-//void export_as_pnm(const occupancy_grid_t& map, string file_name);
 
 } // namespace slam_sim
 

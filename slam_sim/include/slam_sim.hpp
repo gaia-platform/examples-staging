@@ -23,6 +23,7 @@
 #pragma once
 
 #include "gaia_slam.h"
+#include "occupancy.hpp"
 #include "sensor_data.hpp"
 
 namespace slam_sim
@@ -32,6 +33,17 @@ namespace slam_sim
 //  to quit it's set to 1.
 extern int32_t g_quit;
 constexpr int32_t EXIT_AFTER_X_PATHS = 3;
+
+// Low-res map Alice has created of the surroundings.
+extern occupancy_grid_t* g_area_map;
+
+constexpr float AREA_MAP_NODE_WIDTH_METERS = 0.25;
+constexpr float LOCAL_MAP_NODE_WIDTH_METERS = AREA_MAP_NODE_WIDTH_METERS / 4.0;
+
+// If world is AxB, have default size be (A+2)x(B+2)
+constexpr float DEFAULT_AREA_MAP_WIDTH_METERS = 16.0;
+constexpr float DEFAULT_AREA_MAP_HEIGHT_METERS = 12.0;
+
 
 // Flags to indicate state of Alice's movement. This information is
 //  stored in the present path.

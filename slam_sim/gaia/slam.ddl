@@ -61,8 +61,6 @@ table ego
 --  manage concurrent access manually.
 table area_map
 (
-  blob_id uint32,
-
   -- Bounding polygon
   -- Uses world coordinates, with increasing X,Y being rightward/upward.
   left_meters float,
@@ -82,8 +80,6 @@ table area_map
 
 table local_map
 (
-  blob_id uint32,
-
   -- Bounding polygon
   -- Uses world coordinates, with increasing X,Y being rightward/upward
   left_meters float,
@@ -104,8 +100,6 @@ table local_map
 
 table working_map
 (
-  blob_id uint32,
-
   -- An on_change rule needs a field to change to fire the rule. Use this
   --  field to guarantee that a change is made so the rule is fired. Note
   --  that a record being "touched" is not sufficient to trigger a change

@@ -8,13 +8,19 @@
 #include <assert.h>
 #include <math.h>
 
-#include "occupancy.hpp"
+#include <fstream>
+#include <iostream>
+
 #include "line_segment.hpp"
+#include "occupancy.hpp"
+#include "slam_sim.hpp"
 
 namespace slam_sim
 {
 
 using std::vector;
+using std::string;
+using std::cerr;
 
 using utils::sensor_data_t;
 using utils::landmark_description_t;
@@ -63,11 +69,14 @@ occupancy_grid_t::occupancy_grid_t(float node_width_meters, float width_meters,
     m_node_size_meters = node_width_meters;
     m_size.rows = (uint32_t) ceil(height_meters / node_width_meters);
     m_size.cols = (uint32_t) ceil(width_meters / node_width_meters);
+    m_top_left.x_meters = -width_meters / 2.0;
+    m_bottom_right.x_meters = width_meters / 2.0;
+    m_top_left.y_meters = -height_meters / 2.0;
+    m_bottom_right.y_meters = height_meters / 2.0;
     //
     uint32_t num_nodes = m_size.rows * m_size.cols;
     m_grid.resize(num_nodes);
     m_grid_flags.resize(num_nodes);
-
     clear();
 }
 
@@ -232,7 +241,57 @@ void occupancy_grid_t::apply_sensor_data(sensor_data_t& data,
 
 // Applying sensor data to the map grids
 ////////////////////////////////////////////////////////////////////////
-// Computer path weights
+// Compute path weights
+
+////////////////////////////////////////////////////////////////////////
+// Export map
+
+void occupancy_grid_t::export_as_pnm(string file_name)
+{
+    uint32_t n_pix = m_size.cols * m_size.rows;
+    uint8_t* r = new uint8_t[n_pix];
+    uint8_t* g = new uint8_t[n_pix];
+    uint8_t* b = new uint8_t[n_pix];
+    // Create image.
+    for (uint32_t y=0; y<n_pix; y++)
+    {
+        for (uint32_t x=0; x<n_pix; x++)
+        {
+            uint32_t idx = x + y * m_size.cols;
+            map_node_t& node = m_grid[idx];
+            if (node.observed > 0.0)
+            {
+                float boundary = node.boundary / node.observed;
+                assert(boundary <= 1.0);
+                r[idx] = (uint8_t) round(255.0 * boundary);
+                float landmarks = node.landmarks / node.observed;
+                assert(landmarks <= 1.0);
+                b[idx] = (uint8_t) round(255.0 * landmarks);
+            }
+            g[idx] = node.occupied > 0.0 ? 128 : 0;
+        }
+    }
+
+
+    // Export image.
+    try 
+    {
+          std::ofstream f(file_name, std::ofstream::binary);
+        f << "P6\n" << m_size.cols << " " << m_size.rows << "\n";
+        for (uint32_t i=0; i<n_pix; i++)
+        {
+            f << r[i] << g[i] << b[i];
+        }
+
+    }
+    catch (const std::exception& ioe)
+    {
+        cerr << "Error writing to " << file_name << ": " << ioe.what() << "\n";
+    }
+    delete[] r;
+    delete[] g;
+    delete[] b;
+}
 
 
 } // namespace slam_sim

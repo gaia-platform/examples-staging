@@ -26,6 +26,8 @@
 namespace slam_sim
 {
 
+using std::string;
+
 using gaia::slam::paths_t;
 using gaia::slam::observations_t;
 using gaia::slam::edges_t;
@@ -74,6 +76,16 @@ gaia_log::app().info("Error calc start at {},{}", head.pos_x_meters(), head.pos_
     }
 }
 
+
+void export_area_map()
+{
+    static int32_t ctr = 0;
+    string fname("map_" + std::to_string(ctr));
+    g_area_map->export_as_pnm(fname);
+    ctr++;
+}
+
+
 void build_area_map(area_map_t& am)
 {
     for (paths_t& p: paths_t::list())
@@ -97,6 +109,8 @@ void build_area_map(area_map_t& am)
     area_map_writer writer = am.writer();
     writer.change_counter = am.change_counter() + 1;
     writer.update_row();
+
+    export_area_map();
 }
 
 

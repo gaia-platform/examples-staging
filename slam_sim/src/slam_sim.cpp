@@ -149,6 +149,10 @@ void init_sim()
     gaia_log::app().info("Seeding the database...");
     seed_database(g_initial_x_meters, g_initial_y_meters);
 
+    // Create map(s).
+    g_area_map = new occupancy_grid_t(AREA_MAP_NODE_WIDTH_METERS,
+        DEFAULT_AREA_MAP_WIDTH_METERS, DEFAULT_AREA_MAP_HEIGHT_METERS);
+
     gaia_log::app().info("Creating initial path...");
     gaia::db::begin_transaction();
     create_new_path();
