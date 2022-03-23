@@ -70,14 +70,16 @@ occupancy_grid_t::occupancy_grid_t(float node_width_meters, float width_meters,
     float height_meters)
 {
     m_node_size_meters = node_width_meters;
-    m_size.rows = (uint32_t) ceil(height_meters / node_width_meters);
-    m_size.cols = (uint32_t) ceil(width_meters / node_width_meters);
+    m_grid_size.rows = (uint32_t) ceil(height_meters / node_width_meters);
+    m_grid_size.cols = (uint32_t) ceil(width_meters / node_width_meters);
+    m_map_size.x_meters = width_meters;
+    m_map_size.y_meters = height_meters;
     m_top_left.x_meters = -width_meters / 2.0;
     m_bottom_right.x_meters = width_meters / 2.0;
     m_top_left.y_meters = -height_meters / 2.0;
     m_bottom_right.y_meters = height_meters / 2.0;
     //
-    uint32_t num_nodes = m_size.rows * m_size.cols;
+    uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
     m_grid.resize(num_nodes);
     m_grid_flags.resize(num_nodes);
     clear();
@@ -113,13 +115,10 @@ void map_node_flags_t::clear()
 
 void occupancy_grid_t::clear()
 {
-printf("Clearing %d grid squares\n", (int32_t) m_grid.size());
-printf("Clearing %d grid squares\n", (int32_t) m_grid_flags.size());
     for (uint32_t i=0; i<m_grid.size(); i++)
     {
         m_grid[i].clear();
     }
-
     for (uint32_t i=0; i<m_grid_flags.size(); i++)
     {
         m_grid_flags[i].clear();
@@ -131,19 +130,23 @@ printf("Clearing %d grid squares\n", (int32_t) m_grid_flags.size());
 // Node access
 
 
+// Returns index of map node at specified location. Location uses 
 uint32_t occupancy_grid_t::get_node_index(float x_meters, float y_meters)
 {
-    uint32_t x_idx = (uint32_t) floor(m_size.cols / x_meters);
-    if (x_idx >= m_size.cols)
+    float left_inset_meters = x_meters - m_top_left.x_meters;
+    uint32_t x_idx = (uint32_t) floor(left_inset_meters / m_map_size.x_meters);
+    if (x_idx >= m_grid_size.cols)
     {
-        x_idx = m_size.cols - 1;
+        x_idx = m_grid_size.cols - 1;
     }
-    uint32_t y_idx = (uint32_t) floor(m_size.rows / y_meters);
-    if (y_idx >= m_size.rows)
+    float bottom_inset_meters = y_meters - m_bottom_right.y_meters;
+    uint32_t y_idx = 
+        (uint32_t) floor(bottom_inset_meters / m_map_size.y_meters);
+    if (y_idx >= m_grid_size.rows)
     {
-        y_idx = m_size.rows - 1;
+        y_idx = m_grid_size.rows - 1;
     }
-    return x_idx + y_idx * m_size.cols;
+    return x_idx + y_idx * m_grid_size.cols;
 }
 
 
@@ -165,7 +168,8 @@ map_node_flags_t& occupancy_grid_t::get_node_flags(
 ////////////////////////////////////////////////////////////////////////
 // Applying sensor data to the map grids
 
-// Updates occupancy, oberved and boundary flags.
+// Updates occupancy, oberved and boundary flags in map from 
+//  observations on this radial.
 // Steps through radial and estimates what grid squares it crosses.
 void occupancy_grid_t::apply_radial(uint32_t radial, float range_meters,
     float pos_x_meters, float pos_y_meters)
@@ -187,15 +191,18 @@ void occupancy_grid_t::apply_radial(uint32_t radial, float range_meters,
     double step_size_meters = dist_meters / num_steps;
     for (uint32_t i=1; i<=num_steps; i++)
     {
+        // Get position in world map, adjusting relative range data by
+        //  bot's absolute position.
         float dist = (float) i * step_size_meters;
-        float x_pos = pos_x_meters + dist * sc.s;
-        float y_pos = pos_y_meters + dist * sc.c;
+        float x_pos = dist * sc.s - pos_x_meters;
+        float y_pos = dist * sc.c - pos_y_meters;
         map_node_flags_t& flags = get_node_flags(x_pos, y_pos);
         flags.observed = 1;
         // If this is the end of the radial and a range was detected,
         //  mark the boundary flag.
         if ((i == num_steps) && (range_meters > 0.0))
         {
+printf("  Boundary on %d at %.2f,%.2f (%.2f, %.2f, %.2f)\n", radial, x_pos, y_pos, pos_x_meters, pos_y_meters, dist);
             flags.boundary = 1;
         }
     }
@@ -243,7 +250,7 @@ void occupancy_grid_t::apply_flags()
 void occupancy_grid_t::apply_sensor_data(const observations_t& obs)
 {
     check_sincos_lut(obs.num_radials());
-printf("Applying sensor data\n");
+printf("Applying sensor data at %.2f,%.2f (%d)\n", obs.pos_x_meters(), obs.pos_y_meters(), obs.id());
     float pos_x_meters = obs.pos_x_meters();
     float pos_y_meters = obs.pos_y_meters();
     for (int32_t i=0; i<obs.num_radials(); i++)
@@ -265,16 +272,16 @@ printf("Applying sensor data\n");
 
 void occupancy_grid_t::export_as_pnm(string file_name)
 {
-    uint32_t n_pix = m_size.cols * m_size.rows;
+    uint32_t n_pix = m_grid_size.cols * m_grid_size.rows;
     uint8_t* r = new uint8_t[n_pix];
     uint8_t* g = new uint8_t[n_pix];
     uint8_t* b = new uint8_t[n_pix];
     // Create image.
-    for (uint32_t y=0; y<m_size.rows; y++)
+    for (uint32_t y=0; y<m_grid_size.rows; y++)
     {
-        for (uint32_t x=0; x<m_size.cols; x++)
+        for (uint32_t x=0; x<m_grid_size.cols; x++)
         {
-            uint32_t idx = x + y * m_size.cols;
+            uint32_t idx = x + y * m_grid_size.cols;
             map_node_t& node = m_grid[idx];
             if (node.observed > 0.0)
             {
@@ -294,8 +301,8 @@ void occupancy_grid_t::export_as_pnm(string file_name)
     try 
     {
         std::ofstream f(file_name, std::ofstream::binary);
-        f << "P6\n# Slam map\n" << m_size.cols << " " 
-            << m_size.rows << "\n255\n";
+        f << "P6\n# Slam map\n" << m_grid_size.cols << " " 
+            << m_grid_size.rows << "\n255\n";
         for (uint32_t i=0; i<n_pix; i++)
         {
             f << r[i] << g[i] << b[i];

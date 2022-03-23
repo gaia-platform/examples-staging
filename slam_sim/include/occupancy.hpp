@@ -94,6 +94,13 @@ struct world_coordinate_t
 };
 
 
+struct map_size_t
+{
+    float x_meters;
+    float y_meters;
+};
+
+
 class occupancy_grid_t
 {
 public:
@@ -130,7 +137,9 @@ protected:
     void apply_flags();
 
     float m_node_size_meters;
-    grid_size_t m_size;
+    grid_size_t m_grid_size;
+
+    map_size_t m_map_size;
     // Positive coordiantes are rightward and upward.
     world_coordinate_t m_top_left;
     world_coordinate_t m_bottom_right;

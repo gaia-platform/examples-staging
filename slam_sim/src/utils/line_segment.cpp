@@ -108,11 +108,11 @@ double line_segment_t::intersect_range(double x, double y, double theta_deg)
         //  expanded, meet at this point.
         double inter_theta = unwrap_compass(R2D * atan2(px-x3, py-y3));
         double delta_degs = inter_theta - theta;
-        if (delta_degs < -180)
+        if (delta_degs < -180.0)
         {
             delta_degs += 360.0;
         }
-        else if (delta_degs > 1800)
+        else if (delta_degs > 180.0)
         {
             delta_degs -= 360.0;
         }

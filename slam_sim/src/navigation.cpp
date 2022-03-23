@@ -86,6 +86,11 @@ void export_area_map()
     gaia_log::app().info("Building map {}", fname);
     g_area_map->export_as_pnm(fname);
     ctr++;
+
+if (ctr > 10) {
+  exit(0);
+}
+
 }
 
 
@@ -94,11 +99,11 @@ void build_area_map(area_map_t& am)
     g_area_map->clear();
     for (paths_t& p: paths_t::list())
     {
-printf(" path\n");
+//printf(" path\n");
         observations_t obs = p.first_observation();
         while (obs)
         {
-printf("   obs\n");
+//printf("   obs\n");
             // TODO do something with observation data.
             gaia_log::app().info("Pulling sensor data from {}:{}", 
                 p.id(), obs.id());
@@ -109,7 +114,7 @@ printf("   obs\n");
             obs = obs.forward_edge().next();
         }
     }
-printf("Rebuild map\n");
+//printf("Rebuild map\n");
 
     // TODO rebuild the area map
     // In the meantime, just 'touch' the record by updating the

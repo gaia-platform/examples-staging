@@ -68,8 +68,8 @@ using utils::landmark_description_t;
 //  transaction
 
 // Dev code. Hardcode destinations during development.
-constexpr double X_DEST_OFFSET_METERS = 1.5;
-constexpr double Y_DEST_OFFSET_METERS = 2.5;
+constexpr double X_DEST_OFFSET_METERS = 8.0;
+constexpr double Y_DEST_OFFSET_METERS = -8.8;
 
 
 void select_destination()
@@ -388,13 +388,14 @@ void create_observation(paths_t& path)
     }
     double heading_degs = utils::R2D * atan2(pos_x_meters, pos_y_meters);
     double range_meters = sqrt(dx_meters*dx_meters + dy_meters*dy_meters);
-    gaia_log::app().info("Performing observation at {},{}", 
-        pos_x_meters, pos_y_meters);
+    gaia_log::app().info("Performing observation {} at {},{}", 
+        next_observation_id, pos_x_meters, pos_y_meters);
     sensor_data_t data;
 //    double x_offset_meters, y_offset_meters;
 //    load_position_offset(x_offset_meters, y_offset_meters);
 //    gaia_log::app().info("Position offset at {},{}", 
 //        x_offset_meters, y_offset_meters);
+printf("SENSOR sweep for obs %d\n", next_observation_id);
     perform_sensor_sweep(actual_x_meters, actual_y_meters, data);
 
     // Create an observation record, storing sensor data.
