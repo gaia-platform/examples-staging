@@ -22,6 +22,8 @@ As elsewhere in the code, positive coordinates are to the up and right.
 
 #include <vector>
 
+#include "gaia_slam.h"
+
 #include "sensor_data.hpp"
 #include "landmark_description.hpp"
 
@@ -115,17 +117,14 @@ public:
     map_node_t& get_node(float x_meters, float y_meters);
     map_node_flags_t& get_node_flags(float x_meters, float y_meters);
 
-    // Apply sensor data to map from position x,y.
-    void apply_sensor_data(utils::sensor_data_t& data, float pos_x_meters,
-        float pos_y_meters);
+    // Apply sensor data to map from observation.
+    void apply_sensor_data(const gaia::slam::observations_t&);
 
     void export_as_pnm(std::string file_name);
 
 protected:
     uint32_t get_node_index(float pos_x_meters, float pos_y_meters);
-    void apply_landmarks(
-        std::vector<utils::landmark_description_t>& landmarks,
-        float pos_x_meters, float pos_y_meters);
+    void apply_landmarks(const gaia::slam::observations_t&);
     void apply_radial(uint32_t radial, float range_meters, 
         float pos_x_meters, float pos_y_meters);
     void apply_flags();

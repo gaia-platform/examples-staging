@@ -87,8 +87,8 @@ static void usage(int, char** argv)
     printf("  where\n");
     printf("    -m    the json file describing the world (e.g., "
         "data/map.json)\n");
-    printf("    -x    starting X coordinate of bot (must be >0)\n");
-    printf("    -y    starting Y coordinate of bot (must be >0)\n");
+    printf("    -x    starting X coordinate of bot\n");
+    printf("    -y    starting Y coordinate of bot\n");
     exit(1);
 }
 
@@ -97,8 +97,8 @@ void parse_command_line(int argc, char** argv)
 {
     int opt;
     const char* map_file = NULL;
-    double g_initial_x_meters = -1.0;
-    double g_initial_y_meters = -1.0;
+    bool have_x = false;
+    bool have_y = false;
     while ((opt = getopt(argc, argv, "hm:x:y:")) != -1)
     {
         switch(opt)
@@ -115,6 +115,7 @@ void parse_command_line(int argc, char** argv)
                 {
                     usage(argc, argv);
                 }
+                have_x = true;
                 break;
             case 'y':
                 try
@@ -125,6 +126,7 @@ void parse_command_line(int argc, char** argv)
                 {
                     usage(argc, argv);
                 }
+                have_y = true;
                 break;
             case 'h':
                 usage(argc, argv);
@@ -133,11 +135,13 @@ void parse_command_line(int argc, char** argv)
                 usage(argc, argv);
         }
     }
-    if ((map_file == NULL) || (g_initial_x_meters <= 0.0) || 
-        (g_initial_y_meters < 0.0))
+    if ((map_file == NULL) || !have_x || !have_y)
     {
         usage(argc, argv);
     }
+    gaia_log::app().info("Initial possition at {},{}", 
+        g_initial_x_meters, g_initial_y_meters);
+    gaia_log::app().info("Loading world map {}", map_file);
     load_world_map(map_file);
 }
 
@@ -164,9 +168,9 @@ void init_sim()
 
 int main(int argc, char** argv)
 {
-    slam_sim::parse_command_line(argc, argv);
-
     gaia::system::initialize();
+
+    slam_sim::parse_command_line(argc, argv);
 
     // We explicitly handle the transactions with begin_transaction() 
     //  and commit_transaction() to trigger the rules.

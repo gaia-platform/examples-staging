@@ -96,7 +96,7 @@ ruleset observation_ruleset
     //  no transaction conflict.
     on_update(ep: estimated_position)
     {
-        gaia_log::app().info("Estimated position changed. {},{}", ep.x_meters,
+        gaia_log::app().info("Estimated position changed to {},{}", ep.x_meters,
             ep.y_meters);
         create_observation(/ego.current_path->paths);
     }

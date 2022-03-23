@@ -11,6 +11,8 @@
 #include <mutex>
 #include <vector>
 
+#include <gaia/system.hpp>
+
 #include "json.hpp"
 #include "line_segment.hpp"
 #include "sensor_data.hpp"
@@ -57,6 +59,8 @@ int main(int argc, char** argv)
     (void) argc;
     (void) argv;
     uint32_t errs = 0;
+
+    gaia::system::initialize();
 
     ////////////////////////////////////////////////////////////////////
     load_world_map(WORLD_MAP_FILE);

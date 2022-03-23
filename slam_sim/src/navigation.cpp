@@ -49,6 +49,8 @@ gaia_log::app().info("Calculating error");
 gaia_log::app().info("Error calc start at {},{}", head.pos_x_meters(), head.pos_y_meters());
     edges_t e = head.forward_edge();
     observations_t next = e.next();
+    // TODO FIXME error can only be calculated when the start and end
+    //  landmark is the same.
     while (next)
     {
         // TODO do something to estimate error
@@ -80,7 +82,8 @@ gaia_log::app().info("Error calc start at {},{}", head.pos_x_meters(), head.pos_
 void export_area_map()
 {
     static int32_t ctr = 0;
-    string fname("map_" + std::to_string(ctr));
+    string fname("map_" + std::to_string(ctr) + ".pgm");
+    gaia_log::app().info("Building map {}", fname);
     g_area_map->export_as_pnm(fname);
     ctr++;
 }
@@ -88,20 +91,25 @@ void export_area_map()
 
 void build_area_map(area_map_t& am)
 {
+    g_area_map->clear();
     for (paths_t& p: paths_t::list())
     {
+printf(" path\n");
         observations_t obs = p.first_observation();
         while (obs)
         {
+printf("   obs\n");
             // TODO do something with observation data.
             gaia_log::app().info("Pulling sensor data from {}:{}", 
                 p.id(), obs.id());
+            g_area_map->apply_sensor_data(obs);
             if (!obs.forward_edge()) {
                 break;
             }
             obs = obs.forward_edge().next();
         }
     }
+printf("Rebuild map\n");
 
     // TODO rebuild the area map
     // In the meantime, just 'touch' the record by updating the

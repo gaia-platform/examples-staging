@@ -26,6 +26,9 @@ using utils::sensor_data_t;
 using utils::landmark_description_t;
 using utils::D2R;
 
+using gaia::slam::landmark_sightings_t;
+using gaia::slam::observations_t;
+
 ////////////////////////////////////////////////////////////////////////
 // Lookup table for caching sin/cos values
 
@@ -39,14 +42,14 @@ static sin_cos_t* s_sincos_lut = NULL;
 static uint32_t s_sincos_lut_len = 0;
 
 
-static void check_sincos_lut(sensor_data_t& data)
+static void check_sincos_lut(uint32_t num_radials)
 {
     if (s_sincos_lut_len == 0)
     {
-        s_sincos_lut = new sin_cos_t[data.num_radials];
+        s_sincos_lut = new sin_cos_t[num_radials];
         // LUT isn't initialized. Do so now.
-        double step_degs = 360.0 / data.num_radials;
-        for (uint32_t i=0; i<data.num_radials; i++)
+        double step_degs = 360.0 / num_radials;
+        for (uint32_t i=0; i<num_radials; i++)
         {
             float theta_rads = D2R * step_degs * (float) i;
             // TODO Fall back to sin and cos if this isn't available.
@@ -54,10 +57,10 @@ static void check_sincos_lut(sensor_data_t& data)
             //s_sincos_lut[i].s = sinf(D2R * theta_degs);
             //s_sincos_lut[i].c = cosf(D2R * theta_degs);
         }
-        s_sincos_lut_len = data.num_radials;
+        s_sincos_lut_len = num_radials;
     }
     // Verify LUT is of correct size.
-    assert(s_sincos_lut_len == data.num_radials);
+    assert(s_sincos_lut_len == num_radials);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -86,13 +89,16 @@ occupancy_grid_t::occupancy_grid_t(float node_width_meters, float width_meters,
 
 void map_node_t::clear()
 {
-    this->occupied = 0;
-    this->observed = 0;
-    this->boundary = 0;
-    this->landmarks = 0;
+    this->parent_idx = -1;
+    this->direction_degs = 0.0f;
 
-    this->traversal_cost = 0.0;
-    this->distance = 0.0;
+    this->occupied = 0.0f;
+    this->observed = 0.0f;
+    this->boundary = 0.0f;
+    this->landmarks = 0.0f;
+
+    this->traversal_cost = 0.0f;
+    this->distance = 0.0f;
 }
 
 
@@ -107,6 +113,8 @@ void map_node_flags_t::clear()
 
 void occupancy_grid_t::clear()
 {
+printf("Clearing %d grid squares\n", (int32_t) m_grid.size());
+printf("Clearing %d grid squares\n", (int32_t) m_grid_flags.size());
     for (uint32_t i=0; i<m_grid.size(); i++)
     {
         m_grid[i].clear();
@@ -195,14 +203,22 @@ void occupancy_grid_t::apply_radial(uint32_t radial, float range_meters,
 
 
 // Updates landmark flags.
-void occupancy_grid_t::apply_landmarks(
-    vector<landmark_description_t>& landmarks, 
-    float pos_x_meters, float pos_y_meters)
+void occupancy_grid_t::apply_landmarks(const observations_t& obs)
 {
-    for (landmark_description_t& ld: landmarks)
+    float pos_x_meters = obs.pos_x_meters();
+    float pos_y_meters = obs.pos_y_meters();
+    for (const landmark_sightings_t& ls: obs.landmark_sightings())
     {
-        map_node_flags_t& flags = get_node_flags(pos_x_meters + ld.x_meters, 
-            pos_y_meters + ld.y_meters);
+        int32_t radial = (int32_t) floor(obs.num_radials() 
+            * ls.bearing_degs() / 360.0);
+        assert(radial >= 0);
+        assert(radial < obs.num_radials());
+        const sin_cos_t& sc = s_sincos_lut[radial];
+        float dx_meters = ls.range_meters() * sc.s;
+        float dy_meters = ls.range_meters() * sc.c;
+
+        map_node_flags_t& flags = get_node_flags(pos_x_meters + dx_meters, 
+            pos_y_meters + dy_meters);
         flags.landmark = 1;
     }
 }
@@ -224,16 +240,17 @@ void occupancy_grid_t::apply_flags()
 }
 
 
-void occupancy_grid_t::apply_sensor_data(sensor_data_t& data, 
-    float pos_x_meters, float pos_y_meters)
+void occupancy_grid_t::apply_sensor_data(const observations_t& obs)
 {
-    check_sincos_lut(data);
-
-    for (uint32_t i=0; i<data.num_radials; i++)
+    check_sincos_lut(obs.num_radials());
+printf("Applying sensor data\n");
+    float pos_x_meters = obs.pos_x_meters();
+    float pos_y_meters = obs.pos_y_meters();
+    for (int32_t i=0; i<obs.num_radials(); i++)
     {
-        apply_radial(i, data.range_meters[i], pos_x_meters, pos_y_meters);
+        apply_radial(i, obs.distance_meters()[i], pos_x_meters, pos_y_meters);
     }
-    apply_landmarks(data.landmarks_visible, pos_x_meters, pos_y_meters);
+    apply_landmarks(obs);
 
     apply_flags();
 }
@@ -253,9 +270,9 @@ void occupancy_grid_t::export_as_pnm(string file_name)
     uint8_t* g = new uint8_t[n_pix];
     uint8_t* b = new uint8_t[n_pix];
     // Create image.
-    for (uint32_t y=0; y<n_pix; y++)
+    for (uint32_t y=0; y<m_size.rows; y++)
     {
-        for (uint32_t x=0; x<n_pix; x++)
+        for (uint32_t x=0; x<m_size.cols; x++)
         {
             uint32_t idx = x + y * m_size.cols;
             map_node_t& node = m_grid[idx];
@@ -276,8 +293,9 @@ void occupancy_grid_t::export_as_pnm(string file_name)
     // Export image.
     try 
     {
-          std::ofstream f(file_name, std::ofstream::binary);
-        f << "P6\n" << m_size.cols << " " << m_size.rows << "\n";
+        std::ofstream f(file_name, std::ofstream::binary);
+        f << "P6\n# Slam map\n" << m_size.cols << " " 
+            << m_size.rows << "\n255\n";
         for (uint32_t i=0; i<n_pix; i++)
         {
             f << r[i] << g[i] << b[i];
