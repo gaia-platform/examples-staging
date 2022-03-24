@@ -46,8 +46,8 @@ static uint32_t check_radial(uint32_t num, double expected,
     uint32_t errs = 0;
     if (fabs(data.range_meters[num] - expected) > 0.01)
     {
-        fprintf(stderr, "Radial %d has range of %.3f, expected %.3f\n",
-            num, data.range_meters[num], expected);
+        fprintf(stderr, "Radial %d (%d degs) has range of %.3f, "
+            "expected %.3f\n", num, 2*num, data.range_meters[num], expected);
         errs++;
     }
     return errs;
@@ -66,7 +66,7 @@ int main(int argc, char** argv)
     load_world_map(WORLD_MAP_FILE);
     std::string response;
     sensor_data_t data;
-    perform_sensor_sweep(4.0, 0.6, data);
+    perform_sensor_sweep(-3.0, -4.4, data);
 
     // wall distances
     errs += check_radial(0, 0.5, data);
