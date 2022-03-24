@@ -5,19 +5,22 @@
 -- license that can be found in the LICENSE.txt file
 -- or at https://opensource.org/licenses/MIT.
 ------------------------------------------------------------------------
+
+------------------------------------------------------------------------
 --
 -- Schema for SLAM simulation.
 --
--- Schema is split into 3 parts. 
--- The first are tables that have individual records in them. For 
---  example, the 'ego', the 'position', and maps that represent the 
+-- Schema is split into 3 categories of tables.
+--
+-- The first includes tables that have individual records in them. For
+--  example, the 'ego', the 'position', and maps that represent the
 --  area (used for path finding).
--- 
--- The second are tables storing event data. This includes destination
+--
+-- The second includes tables storing event data. This includes destination
 --  requests pushed in externally (e.g., an external request for Alice
 --  to go to a particular position) or if Alice senses a collision.
 --
--- The third is the main elements of the SLAM algorithm. This includes
+-- The third includes the main elements of the SLAM algorithm. This includes
 --  observations (more commonly called poses) and sequences of
 --  observations here called paths (akin to simplified pose graphs).
 --
@@ -42,8 +45,7 @@ table ego
 
   -- Explicitly created references.
   -- Keep most of ego data in different tables so that updates to
-  --  one field doesn't risk conflict and txn rollback due update
-  --  to another.
+  --  one field don't risk conflict and txn rollback.
   position references estimated_position,
   destination references destination,
   error references error_correction,
@@ -60,8 +62,9 @@ table ego
 table area_map
 (
   blob_id uint32,
+
   -- Bounding polygon
-  -- Uses world coordinates, with increasing X,Y being rightward/upward
+  -- Uses world coordinates, with increasing X,Y being rightward/upward.
   left_meters float,
   right_meters float,
   top_meters float,
@@ -80,6 +83,7 @@ table area_map
 table local_map
 (
   blob_id uint32,
+
   -- Bounding polygon
   -- Uses world coordinates, with increasing X,Y being rightward/upward
   left_meters float,
@@ -115,7 +119,7 @@ table working_map
 
 table destination
 (
-  -- Uses world coordinates, with increasing X,Y being rightward/upward
+  -- Uses world coordinates, with increasing X,Y being rightward/upward.
   x_meters float,
   y_meters float,
 
@@ -131,7 +135,7 @@ table destination
 
 table estimated_position
 (
-  -- Uses world coordinates, with increasing X,Y being rightward/upward
+  -- Uses world coordinates, with increasing X,Y being rightward/upward.
   x_meters float,
   y_meters float,
 
@@ -165,8 +169,8 @@ table error_correction
 table pending_destination
 (
   -- When a destination request is made, it is stored here. When it's
-  --  appriate, this location will become the the new destination.
-  -- Uses world coordinates, with increasing X,Y being rightward/upward
+  --  appropriate, this location will become the the new destination.
+  -- Uses world coordinates, with increasing X,Y being rightward/upward.
   x_meters float,
   y_meters float
 )
@@ -230,8 +234,8 @@ table observations
   dist_meters float,
 
 
-  path references paths[] using first_observation,
-  path_dup references paths[] using latest_observation,
+  path references paths[] using latest_observation,
+  path_dup references paths[] using first_observation,
 
   ------------------------------
   -- Sensing
@@ -243,7 +247,9 @@ table observations
   landmark_sightings references landmark_sightings[],
 
   -- As noted, an observation is only connected to two other observations.
-  -- A node would be instead have a single 'references edges[]'
+  -- A node would instead have a single 'references edges[]'
+  -- Forward is the edge connecting this observation to the next one, and
+  --  reverse connects this observation to the previous.
   forward_edge references edges,
   reverse_edge references edges
 )
@@ -254,6 +260,9 @@ table edges
   -- ID is the same as that of target (next) observation.
   id int32,
 
+  -- For sequential observations O1 and O2, this edge attaches to
+  --  O1.forward_edge and O2.reverse_edge, so 'next' is O2.reverse_edge
+  --  and 'prev' is O1.forward_edge.
   next references observations using reverse_edge,
   prev references observations using forward_edge
 )
@@ -287,14 +296,14 @@ table landmarks
 table landmark_sightings
 (
   range_meters float,
-  heading_degs float,
+  bearing_degs float,
 
   -- Observation corresponding to this sighting.
   observation_id int32,
   observation references observations
     where landmark_sightings.observation_id = observations.id,
 
-  -- Landmark that was sighted
+  -- Landmark that was sighted.
   landmark_id int32,
   landmark references landmarks
     where landmark_sightings.landmark_id = landmarks.landmark_id

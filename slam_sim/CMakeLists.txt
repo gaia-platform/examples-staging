@@ -24,6 +24,9 @@ find_package(Threads REQUIRED)
 
 include("/opt/gaia/cmake/gaia.cmake")
 
+# Default compiler/linker flags.
+add_compile_options(-c -Wall -Wextra -ggdb)
+
 # --- Generate Direct Access classes from DDL---
 process_schema(
   DDL_FILE ${PROJECT_SOURCE_DIR}/gaia/slam.ddl
@@ -38,33 +41,34 @@ translate_ruleset(
     -I ${PROJECT_SOURCE_DIR}/include
 )
 
-
 # Application
 
 add_executable(slam_sim
-  # src/blob_cache.cpp
-  # src/line_segment.cpp
+  src/analyze.cpp
+  src/globals.cpp
   src/main.cpp
-  # src/mapping.cpp
+  src/navigation.cpp
+  src/paths.cpp
+  src/utils/blob_cache.cpp
+  src/utils/landmark_description.cpp
+  src/utils/line_segment.cpp
 )
 
-# target_add_gaia_generated_sources(slam_sim)
+target_add_gaia_generated_sources(slam_sim)
 
 target_include_directories(slam_sim PRIVATE
   ${GAIA_INC}
   ${PROJECT_SOURCE_DIR}/include
 )
 
-target_link_libraries(slam_sim PRIVATE
-  ${GAIA_LIB}
-  Threads::Threads
-)
+target_link_directories(slam_sim PRIVATE ${GAIA_LIB_DIR})
+target_link_libraries(slam_sim PRIVATE ${GAIA_LIB} rt Threads::Threads)
 
 # Tests
 
 add_executable(test_blob_cache
   tests/test_blob_cache.cpp
-  src/blob_cache.cpp
+  src/utils/blob_cache.cpp
 )
 
 set_target_properties(test_blob_cache PROPERTIES COMPILE_FLAGS "${GAIA_COMPILE_FLAGS}")
@@ -73,3 +77,35 @@ target_include_directories(test_blob_cache PRIVATE ${PROJECT_SOURCE_DIR}/include
 target_link_libraries(test_blob_cache PRIVATE rt)
 
 add_test(NAME test_blob_cache COMMAND test_blob_cache)
+
+add_executable(test_line_segment
+  tests/test_line_segment.cpp
+  src/utils/line_segment.cpp
+)
+
+set_target_properties(test_line_segment PROPERTIES COMPILE_FLAGS "${GAIA_COMPILE_FLAGS}")
+set_target_properties(test_line_segment PROPERTIES LINK_FLAGS "${GAIA_LINK_FLAGS}")
+target_include_directories(test_line_segment PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(test_line_segment PRIVATE rt)
+
+add_test(NAME test_line_segment COMMAND test_line_segment)
+
+add_executable(test_analyze
+  tests/test_analyze.cpp
+  src/analyze.cpp
+  src/globals.cpp
+  src/navigation.cpp
+  src/paths.cpp
+  src/utils/line_segment.cpp
+  src/utils/landmark_description.cpp
+)
+
+target_add_gaia_generated_sources(test_analyze)
+
+set_target_properties(test_analyze PROPERTIES COMPILE_FLAGS "${GAIA_COMPILE_FLAGS}")
+set_target_properties(test_analyze PROPERTIES LINK_FLAGS "${GAIA_LINK_FLAGS}")
+target_include_directories(test_analyze PRIVATE ${GAIA_INC})
+target_include_directories(test_analyze PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(test_analyze PRIVATE ${GAIA_LIB} rt)
+
+add_test(NAME test_analyze COMMAND test_analyze)

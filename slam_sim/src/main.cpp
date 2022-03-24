@@ -17,7 +17,11 @@
 #include <gaia/logger.hpp>
 #include <gaia/system.hpp>
 
+#include "gaia_slam.h"
+
 #include "slam_sim.hpp"
+
+using namespace gaia::slam;
 
 using std::this_thread::sleep_for;
 
@@ -25,8 +29,6 @@ namespace slam_sim
 {
 
 constexpr uint32_t c_rule_wait_millis = 100;
-
-int32_t g_quit = 0;
 
 /**
  * Wait an arbitrary amount of time for rule execution to terminate.
@@ -54,13 +56,25 @@ void clear_table()
 
 void clear_data()
 {
-    // TODO refresh the database and delete all old records.
-    // At present the only way to do this is 'make refresh_db' or to
-    //  go into gaia/ and 'make'.
+    clear_table<edges_t>();
+    clear_table<landmark_sightings_t>();
+    clear_table<landmarks_t>();
+    clear_table<paths_t>();
+    clear_table<observations_t>();
+    clear_table<collision_event_t>();
+    clear_table<collision_event_t>();
+    clear_table<pending_destination_t>();
+    clear_table<error_correction_t>();
+    clear_table<estimated_position_t>();
+    clear_table<destination_t>();
+    clear_table<working_map_t>();
+    clear_table<local_map_t>();
+    clear_table<area_map_t>();
+    clear_table<ego_t>();
 }
 
 
-static void usage(int argc, char** argv)
+static void usage(int, char** argv)
 {
     printf("Gaia SLAM simulator\n\n");
     printf("Usage: %s -m <map.json>\n", argv[0]);
@@ -98,10 +112,10 @@ void init_sim()
 {
     // Seed database and then create first path.
     // Seeding function manages its own transaction.
-    gaia_log::app().info("Seeding the database");
+    gaia_log::app().info("Seeding the database...");
     seed_database();
 
-    gaia_log::app().info("Creating initial path");
+    gaia_log::app().info("Creating initial path...");
     gaia::db::begin_transaction();
     create_new_path();
     gaia::db::commit_transaction();
@@ -122,7 +136,7 @@ int main(int argc, char** argv)
     slam_sim::clear_data();
     gaia::db::commit_transaction();
 
-    gaia_log::app().info("=== Creates a new Graph and observe the corresponding rules triggered ===");
+    gaia_log::app().info("Starting SLAM simulation...");
 
     slam_sim::init_sim();
     slam_sim::wait_for_rules();

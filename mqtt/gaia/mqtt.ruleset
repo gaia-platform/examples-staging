@@ -1,0 +1,47 @@
+////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////
+
+#include "gaia/logger.hpp"
+#include "gaia_mqtt.h"
+#include <lift/lift.hpp>
+#include <nlohmann/json.hpp>
+
+using namespace std;
+using namespace gaia::mqtt;
+using namespace nlohmann;
+
+void publish_message(const string& topic, const string& payload);
+
+ruleset mqtt_ruleset
+{
+    on_insert(messages)
+    {
+        gaia_log::app().info("Fetching data from REST API");
+
+        // Synchronous requests can be created on the stack.
+        lift::request sync_request{"https://jsonplaceholder.typicode.com/posts/1"};
+        sync_request.method(lift::http::method::get);
+
+        // This is the blocking synchronous HTTP call, this thread will wait until the http request
+        // completes or times out.
+        auto sync_response = sync_request.perform();
+
+        // Print the status of the request.
+        gaia_log::app().info("Lift status (sync): '{}'", lift::to_string(sync_response.lift_status()));
+
+        // Get the raw body of the response (a JSON string).
+        std::string_view raw_data = sync_response.data();
+        gaia_log::app().info("Raw data:\n{}", raw_data);
+
+        // Parse the body of the data into a JSON object and access one of its attributes.
+        json parsed_response = json::parse(raw_data);
+        gaia_log::app().info(
+            "Parsed data:\n id: '{}'\n title: '{}'",
+            parsed_response["id"].get<uint32_t>(), parsed_response["title"].get<std::string>());
+    }
+}
