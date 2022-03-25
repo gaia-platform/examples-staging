@@ -196,7 +196,7 @@ void occupancy_grid_t::apply_sensor_data(const observations_t& obs)
 printf("Applying sensor data at %.2f,%.2f (%d)\n", pos.pos_x_meters(), pos.pos_y_meters(), obs.id());
     for (int32_t i=0; i<r.num_radials(); i++)
     {
-        apply_radial(r.radial_degs()[i], r.distance_meters()[i], 
+        apply_radial(r.bearing_degs()[i], r.distance_meters()[i], 
             pos.pos_x_meters(), pos.pos_y_meters());
     }
 

@@ -31,6 +31,19 @@ static int32_t s_next_observation_id = 1;
 
 using gaia::common::gaia_id_t;
 
+using gaia::slam::edges_t;
+using gaia::slam::ego_t;
+using gaia::slam::graphs_t;
+using gaia::slam::latest_observation_t;
+using gaia::slam::movements_t;
+using gaia::slam::observations_t;
+using gaia::slam::observed_area_t;
+using gaia::slam::positions_t;
+using gaia::slam::range_data_t;
+
+using gaia::slam::latest_observation_writer;
+using gaia::slam::observed_area_writer;
+
 using utils::sensor_data_t;
 
 ////////////////////////////////////////////////////////////////////////
@@ -39,108 +52,91 @@ using utils::sensor_data_t;
 //  transaction
 
 
-#error "Rewrite this"
-void create_observation(paths_t& path)
+static void update_observed_area(ego_t& ego, map_coord_t coord)
 {
-    // Get position and do a sensor sweep.
-    double actual_x_meters = -1.0;
-    double actual_y_meters = -1.0;
-    for (sim_actual_position_t& sap: sim_actual_position_t::list())
+    const observed_area_t& area = ego.world();
+    bool change = false;
+    float left_edge   = area.left_meters();
+    float right_edge  = area.right_meters();
+    float bottom_edge = area.bottom_meters();
+    float top_edge    = area.top_meters();
+    if (floor(coord.x_meters - RANGE_SENSOR_MAX_METERS) < left_edge)
     {
-        actual_x_meters = sap.x_meters();
-        actual_y_meters = sap.y_meters();
-        break;
+        left_edge = floor(coord.x_meters - RANGE_SENSOR_MAX_METERS);
+        change = true;
     }
-    double pos_x_meters = -1.0;
-    double pos_y_meters = -1.0;
-    double dx_meters = -1.0;
-    double dy_meters = -1.0;
-    for (estimated_position_t& ep: estimated_position_t::list())
+    if (change)
     {
-        pos_x_meters = ep.x_meters();
-        pos_y_meters = ep.y_meters();
-        dx_meters = ep.dx_meters();
-        dy_meters = ep.dy_meters();
-        break;
+        observed_area_writer oa_writer = observed_area_writer();
+        oa_writer.left_meters   = left_edge;
+        oa_writer.right_meters  = right_edge;
+        oa_writer.bottom_meters = bottom_edge;
+        oa_writer.top_meters    = top_edge;
+        oa_writer.update_row();
     }
-    double heading_degs = utils::R2D * atan2(pos_x_meters, pos_y_meters);
-    double range_meters = sqrt(dx_meters*dx_meters + dy_meters*dy_meters);
-    gaia_log::app().info("Performing observation {} at {},{}", 
-        s_next_observation_id, pos_x_meters, pos_y_meters);
-    sensor_data_t data;
-//    double x_offset_meters, y_offset_meters;
-//    load_position_offset(x_offset_meters, y_offset_meters);
-//    gaia_log::app().info("Position offset at {},{}", 
-//        x_offset_meters, y_offset_meters);
-printf("SENSOR sweep for obs %d\n", next_observation_id);
-    perform_sensor_sweep(actual_x_meters, actual_y_meters, data);
+}    
 
-    // Create an observation record, storing sensor data.
-    // This is the ID of the new observation. Call it 'num' here so to not
-    //  get confused with gaia IDs.
-    uint32_t obs_num = next_observation_id++;
-    if (path.num_observations() == 0)
-    {
-        // For first observation, don't store position delta.
-        dx_meters = 0.0;
-        dy_meters = 0.0;
-        heading_degs = 0.0;
-        range_meters = 0.0;
-    }
-    gaia_id_t new_obs_id = observations_t::insert_row(
-        obs_num,              // id
-        pos_x_meters,         // pos_x_meters
-        pos_y_meters,         // pos_y_meters
-        actual_x_meters,      // actual_x_meters
-        actual_y_meters,      // actual_y_meters
-        dx_meters,            // dx_meters
-        dy_meters,            // dy_meters
-        heading_degs,         // heading_degs
-        range_meters,         // dist_meters
+void create_observation(map_coord_t& prev, map_coord_t& coord)
+{
+    uint32_t obs_num = s_next_observation_id++;
+    gaia_log::app().info("Performing observation {} at {},{} heading {}", 
+        obs_num, coord.x_meters, coord.y_meters, coord.heading_degs);
+    sensor_data_t data;
+printf("SENSOR sweep for obs %d\n", obs_num);
+    calculate_range_data(coord, data);
+
+    // Get ego
+    ego_t& ego = *(ego_t::list().begin());
+    uint32_t graph_id = ego.current_graph_id();
+
+    // create position record
+    gaia_id_t pos_id = positions_t::insert_row(
+        coord.x_meters,       // x_meters
+        coord.y_meters,       // y_meters
+        coord.heading_degs    // heading_degs
+    );
+    // create range_data record
+    gaia_id_t range_id = range_data_t::insert_row(
         data.num_radials,     // num_radials
+        data.bearing_degs,    // bearing_degs
         data.range_meters     // distance_meters
     );
-    observations_t new_obs = observations_t::get(new_obs_id);
+    // create movement record
+    gaia_id_t movement_id = movements_t::insert_row(
+        coord.x_meters - prev.x_meters,         // dx_meters
+        coord.y_meters - prev.y_meters,         // dy_meters
+        coord.heading_degs - prev.heading_degs  // dheading_degs
+    );
+    // create observation record
+    gaia_id_t observation_id = observations_t::insert_row(
+        obs_num,              // id
+        graph_id              // graph_id
+    );
 
+    // create references
+    observations_t obs = observations_t::get(observation_id);
+    obs.position().connect(pos_id);
+    obs.range_data().connect(range_id);
+    obs.motion().connect(movement_id);
 
-    // Connect observation to path and to previous observation, if present.
-    // Make a copy of the number of observations while we modify path.
-    uint32_t number_of_observations = path.num_observations();
-    paths_writer p_writer = path.writer();
-    if (number_of_observations == 0)
+    update_observed_area(ego, coord);
+
+    // create edge
+    const latest_observation_t lo = ego.latest_observation();
+    const observations_t prev_obs = lo.observation();
+    if (prev_obs)
     {
-        // First observation.
-        p_writer.start_obs_id = obs_num;
-        // For first observation, don't store position delta.
-        dx_meters = 0.0;
-        dy_meters = 0.0;
-        heading_degs = 0.0;
-        range_meters = 0.0;
+        edges_t::insert_row(
+            graph_id,         // graph_id
+            prev_obs.id(),    // src_id
+            obs_num           // dest_id
+        );
     }
-    else
-    {
-        // Build an edge to connect to the previous observation.
-        gaia_id_t edge_id = edges_t::insert_row(obs_num);
-        // Now link observations to the edge.
-        new_obs.reverse_edge().connect(edge_id);
-        if (number_of_observations == 1)
-        {
-            // Second observation so this is the first edge. Get
-            //  connection info directly from
-            observations_t prev_obs = path.first_observation();
-            prev_obs.forward_edge().connect(edge_id);
-        }
-        else
-        {
-            // Get connection info from previous edge.
-            observations_t prev_obs = path.latest_observation();
-            prev_obs.forward_edge().connect(edge_id);
-        }
 
-    }
-    p_writer.latest_obs_id = obs_num;
-    p_writer.num_observations = path.num_observations() + 1;
-    p_writer.update_row();
+    // update latest_observation
+    latest_observation_writer lo_writer = latest_observation_writer();
+    lo_writer.observation_id = obs_num;
+    lo_writer.update_row();
 }
 
 
@@ -148,45 +144,32 @@ printf("SENSOR sweep for obs %d\n", next_observation_id);
 // Non-rule API
 // The functions here must manage their own transactions.
 
-
-void seed_database(double initial_x_meters, double initial_y_meters)
+void seed_database()
 {
     // There shouldn't be any transaction conflicts as this is the first
-    //  operation on the database, so ignore the try/catch block.
+    //  operation on the database so ignore the try/catch block.
     gaia::db::begin_transaction();
-    //
-    gaia_id_t ego_id = ego_t::insert_row(0);  // current_path_id
+
+    ////////////////////////////////////////////
+    // Records
+    graphs_t::insert_row(1);  // id
+    gaia_id_t ego_id = ego_t::insert_row(1);  // current_graph_id
     ego_t ego = ego_t::get(ego_id);
 
-// TODO FINISH ME
-
-    ////////////////////////////////////////////
-    // Position and destination
-    gaia_id_t destination_id = destination_t::insert_row(
-        0.0,          // x_meters
-        0.0,          // y_meters
-        0             // expected_arrival
+    gaia_id_t latest_observation_id = latest_observation_t::insert_row(
+        0             // observation_id
     );
-    gaia_id_t position_id = estimated_position_t::insert_row(
-        0.0,          // x_meters
-        0.0,          // y_meters
-        0.0,          // x_meters
-        0.0           // y_meters
-    );
-    gaia_id_t error_correction_id = error_correction_t::insert_row(
-        0.0,          // drift_correction
-        0.0,          // forward_correction
-        0.0           // correction_weight
+    gaia_id_t area_id = observed_area_t::insert_row(
+        floor(-RANGE_SENSOR_MAX_METERS),      // left_meters
+        ceil(RANGE_SENSOR_MAX_METERS),        // right_meters
+        ceil(RANGE_SENSOR_MAX_METERS),        // top_meters
+        floor(-RANGE_SENSOR_MAX_METERS)       // bottom_meters
     );
 
     ////////////////////////////////////////////
-    // Establish relationships
-    ego.position().connect(position_id);
-    ego.destination().connect(destination_id);
-    ego.error().connect(error_correction_id);
-    ego.low_res_map().connect(area_map_id);
-    ego.high_res_map().connect(local_map_id);
-    ego.working_map().connect(working_map_id);
+    // Relationships
+    ego.world().connect(area_id);
+    ego.latest_observation().connect(latest_observation_id);
 
     ////////////////////////////////////////////
     // All done
@@ -194,3 +177,4 @@ void seed_database(double initial_x_meters, double initial_y_meters)
 }
 
 } // namespace slam_sim
+

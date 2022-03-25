@@ -58,6 +58,7 @@ target_add_gaia_generated_sources(slam_sim)
 target_include_directories(slam_sim PRIVATE
   ${GAIA_INC}
   ${PROJECT_SOURCE_DIR}/include
+  ${PROJECT_SOURCE_DIR}/gaia/slam
 )
 
 target_link_directories(slam_sim PRIVATE ${GAIA_LIB_DIR})
@@ -101,6 +102,8 @@ add_executable(test_analyze
   src/analyze.cpp
   src/occupancy.cpp
   src/paths.cpp
+  src/rule_api.cpp
+  src/utils/coord_list.cpp
   src/utils/line_segment.cpp
 )
 target_add_gaia_generated_sources(test_analyze)

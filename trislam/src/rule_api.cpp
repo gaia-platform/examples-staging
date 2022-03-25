@@ -14,30 +14,25 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+#include <gaia/db/db.hpp>
 #include <gaia/logger.hpp>
 
+#include "gaia_slam.h"
+
+#include "occupancy.hpp"
 #include "slam_sim.hpp"
 
 namespace slam_sim
 {
 
-void move_bot_along_path(string path_file)
-{
-    // Path file contain points that define the path. The sequence of 
-    //  points define segments.
-    coord_list_t path(path_file);
-    for (map_coord_t& mc: path)
-    {
-        // TODO create observation at this location
+using std::string;
 
-
-        // Wait for a short while before moving ahead.
-        usleep(50000);
-    }
-    
-    // TODO 'optimize' graph and output final map
-}
-
+using gaia::slam::edges_t;
+using gaia::slam::ego_t;
+using gaia::slam::error_corrections_t;
+using gaia::slam::graphs_t;
+using gaia::slam::observed_area_t;
+using gaia::slam::observations_t;
 
 bool optimization_required()
 {
@@ -55,37 +50,42 @@ void optimize_graph(graphs_t& graph)
 {
     // Map optimization logic goes here. Here are some ways to iterate
     //  through the data.
+    gaia_log::app().info("Stub function to optimize graph {}", graph.id());
     // By edges:
     for (edges_t& e: edges_t::list())
     {
-        gaia_log::app()info("Edge {} connects observations {} and {}",
-            e.id(), e.src().id(), e.dest().id());
+        gaia_log::app().info("Edge connects observations {} and {}",
+            e.src().id(), e.dest().id());
     }
 
     // By observations:
     for (observations_t& o: observations_t::list())
     {
-        gaia_log::app()info("Obervation {} connects to:", o.id());
+        gaia_log::app().info("Obervation {} connects to:", o.id());
         for (edges_t& e: o.in_edges())
         {
-            gaia_log::app()info("  (in) obervation {} via edge {}:", e.src(), 
-                e.id());
+            gaia_log::app().info("  (in) obervation {}", e.src_id());
         }
         for (edges_t& e: o.out_edges())
         {
-            gaia_log::app()info("  (out) obervation {} via edge {}:", 
-                e.dest(), e.id());
+            gaia_log::app().info("  (out) obervation {}", e.dest_id());
         }
     }
 
-    // TODO Create error correction record 
+    // Create error correction record. This serves to store error correction
+    //  data, if necessary, as well as trigger a rule event.
+    static uint32_t next_ec_id = 1;
+    error_corrections_t::insert_row(
+        next_ec_id,         // id
+        graph.id()          // graph_id
+    );
 }
 
 
 ////////////////////////////////////////////////////////////////////////
 // Map building
 
-static void write_map_to_file(observation_grid_t& map)
+static void write_map_to_file(occupancy_grid_t& map)
 {
     static int32_t ctr = 0;
     string fname("map_" + std::to_string(ctr) + ".pgm");
@@ -97,9 +97,11 @@ static void write_map_to_file(observation_grid_t& map)
 
 void build_map()
 {
+    gaia::db::begin_transaction();
     ego_t ego = *(ego_t::list().begin());
     observed_area_t& area = *(observed_area_t::list().begin());
     build_map(ego.current_graph(), area);
+    gaia::db::commit_transaction();
 }
 
 
@@ -113,13 +115,13 @@ void build_map(graphs_t& g, observed_area_t& bounds)
         .x_meters = bounds.right_meters(),
         .y_meters = bounds.bottom_meters()
     };
-    observation_grid_t map(MAP_NODE_WIDTH_METERS, top_left, bottom_right);
+    occupancy_grid_t map(MAP_NODE_WIDTH_METERS, top_left, bottom_right);
     // Iterate through observations in this graph and build a map.
     for (observations_t& o: g.observations())
     {
-        gaia_log::app()info("Applying sensor data from observation {}", 
+        gaia_log::app().info("Applying sensor data from observation {}", 
             o.id());
-        map.apply_sensor_data(obs);
+        map.apply_sensor_data(o);
     }
     write_map_to_file(map);
 }

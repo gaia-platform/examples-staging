@@ -17,6 +17,10 @@
 -- The second includes the main elements of the SLAM algorithm. This includes
 --  observations (i.e., 'vertex'), edges and graphs.
 --
+-- Style note: tables with an individual record in them are named in
+--  the singular (e.g., 'ego') while tables that have multiple records
+--  in them are named in the plural (e.g., 'observations').
+--
 ------------------------------------------------------------------------
 
 database slam;
@@ -35,7 +39,7 @@ table ego
   -- Explicitly created references.
   -- Keep most of ego data in different tables so that updates to
   --  one field don't risk conflict and txn rollback.
-  latest_observation references observations,
+  latest_observation references latest_observation,
   world references observed_area
 )
 
@@ -56,6 +60,19 @@ table observed_area
 )
 
 
+-- Link to most recently created observation. If multiple observations are
+--  not created simultaneously (which they shouldn't be) then it's not
+--  possible to get a transaction collision updating the single record
+--  in this table.
+table latest_observation
+(
+  observation_id uint32,
+  observation references observations
+      where latest_observation.observation_id = observations.id,
+  ego references ego
+)
+
+
 ------------------------------------------------------------------------
 -- Data tables
 
@@ -71,11 +88,9 @@ table graphs
 )
 
 
+-- Connects two observations.
 table edges
 (
-  -- ID is the same as that of target (next) observation.
-  id uint32 unique,
-
   graph_id uint32,
   graph references graphs
       where edges.graph_id = graphs.id,
@@ -130,9 +145,9 @@ table observations
   id uint32 unique,
 
   position references positions,
-  motion references movements,
   range_data references range_data,
-  ego references ego,
+  motion references movements,
+--  ego references ego,
 
   -- This is set at creation and doesn't change.
   graph_id uint32,
@@ -144,8 +159,9 @@ table observations
   --  and rules that modify them (i.e., that add edges) should be designed 
   --  and expect a possible transaction rollback.
   in_edges references edges[],
-  out_edges references edges[]
+  out_edges references edges[],
 
+  prev_observation references latest_observation[]
 )
 
 
@@ -155,6 +171,7 @@ table positions
   --  when we have better error estimates.
   pos_x_meters float,
   pos_y_meters float,
+  heading_degs float,
 
   observation references observations
 )
@@ -162,12 +179,11 @@ table positions
 
 table movements
 (
-  -- DR motion from previous observation.
+  -- DR motion from previous observation. This is a placeholder for storing
+  --  dead reckoning data that could be used during graph optimization.
   dx_meters float,
   dy_meters float,
-  -- DR motion in polar coordinates.
-  heading_degs float,
-  distance_meters float,
+  dheading_degs float,
 
   observation references observations
 )
@@ -177,11 +193,9 @@ table range_data
 (
   -- This can be stored in a blob or in dedicated fields.
   num_radials int32,
-  radial_degs float[],
+  bearing_degs float[],
   distance_meters float[],
 
   observation references observations
 )
-
-
 

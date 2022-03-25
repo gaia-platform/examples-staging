@@ -20,6 +20,8 @@
 #pragma once
 
 #include "gaia_slam.h"
+
+#include "coord_list.hpp"
 #include "occupancy.hpp"
 #include "sensor_data.hpp"
 
@@ -37,13 +39,7 @@ constexpr int32_t NUM_RANGE_RADIALS = 45;
 
 
 ////////////////////////////////////////////////
-// Initialization
-
-void seed_database();
-
-
-////////////////////////////////////////////////
-// Operation
+// Rules API
 
 // Determines if it's time to perform a graph optimization.
 bool optimization_required();
@@ -59,4 +55,14 @@ void optimize_graph(gaia::slam::graphs_t&);
 void build_map();
 void build_map(gaia::slam::graphs_t, gaia::slam::observed_area_t&);
 
+
+////////////////////////////////////////////////
+// Internal
+
+void seed_database();
+
+void create_observation(map_coord_t& coord);
+void calculate_range_data(map_coord_t& coord, utils::sensor_data_t& data);
+
 } // namespace slam_sim
+

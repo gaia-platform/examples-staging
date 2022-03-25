@@ -27,8 +27,12 @@ using namespace gaia::slam;
 namespace slam_sim
 {
 
-constexpr uint32_t c_rule_wait_millis = 100;
+constexpr double RULE_WAIT_SEC = 0.1;
 
+// If there is a transaction conflict when creating and observation then
+//  retry again a finite number of times. If those fail then wait for
+//  the next observation and try again.
+constexpr uint32_t NUM_OBSERVATION_TXN_RETRIES = 2;
 
 
 void move_bot_along_path(string path_file)
@@ -36,14 +40,31 @@ void move_bot_along_path(string path_file)
     // Path file contain points that define the path. The sequence of 
     //  points define segments.
     coord_list_t path(path_file);
-    for (map_coord_t& mc: path)
+    map_coord_t prev = path[0];
+    for (map_coord_t& latest: path)
     {
-        // create observation at this location
+        // Create observation at this location.
+        //  observation to be made.
+        for (uint32_t i=0; i<NUM_OBSERVATION_TXN_RETRIES; i++)
+        {
+            try
+            {
+                gaia::db::begin_transaction();
+                create_observation(prev, latest);
+                gaia::db::commit_transaction();
+            }
+            catch (gaia::db::transaction_update_conflict&)
+            {
+                // Take a brief nap and try again.
+                usleep(1000);
+            }
+        }
         // wait
-        usleep(c_rule_wait_millis * 1000);
+        usleep((uint32_t) (RULE_WAIT_SEC * 1.0e-6));
+        prev = latest;
     }
-    
-    // TODO 'optimize' graph and output final map
+    // Output final map.
+    build_map();
 }
 
 

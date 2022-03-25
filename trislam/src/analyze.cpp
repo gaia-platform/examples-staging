@@ -92,8 +92,7 @@ void load_world_map(const char* world_map)
 // For each observation radial, check point of intersection of that
 //  radial with the nearest positive intersection with the line segments
 //  making up the 2D world map.
-static void calculate_range_data(double x_meters, double y_meters, 
-    double heading_degs, sensor_data_t& data)
+void calculate_range_data(map_coord_t& coord, sensor_data_t& data)
 {
     data.range_meters.clear();
     data.num_radials = NUM_RANGE_RADIALS;
@@ -103,7 +102,7 @@ static void calculate_range_data(double x_meters, double y_meters,
     for (uint32_t n=0; n<NUM_RANGE_RADIALS; n++)
     {
         // Get this radial and constrain to [0,360)
-        double theta_degs = heading_degs - RANGE_SENSOR_SWEEP_DEGS
+        double theta_degs = coord.heading_degs - RANGE_SENSOR_SWEEP_DEGS
             + (double) n * step_degs;
         theta_degs = theta_degs >= 360.0 ? theta_degs - 360.0 : theta_degs;
         theta_degs = theta_degs < 0.0    ? theta_degs + 360.0 : theta_degs;
@@ -114,7 +113,7 @@ static void calculate_range_data(double x_meters, double y_meters,
         {
             line_segment_t& seg = g_world_lines[i];
             double dist_meters =
-                seg.intersect_range(x_meters, y_meters, theta_degs);
+                seg.intersect_range(coord.x_meters, coord.y_meters, theta_degs);
             if (dist_meters > 0.0)
             {
                 if ((min_meters < 0.0) || (dist_meters < min_meters))
