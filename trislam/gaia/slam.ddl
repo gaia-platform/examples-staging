@@ -167,7 +167,7 @@ table movements
   dy_meters float,
   -- DR motion in polar coordinates.
   heading_degs float,
-  dist_meters float,
+  distance_meters float,
 
   observation references observations
 )

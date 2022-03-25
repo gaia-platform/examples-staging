@@ -24,6 +24,7 @@
 #include "json.hpp"
 #include "line_segment.hpp"
 #include "sensor_data.hpp"
+#include "slam_sim.hpp"
 
 namespace slam_sim
 {
@@ -60,19 +61,8 @@ static void set_map(const char* map)
             g_world_lines.push_back(line_segment_t(x0, y0, x1, y1));
         }
     }
-
-    // copy landmark data
-    const json& land_objects = world_map["landmarks"];
-    for (uint32_t i=0; i<land_objects.size(); i++)
-    {
-        string name = land_objects[i]["name"];
-        int32_t id = land_objects[i]["id"];
-        double x_meters = land_objects[i]["x"];
-        double y_meters = land_objects[i]["y"];
-        g_landmarks.push_back(
-            landmark_description_t(name, id, x_meters, y_meters));
-    }
 }
+
 
 void load_world_map(const char* world_map)
 {
@@ -107,19 +97,17 @@ static void calculate_range_data(double x_meters, double y_meters,
 {
     data.range_meters.clear();
     data.num_radials = NUM_RANGE_RADIALS;
-    data.heading_degs = heading_degs;
 //printf("RANGES from %.3f,%.3f\n", x_meters, y_meters);
-    // Define range to be scanned.
-    double radial_degs = heading_degs - RANGE_SENSOR_SWEEP_DEGS;
-    if (theta_degs < 0.0)
-    {
-        radial_degs += 360.0;
-    }
-    double step_degs = RANGE_SENSOR_SWEEP / (NUM_RANGE_RADIALS - 1);
+    double step_degs = RANGE_SENSOR_SWEEP_DEGS / (NUM_RANGE_RADIALS - 1);
     // Get range on each radial, and store both distance and radial degs.
     for (uint32_t n=0; n<NUM_RANGE_RADIALS; n++)
     {
-        double theta_degs = n * 360.0 / (double) NUM_RANGE_RADIALS;
+        // Get this radial and constrain to [0,360)
+        double theta_degs = heading_degs - RANGE_SENSOR_SWEEP_DEGS
+            + (double) n * step_degs;
+        theta_degs = theta_degs >= 360.0 ? theta_degs - 360.0 : theta_degs;
+        theta_degs = theta_degs < 0.0    ? theta_degs + 360.0 : theta_degs;
+        // Measure distance on this radial
         double min_meters = -1.0;
         int32_t line_num = -1;
         for (uint32_t i=0; i<g_world_lines.size(); i++)
@@ -137,18 +125,12 @@ static void calculate_range_data(double x_meters, double y_meters,
             }
         }
 //printf("   %3d   %8.2f   %6.2f    %4d\n", n, theta_degs, min_meters, line_num);
-        if (min_meters > utils::RANGE_SENSOR_MAX_METERS)
+        if (min_meters > RANGE_SENSOR_MAX_METERS)
         {
             min_meters = -1.0;
         }
         data.range_meters.push_back(min_meters);
-        data.bearing_degs.push_back(radial_degs);
-        // Advance radial
-        radial_degs += step_degs;
-        if (radial_degs >= 360.0)
-        {
-            radial_degs -= 360.0;
-        }
+        data.bearing_degs.push_back(theta_degs);
     }
 }
 

@@ -1,8 +1,15 @@
-#include "coor_loader.hpp"
+#include <math.h>
 
-constexpr const char* g_test_file = "../data/test_coords.txt";
+#include <string>
+
+#include "coord_list.hpp"
+
+static constexpr const char* s_test_file = "../data/test_coords.txt";
 
 using slam_sim::map_coord_t;
+
+using std::string;
+
 
 uint32_t check_coord(map_coord_t& coord, double x, double y, double theta)
 {
@@ -44,7 +51,7 @@ int main(int argc, char** argv)
     (void) argv;
     uint32_t errs = 0;
     ////////////////////////////////////////////////////////////////////
-    errs += test_path_file(g_test_file);
+    errs += test_path_file(s_test_file);
 
     ////////////////////////////////////////////////////////////////////
     if (errs > 0)

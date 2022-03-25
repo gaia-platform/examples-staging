@@ -26,37 +26,9 @@ using utils::sensor_data_t;
 using utils::D2R;
 
 using gaia::slam::observations_t;
+using gaia::slam::positions_t;
+using gaia::slam::range_data_t;
 
-////////////////////////////////////////////////////////////////////////
-// Lookup table for caching sin/cos values
-
-// Instead of computing sine and cosine all the time, precompute these
-//  values for each range radial and cache it.
-struct sin_cos_t {
-    float s, c;
-};
-
-static sin_cos_t* s_sincos_lut = NULL;
-static uint32_t s_sincos_lut_len = 0;
-
-
-static void check_sincos_lut(uint32_t num_radials)
-{
-    if (s_sincos_lut_len == 0)
-    {
-        s_sincos_lut = new sin_cos_t[num_radials];
-        // LUT isn't initialized. Do so now.
-        double step_degs = 360.0 / num_radials;
-        for (uint32_t i=0; i<num_radials; i++)
-        {
-            float theta_rads = D2R * step_degs * (float) i;
-            sincosf(theta_rads, &s_sincos_lut[i].s, &s_sincos_lut[i].c);
-        }
-        s_sincos_lut_len = num_radials;
-    }
-    // Verify LUT is of correct size.
-    assert(s_sincos_lut_len == num_radials);
-}
 
 ////////////////////////////////////////////////////////////////////////
 // Constructors and destructors
@@ -162,7 +134,7 @@ map_node_flags_t& occupancy_grid_t::get_node_flags(
 // Updates occupancy, oberved and boundary flags in map from 
 //  observations on this radial.
 // Steps through radial and estimates what grid squares it crosses.
-void occupancy_grid_t::apply_radial(uint32_t radial, float range_meters,
+void occupancy_grid_t::apply_radial(float radial_degs, float range_meters,
     float pos_x_meters, float pos_y_meters)
 {
     // Set occupancy for this grid square.
@@ -172,9 +144,10 @@ void occupancy_grid_t::apply_radial(uint32_t radial, float range_meters,
     // Set observed and boundary flags.
     // Measured distance on radial.
     double dist_meters = range_meters < 0.0 
-        ? utils::RANGE_SENSOR_MAX_METERS : range_meters;
+        ? RANGE_SENSOR_MAX_METERS : range_meters;
     
-    const sin_cos_t& sc = s_sincos_lut[radial];
+    float s, c;
+    sincosf(D2R * radial_degs, &s, &c);
     // Number of points on radial to examine. Sample at a fraction of 
     //  the grid size.
     uint32_t num_steps = (uint32_t) 
@@ -185,15 +158,15 @@ void occupancy_grid_t::apply_radial(uint32_t radial, float range_meters,
         // Get position in world map, adjusting relative range data by
         //  bot's absolute position.
         float dist = (float) i * step_size_meters;
-        float x_pos = dist * sc.s - pos_x_meters;
-        float y_pos = dist * sc.c - pos_y_meters;
+        float x_pos = dist * s - pos_x_meters;
+        float y_pos = dist * c - pos_y_meters;
         map_node_flags_t& flags = get_node_flags(x_pos, y_pos);
         flags.observed = 1;
         // If this is the end of the radial and a range was detected,
         //  mark the boundary flag.
         if ((i == num_steps) && (range_meters > 0.0))
         {
-printf("  Boundary on %d at %.2f,%.2f (%.2f, %.2f, %.2f)\n", radial, x_pos, y_pos, pos_x_meters, pos_y_meters, dist);
+printf("  Boundary on %.3f at %.2f,%.2f (%.2f, %.2f, %.2f)\n", radial_degs, x_pos, y_pos, pos_x_meters, pos_y_meters, dist);
             flags.boundary = 1;
         }
     }
@@ -217,13 +190,14 @@ void occupancy_grid_t::apply_flags()
 
 void occupancy_grid_t::apply_sensor_data(const observations_t& obs)
 {
-    check_sincos_lut(obs.num_radials());
-printf("Applying sensor data at %.2f,%.2f (%d)\n", obs.pos_x_meters(), obs.pos_y_meters(), obs.id());
-    float pos_x_meters = obs.pos_x_meters();
-    float pos_y_meters = obs.pos_y_meters();
-    for (int32_t i=0; i<obs.num_radials(); i++)
+    positions_t pos = obs.position();
+    range_data_t r = obs.range_data();
+
+printf("Applying sensor data at %.2f,%.2f (%d)\n", pos.pos_x_meters(), pos.pos_y_meters(), obs.id());
+    for (int32_t i=0; i<r.num_radials(); i++)
     {
-        apply_radial(i, obs.distance_meters()[i], pos_x_meters, pos_y_meters);
+        apply_radial(r.radial_degs()[i], r.distance_meters()[i], 
+            pos.pos_x_meters(), pos.pos_y_meters());
     }
 
     apply_flags();
@@ -255,9 +229,6 @@ void occupancy_grid_t::export_as_pnm(string file_name)
                 float boundary = node.boundary / node.observed;
                 assert(boundary <= 1.0);
                 r[idx] = (uint8_t) round(255.0 * boundary);
-                float landmarks = node.landmarks / node.observed;
-                assert(landmarks <= 1.0);
-                b[idx] = (uint8_t) round(255.0 * landmarks);
             }
             g[idx] = node.occupied > 0.0 ? 128 : 0;
         }

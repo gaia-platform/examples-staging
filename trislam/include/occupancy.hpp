@@ -105,7 +105,7 @@ public:
 
 protected:
     uint32_t get_node_index(float pos_x_meters, float pos_y_meters);
-    void apply_radial(uint32_t radial, float range_meters, 
+    void apply_radial(float radial_degs, float range_meters, 
         float pos_x_meters, float pos_y_meters);
     void apply_flags();
 

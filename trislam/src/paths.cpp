@@ -22,7 +22,6 @@
 
 #include "slam_sim.hpp"
 #include "line_segment.hpp"
-#include "landmark_description.hpp"
 
 
 namespace slam_sim
@@ -103,7 +102,6 @@ printf("SENSOR sweep for obs %d\n", next_observation_id);
     );
     observations_t new_obs = observations_t::get(new_obs_id);
 
-    update_landmarks(path, pos_x_meters, pos_y_meters, obs_num, data);
 
     // Connect observation to path and to previous observation, if present.
     // Make a copy of the number of observations while we modify path.
