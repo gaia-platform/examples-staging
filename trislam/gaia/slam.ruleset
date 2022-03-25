@@ -1,0 +1,55 @@
+////////////////////////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////////////////////////
+// 
+// Rules for performing SLAM in the slam simulator.
+//
+////////////////////////////////////////////////////////////////////////
+
+#include <assert.h>
+#include <math.h>
+
+#include <iostream>
+#include <string>
+
+#include <gaia/common.hpp>
+#include <gaia/logger.hpp>
+#include <gaia/rules/rules.hpp>
+
+#include "slam_sim.hpp"
+
+
+using slam_sim::optimization_required;
+using slam_sim::optimize_graph;
+using slam_sim::build_map;
+
+using gaia::slam::edges_t;
+using gaia::slam::observations_t;
+using gaia::slam::error_corrections_t;
+
+
+ruleset observation_ruleset
+{
+    on_insert(e: edges_t)
+    {
+        // New edge created. See if it's time to run new graph optimization.
+        if (optimization_required())
+        {
+            optimize_graph(e.dest->observations.graph);
+        }
+    }
+
+    on_insert(o: observation_t)
+    {
+    }
+
+    on_insert(ec: error_corrections_t)
+    {
+        build_map(/ego.current_graph->graph, /observed_area);
+    }
+}
+
