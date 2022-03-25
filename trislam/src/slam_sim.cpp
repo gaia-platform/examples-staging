@@ -24,8 +24,6 @@
 
 using namespace gaia::slam;
 
-using std::this_thread::sleep_for;
-
 namespace slam_sim
 {
 
@@ -42,12 +40,18 @@ void move_bot_along_path(string path_file)
     {
         // create observation at this location
         // wait
-        usleep(50000);
+        usleep(c_rule_wait_millis * 1000);
     }
     
     // TODO 'optimize' graph and output final map
 }
 
+
+template <typename T_type>
+T_type get_single_record()
+{
+    return *(T_type::list().begin());
+}
 
 template <typename T_type>
 void clear_table()

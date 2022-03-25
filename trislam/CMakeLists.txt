@@ -45,10 +45,9 @@ translate_ruleset(
 
 add_executable(slam_sim
   src/analyze.cpp
-  src/globals.cpp
-  src/navigation.cpp
   src/occupancy.cpp
   src/paths.cpp
+  src/rule_api.cpp
   src/slam_sim.cpp
   src/utils/coord_list.cpp
   src/utils/line_segment.cpp
@@ -100,12 +99,9 @@ add_test(NAME test_line_segment COMMAND test_line_segment)
 add_executable(test_analyze
   tests/test_analyze.cpp
   src/analyze.cpp
-  src/globals.cpp
-  src/navigation.cpp
   src/occupancy.cpp
   src/paths.cpp
   src/utils/line_segment.cpp
-  src/utils/landmark_description.cpp
 )
 target_add_gaia_generated_sources(test_analyze)
 

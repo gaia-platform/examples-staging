@@ -20,6 +20,8 @@
 #include <gaia/logger.hpp>
 #include <gaia/rules/rules.hpp>
 
+#include "gaia_slam.h"
+
 #include "slam_sim.hpp"
 
 
@@ -28,28 +30,34 @@ using slam_sim::optimize_graph;
 using slam_sim::build_map;
 
 using gaia::slam::edges_t;
+using gaia::slam::ego_t;
+using gaia::slam::graphs_t;
 using gaia::slam::observations_t;
 using gaia::slam::error_corrections_t;
+
+//using gaia::slam::graphs_expr;
 
 
 ruleset observation_ruleset
 {
-    on_insert(e: edges_t)
+    on_insert(e: edges)
     {
         // New edge created. See if it's time to run new graph optimization.
         if (optimization_required())
         {
-            optimize_graph(e.dest->observations.graph);
+            optimize_graph(e.dest->observations.graph->graphs);
         }
     }
 
-    on_insert(o: observation_t)
+    on_insert(o: observations)
     {
     }
 
-    on_insert(ec: error_corrections_t)
+    on_insert(ec: error_corrections)
     {
-        build_map(/ego.current_graph->graph, /observed_area);
+        graphs_t g = *(graphs_t::list()
+            .where(graphs_t::expr::id == ec.graph_id).begin());
+        build_map(g, /observed_area);
     }
 }
 

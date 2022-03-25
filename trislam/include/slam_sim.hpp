@@ -53,7 +53,10 @@ bool optimization_required();
 void optimize_graph(gaia::slam::graphs_t&);
 
 // Generates a map (binary occupancy grid) and saves it to disk.
+// Version with no parameters manages its own transaction. The version
+//  with record references is meant to be called from w/in an existing
+//  transaction.
 void build_map();
-void build_map(gaia::slam_sim::graphs_t, gaia::slam_sim::observerd_area_t&);
+void build_map(gaia::slam::graphs_t, gaia::slam::observed_area_t&);
 
 } // namespace slam_sim

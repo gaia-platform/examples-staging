@@ -84,7 +84,7 @@ table edges
   --  don't have to be directed but they can be.
   src_id uint32,
   src references observations
-      using in_edges where edges.src_id = observations.id,
+      using out_edges where edges.src_id = observations.id,
 
   dest_id uint32,
   dest references observations
@@ -101,16 +101,16 @@ table error_corrections
   id uint32 unique,
   graph_id uint32
 
-  -- A reference can be made to graphs if necesasry, but if it's unlikely
-  --  to be used, or infrequently used, it's probably better to avoid the
-  --  reference, to avoid possible transaction conflicts if dealing with
-  --  computationally intensive actions.
-  -- The latest graph can be read by, in rules (declaratively):
-  --      graph_t g = /ego.current_graph->graph;
-  --  or using direct access:
-  --      graph_t g = *(graph_t::list()
-  --          .where(graph_expr.id = ec.graph_id()).begin());
-  -- TODO make sure these work
+  -- A reference can be made to graphs if necesasry. However, if it's
+  --  unlikely to be used, or be used infrequently, might be better
+  --  to avoid having reference, to avoid possible transaction conflicts
+  --  if modifying graph_id in a transaction that has computationally
+  --  intensive actions associated with it.
+  -- In the absense of a reference, the correct graph can always be
+  --  reached using the following direct access approach:
+  --    graphs_t g = *(graphs_t::list()
+  --        .where(graphs_t::expr::id == ec.graph_id).begin());
+  --  for error_corrections record 'ec'.
 
   -- Addional data fields here, as necessary.
 )
@@ -131,36 +131,37 @@ table observations
 
   position references positions,
   motion references movements,
-  range references range_data,
+  range_data references range_data,
+  ego references ego,
 
   -- This is set at creation and doesn't change.
   graph_id uint32,
   graph references graphs
-      where graphs.id == observations.graph_id
+      where graphs.id = observations.graph_id,
 
   ----------------------------------------------
   -- Dynamic fields. These can be modified asynchronously. Functions
   --  and rules that modify them (i.e., that add edges) should be designed 
   --  and expect a possible transaction rollback.
-  in_edges refrences edges[],
-  out_edges refrences edges[],
+  in_edges references edges[],
+  out_edges references edges[]
 
 )
 
 
 table positions
-{
+(
   -- The latest best guess of position. It may be modified in the future
   --  when we have better error estimates.
   pos_x_meters float,
   pos_y_meters float,
 
   observation references observations
-}
+)
 
 
 table movements
-{
+(
   -- DR motion from previous observation.
   dx_meters float,
   dy_meters float,
@@ -169,7 +170,7 @@ table movements
   dist_meters float,
 
   observation references observations
-}
+)
 
 
 table range_data
