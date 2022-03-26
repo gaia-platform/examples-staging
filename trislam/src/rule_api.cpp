@@ -105,7 +105,7 @@ void build_map()
 }
 
 
-void build_map(graphs_t& g, observed_area_t& bounds)
+void build_map(const graphs_t& g, const observed_area_t& bounds)
 {
     world_coordinate_t top_left = {
         .x_meters = bounds.left_meters(),
@@ -117,7 +117,7 @@ void build_map(graphs_t& g, observed_area_t& bounds)
     };
     occupancy_grid_t map(MAP_NODE_WIDTH_METERS, top_left, bottom_right);
     // Iterate through observations in this graph and build a map.
-    for (observations_t& o: g.observations())
+    for (const observations_t& o: g.observations())
     {
         gaia_log::app().info("Applying sensor data from observation {}", 
             o.id());

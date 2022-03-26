@@ -53,7 +53,12 @@ void optimize_graph(gaia::slam::graphs_t&);
 //  with record references is meant to be called from w/in an existing
 //  transaction.
 void build_map();
-void build_map(gaia::slam::graphs_t, gaia::slam::observed_area_t&);
+void build_map(const gaia::slam::graphs_t&, const gaia::slam::observed_area_t&);
+
+////////////////////////////////////////////////
+// Utility
+
+void create_observation(map_coord_t& prev, map_coord_t& coord);
 
 
 ////////////////////////////////////////////////
@@ -61,8 +66,10 @@ void build_map(gaia::slam::graphs_t, gaia::slam::observed_area_t&);
 
 void seed_database();
 
-void create_observation(map_coord_t& coord);
+void create_observation(map_coord_t& prev, map_coord_t& coord);
 void calculate_range_data(map_coord_t& coord, utils::sensor_data_t& data);
+
+void load_world_map(const char* map_file);
 
 } // namespace slam_sim
 

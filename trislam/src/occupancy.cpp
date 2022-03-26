@@ -56,6 +56,9 @@ occupancy_grid_t::occupancy_grid_t(float node_width_meters,
     clear();
 }
 
+occupancy_grid_t::~occupancy_grid_t()
+{
+}
 
 ////////////////////////////////////////////////////////////////////////
 // Initialize map
