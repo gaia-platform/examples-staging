@@ -95,14 +95,15 @@ void load_world_map(const char* world_map)
 void calculate_range_data(map_coord_t& coord, sensor_data_t& data)
 {
     data.range_meters.clear();
+    data.bearing_degs.clear();
     data.num_radials = NUM_RANGE_RADIALS;
-//printf("RANGES from %.3f,%.3f\n", x_meters, y_meters);
+printf("RANGES from %.3f,%.3f  bearing %.3f\n", coord.x_meters, coord.y_meters, coord.heading_degs);
     double step_degs = RANGE_SENSOR_SWEEP_DEGS / (NUM_RANGE_RADIALS - 1);
     // Get range on each radial, and store both distance and radial degs.
     for (uint32_t n=0; n<NUM_RANGE_RADIALS; n++)
     {
         // Get this radial and constrain to [0,360)
-        double theta_degs = coord.heading_degs - RANGE_SENSOR_SWEEP_DEGS
+        double theta_degs = coord.heading_degs - RANGE_SENSOR_SWEEP_DEGS/2.0
             + (double) n * step_degs;
         theta_degs = theta_degs >= 360.0 ? theta_degs - 360.0 : theta_degs;
         theta_degs = theta_degs < 0.0    ? theta_degs + 360.0 : theta_degs;

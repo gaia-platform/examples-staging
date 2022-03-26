@@ -35,43 +35,64 @@ void print_sensor_data(sensor_data_t& data)
 }
 
 
-//static uint32_t check_radial(uint32_t num, double expected,
-//    const sensor_data_t& data)
-//{
-//    uint32_t errs = 0;
-//    if (fabs(data.range_meters[num] - expected) > 0.01)
-//    {
-//        fprintf(stderr, "Radial %d (%d degs) has range of %.3f, "
-//            "expected %.3f\n", num, 2*num, data.range_meters[num], expected);
-//        errs++;
-//    }
-//    return errs;
-//}
+static uint32_t check_radial(uint32_t num, double heading_degs,
+    double expected, const sensor_data_t& data)
+{
+    uint32_t errs = 0;
+    if (fabs(data.range_meters[num] - expected) > 0.01)
+    {
+        fprintf(stderr, "Radial %d (%.1f degs) has range of %.3f, "
+            "expected %.3f\n", num, heading_degs, data.range_meters[num], 
+            expected);
+        errs++;
+    }
+    return errs;
+}
 
 
 int main(int argc, char** argv)
 {
     (void) argc;
     (void) argv;
-    uint32_t errs = 1;
+    uint32_t errs = 0;
 
     gaia::system::initialize();
 
     ////////////////////////////////////////////////////////////////////
-    printf("Test needs to be rewritten to take into account new sensor logic");
 
-//    load_world_map(WORLD_MAP_FILE);
-//    std::string response;
-//    sensor_data_t data;
-//    perform_sensor_sweep(-3.0, -4.4, data);
+    assert(NUM_RANGE_RADIALS == 45);
+    load_world_map(WORLD_MAP_FILE);
+    sensor_data_t data;
+
+    map_coord_t pos = {
+        .x_meters = -3.0,
+        .y_meters = 3.9,
+        .heading_degs = 270.0
+    };
+printf("Calculate range data\n");
+    calculate_range_data(pos, data);
+    errs += check_radial(0, 225.0, 1.41, data);
+    errs += check_radial(22, 270.0, 3.90, data);
+    errs += check_radial(44, 315.0, 1.41, data);
+
+    pos.heading_degs = 90.0;
+    calculate_range_data(pos, data);
+    errs += check_radial(0, 45.0, 1.41, data);
+    errs += check_radial(22, 90.0, 2.9, data);
+    errs += check_radial(44, 135.0, -1.0, data);
+
+    for (uint32_t i=0; i<NUM_RANGE_RADIALS; i++)
+    {
+        printf("%2d  \t%7.2f  \t%7.2f\n", i, data.bearing_degs[i], data.range_meters[i]);
+    }
+
+//    errs += check_radial(10, 0.5, data);
 //
-//    // wall distances
-//    errs += check_radial(0, 0.5, data);
 //    errs += check_radial(22, 0.7, data);
-//    errs += check_radial(45, -1.0, data);
+//    errs += check_radial(45, 315.0, -1.0, data);
 //    errs += check_radial(90, -1.0, data);
 //    errs += check_radial(134, 3.9, data);
-//
+
 //    // table distances
 //    // 190 degs. Strikes vertical edge of table near bottom.
 //    //    sqrt(0.5^2 + (0.5/tan(10))^2)
