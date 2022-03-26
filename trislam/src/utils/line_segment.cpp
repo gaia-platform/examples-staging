@@ -75,13 +75,13 @@ double line_segment_t::intersect_range(double x, double y, double theta_deg)
     // Segment 1
     double x1 = m_x0;
     double x2 = m_x1;
-    double y1 = -m_y0;
-    double y2 = -m_y1;
+    double y1 = m_y0;
+    double y2 = m_y1;
     // Segment 2
     double x3 = x;
     double x4 = x3 + 10.0 * sin(D2R * theta);
-    double y3 = -y;
-    double y4 = -y + 10.0 * cos(D2R * theta);
+    double y3 = y;
+    double y4 = y + 10.0 * cos(D2R * theta);
 //printf("This segment:   %.1f,%.1f -> %.1f,%.1f\n", x1, y1, x2, y2);
 //printf(" -> line %.1f,%.1f at %.1f\n", x3, y3, theta);
 //printf("       other:   %.1f,%.1f -> %.4f,%.4f\n", x3, y3, x4, y4);
