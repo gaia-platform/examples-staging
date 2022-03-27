@@ -64,7 +64,7 @@ void create_observation(map_coord_t& prev, map_coord_t& coord);
 ////////////////////////////////////////////////
 // Internal
 
-void seed_database();
+void seed_database(float start_x_meters, float start_y_meters);
 
 void create_observation(map_coord_t& prev, map_coord_t& coord);
 void calculate_range_data(map_coord_t& coord, utils::sensor_data_t& data);

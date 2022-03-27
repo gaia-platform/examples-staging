@@ -35,17 +35,16 @@ constexpr double RULE_WAIT_SEC = 0.1;
 //  the next observation and try again.
 constexpr uint32_t NUM_OBSERVATION_TXN_RETRIES = 2;
 
-static const char* s_path_file = NULL;
+static coord_list_t* s_path = NULL;
 
 void move_bot_along_path()
 {
     // Path file contain points that define the path. The sequence of 
     //  points define segments.
-    assert(s_path_file);
-    coord_list_t path(s_path_file);
-    map_coord_t prev = path[0];
-    for (map_coord_t& latest: path)
+    map_coord_t prev = (*s_path)[0];
+    for (map_coord_t& latest: *s_path)
     {
+printf("Map position %.2f,%.2f  %.1f\n", latest.x_meters, latest.y_meters, latest.heading_degs);
         // Create observation at this location.
         //  observation to be made.
         for (uint32_t i=0; i<NUM_OBSERVATION_TXN_RETRIES; i++)
@@ -55,9 +54,11 @@ void move_bot_along_path()
                 gaia::db::begin_transaction();
                 create_observation(prev, latest);
                 gaia::db::commit_transaction();
+                break;
             }
             catch (gaia::db::transaction_update_conflict&)
             {
+printf("TXN CONFLICT\n");
                 // Take a brief nap and try again.
                 usleep(1000);
             }
@@ -126,6 +127,7 @@ void parse_command_line(int argc, char** argv)
 {
     int opt;
     const char* map_file = NULL;
+    const char* path_file = NULL;
     while ((opt = getopt(argc, argv, "hm:p:")) != -1)
     {
         switch(opt)
@@ -134,7 +136,7 @@ void parse_command_line(int argc, char** argv)
                 map_file = optarg;
                 break;
             case 'p':
-                s_path_file = optarg;
+                path_file = optarg;
                 break;
             case 'h':
                 usage(argc, argv);
@@ -143,13 +145,14 @@ void parse_command_line(int argc, char** argv)
                 usage(argc, argv);
         }
     }
-    if ((map_file == NULL) || (s_path_file == NULL))
+    if ((map_file == NULL) || (path_file == NULL))
     {
         usage(argc, argv);
     }
     gaia_log::app().info("Loading world map {}", map_file);
-    gaia_log::app().info("Using path file {}", s_path_file);
+    gaia_log::app().info("Using path file {}", path_file);
     load_world_map(map_file);
+    s_path = new coord_list_t(path_file);
 }
 
 
@@ -158,7 +161,8 @@ void init_sim()
     // Seed database and then create first path.
     // Seeding function manages its own transaction.
     gaia_log::app().info("Seeding the database...");
-    seed_database();
+    map_coord_t start = (*s_path)[0];
+    seed_database(start.x_meters, start.y_meters);
 }
 
 } // namespace slam_sim;

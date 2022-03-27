@@ -37,7 +37,7 @@ occupancy_grid_t::occupancy_grid_t(float node_width_meters,
     world_coordinate_t top_left, world_coordinate_t bottom_right)
 {
     float width_meters = bottom_right.x_meters - top_left.x_meters;
-    float height_meters = bottom_right.y_meters - top_left.y_meters;
+    float height_meters = top_left.y_meters - bottom_right.y_meters;
     // Number of grids in map.
     m_grid_size.rows = (uint32_t) ceil(height_meters / node_width_meters);
     m_grid_size.cols = (uint32_t) ceil(width_meters / node_width_meters);
@@ -46,9 +46,9 @@ occupancy_grid_t::occupancy_grid_t(float node_width_meters,
     // Physical size of map.
     m_map_size.x_meters = width_meters;
     m_map_size.y_meters = height_meters;
-    // Map bounds.
-    m_top_left = top_left;
-    m_bottom_right = bottom_right;
+    // Map center.
+    m_bottom_left.x_meters = top_left.x_meters;
+    m_bottom_left.y_meters = bottom_right.y_meters;
     //
     uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
     m_grid.resize(num_nodes);
@@ -99,19 +99,22 @@ void occupancy_grid_t::clear()
 // Returns index of map node at specified location. Location uses 
 uint32_t occupancy_grid_t::get_node_index(float x_meters, float y_meters)
 {
-    float left_inset_meters = x_meters - m_top_left.x_meters;
-    uint32_t x_idx = (uint32_t) floor(left_inset_meters / m_map_size.x_meters);
+    // x index.
+    float left_inset_meters = x_meters - m_bottom_left.x_meters;;
+    uint32_t x_idx = (uint32_t) floor(left_inset_meters / m_node_size_meters);
     if (x_idx >= m_grid_size.cols)
     {
         x_idx = m_grid_size.cols - 1;
     }
-    float bottom_inset_meters = y_meters - m_bottom_right.y_meters;
+    // y index.
+    float bottom_inset_meters = y_meters - m_bottom_left.y_meters;;
     uint32_t y_idx = 
-        (uint32_t) floor(bottom_inset_meters / m_map_size.y_meters);
+        (uint32_t) floor(bottom_inset_meters / m_node_size_meters);
     if (y_idx >= m_grid_size.rows)
     {
         y_idx = m_grid_size.rows - 1;
     }
+//printf("  %.2f,%.2f at idcs %d,%d (of %d,%d = %d)\n", x_meters, y_meters, x_idx, y_idx, m_grid_size.cols, m_grid_size.rows, x_idx+y_idx*m_grid_size.cols);
     return x_idx + y_idx * m_grid_size.cols;
 }
 
@@ -142,6 +145,7 @@ void occupancy_grid_t::apply_radial(float radial_degs, float range_meters,
 {
     // Set occupancy for this grid square.
     map_node_flags_t& home_flags = get_node_flags(pos_x_meters, pos_y_meters);
+//printf("OCCUPANCY position %.2f,%.2f\n", pos_x_meters, pos_y_meters);
     home_flags.occupied = 1;
 
     // Set observed and boundary flags.
@@ -161,15 +165,15 @@ void occupancy_grid_t::apply_radial(float radial_degs, float range_meters,
         // Get position in world map, adjusting relative range data by
         //  bot's absolute position.
         float dist = (float) i * step_size_meters;
-        float x_pos = dist * s - pos_x_meters;
-        float y_pos = dist * c - pos_y_meters;
+        float x_pos = dist * s + pos_x_meters;
+        float y_pos = dist * c + pos_y_meters;
         map_node_flags_t& flags = get_node_flags(x_pos, y_pos);
         flags.observed = 1;
         // If this is the end of the radial and a range was detected,
         //  mark the boundary flag.
         if ((i == num_steps) && (range_meters > 0.0))
         {
-printf("  Boundary on %.3f at %.2f,%.2f (%.2f, %.2f, %.2f)\n", radial_degs, x_pos, y_pos, pos_x_meters, pos_y_meters, dist);
+//printf("  Boundary on %.3f at %.2f,%.2f (%.2f, %.2f, %.2f)\n", radial_degs, x_pos, y_pos, pos_x_meters, pos_y_meters, dist);
             flags.boundary = 1;
         }
     }
@@ -187,6 +191,10 @@ void occupancy_grid_t::apply_flags()
         node.occupied += flags.occupied;
         node.observed += flags.observed;
         node.boundary += flags.boundary;
+//if (flags.occupied > 0)
+//{
+//    printf("OCCUPATION at idx=%d\n", i);
+//}
     }
 }
 
@@ -196,7 +204,7 @@ void occupancy_grid_t::apply_sensor_data(const observations_t& obs)
     positions_t pos = obs.position();
     range_data_t r = obs.range_data();
 
-printf("Applying sensor data at %.2f,%.2f (%d)\n", pos.pos_x_meters(), pos.pos_y_meters(), obs.id());
+//printf("Applying sensor data at %.2f,%.2f (%d)\n", pos.pos_x_meters(), pos.pos_y_meters(), obs.id());
     for (int32_t i=0; i<r.num_radials(); i++)
     {
         apply_radial(r.bearing_degs()[i], r.distance_meters()[i], 
@@ -233,7 +241,7 @@ void occupancy_grid_t::export_as_pnm(string file_name)
                 assert(boundary <= 1.0);
                 r[idx] = (uint8_t) round(255.0 * boundary);
             }
-            g[idx] = node.occupied > 0.0 ? 128 : 0;
+            g[idx] = node.occupied > 0.0 ? 255 : 0;
         }
     }
 

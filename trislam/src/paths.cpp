@@ -54,20 +54,43 @@ using utils::sensor_data_t;
 
 static void update_observed_area(ego_t& ego, map_coord_t coord)
 {
-    const observed_area_t& area = ego.world();
+    observed_area_t area = ego.world();
     bool change = false;
+    // Left and right bounds.
     float left_edge   = area.left_meters();
     float right_edge  = area.right_meters();
-    float bottom_edge = area.bottom_meters();
-    float top_edge    = area.top_meters();
-    if (floor(coord.x_meters - RANGE_SENSOR_MAX_METERS) < left_edge)
+printf("OBSERVED AREA at %.2f,%.2f\n", coord.x_meters, coord.y_meters);
+printf("   l/r  %.2f,%.2f\n", left_edge, right_edge);
+    if (floor(coord.x_meters - (RANGE_SENSOR_MAX_METERS+1)) < left_edge)
     {
-        left_edge = floor(coord.x_meters - RANGE_SENSOR_MAX_METERS);
+        left_edge = floor(coord.x_meters - (RANGE_SENSOR_MAX_METERS+1));
         change = true;
     }
+    if (ceil(coord.x_meters + (RANGE_SENSOR_MAX_METERS+1)) > right_edge)
+    {
+        right_edge = floor(coord.x_meters + (RANGE_SENSOR_MAX_METERS+1));
+        change = true;
+    }
+printf("   ->>  %.2f,%.2f\n", left_edge, right_edge);
+    // Top and bottom bounds.
+    float bottom_edge = area.bottom_meters();
+    float top_edge    = area.top_meters();
+printf("   b/t  %.2f,%.2f\n", bottom_edge, top_edge);
+    if (floor(coord.y_meters - (RANGE_SENSOR_MAX_METERS+1)) < bottom_edge)
+    {
+        bottom_edge = floor(coord.y_meters - (RANGE_SENSOR_MAX_METERS+1));
+        change = true;
+    }
+    if (ceil(coord.y_meters + (RANGE_SENSOR_MAX_METERS+1)) > top_edge)
+    {
+        top_edge = floor(coord.y_meters + (RANGE_SENSOR_MAX_METERS+1));
+        change = true;
+    }
+printf("   ->>  %.2f,%.2f\n", bottom_edge, top_edge);
+    // If bounds were modified, update observed area record.
     if (change)
     {
-        observed_area_writer oa_writer = observed_area_writer();
+        observed_area_writer oa_writer = area.writer();
         oa_writer.left_meters   = left_edge;
         oa_writer.right_meters  = right_edge;
         oa_writer.bottom_meters = bottom_edge;
@@ -82,7 +105,7 @@ void create_observation(map_coord_t& prev, map_coord_t& coord)
     gaia_log::app().info("Performing observation {} at {},{} heading {}", 
         obs_num, coord.x_meters, coord.y_meters, coord.heading_degs);
     sensor_data_t data;
-printf("SENSOR sweep for obs %d\n", obs_num);
+printf("SENSOR sweep for obs %d   %.2f,%.2f heading %.1f\n", obs_num, coord.x_meters, coord.y_meters, coord.heading_degs);
     calculate_range_data(coord, data);
 
     // Get ego
@@ -122,8 +145,8 @@ printf("SENSOR sweep for obs %d\n", obs_num);
     update_observed_area(ego, coord);
 
     // create edge
-    const latest_observation_t lo = ego.latest_observation();
-    const observations_t prev_obs = lo.observation();
+    latest_observation_t lo = ego.latest_observation();
+    observations_t prev_obs = lo.observation();
     if (prev_obs)
     {
         edges_t::insert_row(
@@ -134,7 +157,7 @@ printf("SENSOR sweep for obs %d\n", obs_num);
     }
 
     // update latest_observation
-    latest_observation_writer lo_writer = latest_observation_writer();
+    latest_observation_writer lo_writer = lo.writer();
     lo_writer.observation_id = obs_num;
     lo_writer.update_row();
 }
@@ -144,7 +167,7 @@ printf("SENSOR sweep for obs %d\n", obs_num);
 // Non-rule API
 // The functions here must manage their own transactions.
 
-void seed_database()
+void seed_database(float x_meters, float y_meters)
 {
     // There shouldn't be any transaction conflicts as this is the first
     //  operation on the database so ignore the try/catch block.
@@ -160,10 +183,10 @@ void seed_database()
         0             // observation_id
     );
     gaia_id_t area_id = observed_area_t::insert_row(
-        floor(-RANGE_SENSOR_MAX_METERS),      // left_meters
-        ceil(RANGE_SENSOR_MAX_METERS),        // right_meters
-        ceil(RANGE_SENSOR_MAX_METERS),        // top_meters
-        floor(-RANGE_SENSOR_MAX_METERS)       // bottom_meters
+        floor(x_meters - (RANGE_SENSOR_MAX_METERS+1)),    // left_meters
+        ceil(x_meters + (RANGE_SENSOR_MAX_METERS+1)),     // right_meters
+        ceil(y_meters + (RANGE_SENSOR_MAX_METERS+1)),     // top_meters
+        floor(y_meters - (RANGE_SENSOR_MAX_METERS+1))     // bottom_meters
     );
 
     ////////////////////////////////////////////

@@ -1,0 +1,4 @@
+tmp
+*.o
+.*.swp
+build

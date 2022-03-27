@@ -114,8 +114,7 @@ protected:
 
     map_size_t m_map_size;
     // Positive coordiantes are rightward and upward.
-    world_coordinate_t m_top_left;
-    world_coordinate_t m_bottom_right;
+    world_coordinate_t m_bottom_left;
 
     std::vector<map_node_t> m_grid;
     std::vector<map_node_flags_t> m_grid_flags;
