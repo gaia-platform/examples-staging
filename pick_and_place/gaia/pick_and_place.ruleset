@@ -8,7 +8,7 @@
 
 #include "gaia/logger.hpp"
 
-ruleset pick_and_place_ruleset : serial_group()
+ruleset pick_and_place_ruleset
 {
     {
         // Executed when table 'state' has a record with
