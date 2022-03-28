@@ -8,7 +8,7 @@
 
 database pick_and_place
 
--- Encapsulate the state of the machine.
+-- Encapsulates the state of the machine.
 -- Changes to the state triggers actions.
 table state (
     pick bool,

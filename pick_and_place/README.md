@@ -1,8 +1,8 @@
 # Pick and Place demo
 
-A demonstration of the Gaia Platform database working with declarative rules to run a naive pick and place application.
+A demonstration of the Gaia Platform database working with declarative rules to run a naive pick-and-place application.
 
-## Pre-requisites
+## Prerequisites
 
 Ubuntu 20.04 is required.
 
@@ -10,9 +10,9 @@ Follow the [getting started instructions](https://gaia-platform.github.io/gaia-p
 
 ## Build the Gaia application
 
-To build a Gaia application you need the `gaia_db_server` running. If during the SDK installation you selected to install 
-the `gaia_db_server` as a `systemd` service you won't need to do anything. Otherwise, you need to manually start the server
-into a separate terminal:
+To build a Gaia application you need `gaia_db_server` running. If during the SDK installation you selected to install 
+`gaia_db_server` as a `systemd` service you won't need to do anything. Otherwise, you need to manually start the server
+in a separate terminal:
 
 ```shell
 # Start the server with persistence disabled
@@ -33,11 +33,12 @@ make
 
 This is what happens when building a Gaia application. Most of these steps are handled by the build system:
 
-1. The schema (`gaia/pick_and_place.ddl`) is loaded into the `gaia_db_server` with `gaiac` tool.
+1. The schema (`gaia/pick_and_place.ddl`) is loaded into `gaia_db_server` with the `gaiac` tool.
 2. `gaiac` also generates the [Direct Access Classes](https://gaia-platform.github.io/gaia-platform-docs.io/articles/apps-direct-access.html)
     from the schema definition in the Database. Direct Access Classes allow you to perform Create/Read/Update/Delete 
-    copy-free way, transactional, thread-safe way.
-3. The ruleset (`gaia/pick_and_place.ruleset`) is translated into C++ code.
+    copy-free, transactional, thread-safe.
+3. The [ruleset](https://gaia-platform.github.io/gaia-platform-docs.io/articles/rulesets-gaia-rulesets.html) 
+    (`gaia/pick_and_place.ruleset`) is translated into C++ code.
 4. Your application (`src/main.cpp`) is built including the Direct Access Classes and the Translated Ruleset Code.
 
 ## Running the Demo
