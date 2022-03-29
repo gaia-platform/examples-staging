@@ -6,7 +6,7 @@
 // or at https://opensource.org/licenses/MIT.
 ////////////////////////////////////////////////////
 
-#include "behave.hpp"
+#include "behavior.hpp"
 #include <gaia/logger.hpp>
 
 float adjust_temperature(float min_temp, float max_temp, float sensor_value, float fan_rpm);
@@ -27,27 +27,27 @@ ruleset behavior_tree
     ///////////////////////////////////////////////////////////////////////////////////////////////
     on_update(p:node.tick_flag)
     {
-      if (p.node_type == action && p.status != running)
-      {
-        p.status = running;
+        if (p.node_type == action && p.status != running)
+        {
+            p.status = running;
 
-        if (p.argument == check_temperature)
-        {
-          p.check_temperature.connect(check_temperature_trigger.insert());
+            if (p.argument == check_temperature)
+            {
+                p.check_temperature.connect(check_temperature_trigger.insert());
+            }
+            else if (p.argument == set_fan_speed)
+            {
+                p.set_fan_speed.connect(set_fan_speed_trigger.insert());
+            }
+            else if (p.argument == check_fan_speed)
+            {
+                p.check_fan_speed.connect(check_fan_speed_trigger.insert());
+            }
+            else if (p.argument == adjust_fan_speed)
+            {
+                p.adjust_fan_speed.connect(adjust_fan_speed_trigger.insert());
+            }
         }
-        else if (p.argument == set_fan_speed)
-        {
-          p.set_fan_speed.connect(set_fan_speed_trigger.insert());
-        }
-        else if (p.argument == check_fan_speed)
-        {
-          p.check_fan_speed.connect(check_fan_speed_trigger.insert());
-        }
-        else if (p.argument == adjust_fan_speed)
-        {
-          p.adjust_fan_speed.connect(adjust_fan_speed_trigger.insert());
-        }
-      }
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -61,33 +61,33 @@ ruleset behavior_tree
     ///////////////////////////////////////////////////////////////////////////////////////////////
     on_update(p:node.tick_flag)
     {
-      unsigned int child_count = 0;
-      if (p.node_type == selector)
-      {
-        if (p.children->c:node.order == child_count)
+        if (p.node_type == selector)
         {
-          if (c.status == running)
-          {
-            p.status = running;
-            return;
-          }
-          else if(c.status == success)
-          {
-            p.status = success;
-            return;
-          }
-          else if (c.status == idle)
-          {
-            c.tick_flag++;
-            return;
-          }
-          ++child_count;
+            unsigned int child_count = 0;
+            if (p.children->c:node.order == child_count)
+            {
+                if (c.status == running)
+                {
+                    p.status = running;
+                    return;
+                }
+                else if(c.status == success)
+                {
+                    p.status = success;
+                    return;
+                }
+                else if (c.status == idle)
+                {
+                    c.tick_flag++;
+                    return;
+                }
+                ++child_count;
+            }
+            if (p.status == idle)
+            {
+                p.status = failure;
+            }
         }
-        if (p.status == idle)
-        {
-          p.status = failure;
-        }
-      }
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -101,33 +101,33 @@ ruleset behavior_tree
     ///////////////////////////////////////////////////////////////////////////////////////////////
     on_update(p:node.tick_flag)
     {
-      unsigned int child_count = 0;
-      if (p.node_type == sequence)
-      {
-        if (p.children->c:node.order == child_count)
+        if (p.node_type == sequence)
         {
-          if (c.status == running)
-          {
-            p.status = running;
-            return;
-          }
-          else if(c.status == failure)
-          {
-            p.status = failure;
-            return;
-          }
-          else if (c.status == idle)
-          {
-            c.tick_flag++;
-            return;
-          }
-          ++child_count;
+            unsigned int child_count = 0;
+            if (p.children->c:node.order == child_count)
+            {
+                if (c.status == running)
+                {
+                    p.status = running;
+                    return;
+                }
+                else if(c.status == failure)
+                {
+                    p.status = failure;
+                    return;
+                }
+                else if (c.status == idle)
+                {
+                    c.tick_flag++;
+                    return;
+                }
+                ++child_count;
+            }
+            if (p.status == idle)
+            {
+                p.status = success;
+            }
         }
-        if (p.status == idle)
-        {
-          p.status = success;
-        }
-      }
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -141,10 +141,10 @@ ruleset behavior_tree
     ///////////////////////////////////////////////////////////////////////////////////////////////
     on_update(node.status)
     {
-      if (node.status == success || node.status == failure)
-      {
-        node.parent->node.tick_flag++;
-      }
+        if (node.status == success || node.status == failure)
+        {
+          node.parent->node.tick_flag++;
+        }
     }
 };
 
@@ -161,16 +161,16 @@ ruleset behavior_tree_actions
     ///////////////////////////////////////////////////////////////////////////////////////////////
     on_insert(check_temperature_trigger)
     {
-      if (/s:sensor.value < /i:incubator.min_temp
+        if (/s:sensor.value < /i:incubator.min_temp
                         || s.value > i.max_temp)
-      {
-        node.status = failure;
-      }
-      else
-      {
-        node.status = success;
-      }
-      check_temperature_trigger.remove();
+        {
+            node.status = failure;
+        }
+        else
+        {
+            node.status = success;
+        }
+        check_temperature_trigger.remove();
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -184,9 +184,9 @@ ruleset behavior_tree_actions
     ///////////////////////////////////////////////////////////////////////////////////////////////
     on_insert(set_fan_speed_trigger)
     {
-      /a:actuator.value = adjust_temperature(/i:incubator.min_temp, i.max_temp, /sensor.value, a.value);
-      node.status = success;
-      set_fan_speed_trigger.remove();
+        /a:actuator.value = adjust_temperature(/i:incubator.min_temp, i.max_temp, /sensor.value, a.value);
+        node.status = success;
+        set_fan_speed_trigger.remove();
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -200,16 +200,16 @@ ruleset behavior_tree_actions
     ///////////////////////////////////////////////////////////////////////////////////////////////
     on_insert(check_fan_speed_trigger)
     {
-      if (/sensor.value > /incubator.max_temp
+        if (/sensor.value > /incubator.max_temp
                             && /actuator.value > c_fan_threshold * c_fan_speed_limit)
-      {
-        node.status = success;
-      }
-      else
-      {
-        node.status = failure;
-      }
-      check_fan_speed_trigger.remove();
+        {
+            node.status = success;
+        }
+        else
+        {
+            node.status = failure;
+        }
+        check_fan_speed_trigger.remove();
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -223,7 +223,7 @@ ruleset behavior_tree_actions
     ///////////////////////////////////////////////////////////////////////////////////////////////
     on_insert(adjust_fan_speed_trigger)
     {
-      node.status = success;
-      /actuator.value = c_fan_speed_limit;
+        node.status = success;
+        /actuator.value = c_fan_speed_limit;
     }
 };

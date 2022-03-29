@@ -23,8 +23,8 @@ include("/opt/gaia/cmake/gaia.cmake")
 add_compile_options(-Wall -Wextra)
 
 set(INCUBATOR_BEHAVIOR_TREE_DDL ${PROJECT_SOURCE_DIR}/src/incubator.ddl)
-set(BEHAVIOR_TREE_DDL ${PROJECT_SOURCE_DIR}/src/behave.ddl)
-set(BEHAVIOR_TREE_RULESET ${PROJECT_SOURCE_DIR}/src/behave.ruleset)
+set(BEHAVIOR_TREE_DDL ${PROJECT_SOURCE_DIR}/src/behavior.ddl)
+set(BEHAVIOR_TREE_RULESET ${PROJECT_SOURCE_DIR}/src/behavior.ruleset)
 set(BEHAVIOR_TREE_INCLUDES ${PROJECT_SOURCE_DIR}/inc ${CMAKE_CURRENT_SOURCE_DIR}/inc)
 
 # --- Generate Direct Access classes from DDL---
@@ -35,7 +35,7 @@ process_schema(
 
 process_schema(
   DDL_FILE ${BEHAVIOR_TREE_DDL}
-  DATABASE_NAME behave
+  DATABASE_NAME behavior
 )
 
 # -- Translate ruleset into CPP --

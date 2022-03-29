@@ -22,11 +22,11 @@
 #include "gaia/rules/rules.hpp"
 #include "gaia/system.hpp"
 
-#include "behave.hpp"
-#include "gaia_behave.h"
+#include "behavior.hpp"
+#include "gaia_behavior.h"
 #include "gaia_incubator.h"
 
-using namespace gaia::behave;
+using namespace gaia::behavior;
 
 using namespace gaia::common;
 using namespace gaia::db;
@@ -115,19 +115,19 @@ void init_behavioral_tree()
         return;
     }
 
-    auto root_node_id = gaia::behave::node_t::insert_row("root", idle, selector, false, 0, 0);
-    auto check_temperature_node_id = gaia::behave::node_t::insert_row("check_temperature", idle, action, false, check_temperature, 0);
-    auto check_fan_node_id = gaia::behave::node_t::insert_row("check_fan", idle, sequence, false, 0, 1);
-    auto set_fan_node_id = gaia::behave::node_t::insert_row("set_fan", idle, action, false, set_fan_speed, 0);
-    auto check_fan_speed_node_id = gaia::behave::node_t::insert_row("check_fan_adjust", idle, action, false, check_fan_speed, 1);
-    auto adjust_fan_node_id = gaia::behave::node_t::insert_row("adjust_fan", idle, action, false, adjust_fan_speed, 2);
+    auto root_node_id = gaia::behavior::node_t::insert_row("root", idle, selector, false, 0, 0);
+    auto check_temperature_node_id = gaia::behavior::node_t::insert_row("check_temperature", idle, action, false, check_temperature, 0);
+    auto check_fan_node_id = gaia::behavior::node_t::insert_row("check_fan", idle, sequence, false, 0, 1);
+    auto set_fan_node_id = gaia::behavior::node_t::insert_row("set_fan", idle, action, false, set_fan_speed, 0);
+    auto check_fan_speed_node_id = gaia::behavior::node_t::insert_row("check_fan_adjust", idle, action, false, check_fan_speed, 1);
+    auto adjust_fan_node_id = gaia::behavior::node_t::insert_row("adjust_fan", idle, action, false, adjust_fan_speed, 2);
 
-    gaia::behave::node_t::get(root_node_id).children().connect(check_fan_node_id);
-    gaia::behave::node_t::get(root_node_id).children().connect(check_temperature_node_id);
+    gaia::behavior::node_t::get(root_node_id).children().connect(check_fan_node_id);
+    gaia::behavior::node_t::get(root_node_id).children().connect(check_temperature_node_id);
 
-    gaia::behave::node_t::get(check_fan_node_id).children().connect(set_fan_node_id);
-    gaia::behave::node_t::get(check_fan_node_id).children().connect(check_fan_speed_node_id);
-    gaia::behave::node_t::get(check_fan_node_id).children().connect(adjust_fan_node_id);
+    gaia::behavior::node_t::get(check_fan_node_id).children().connect(set_fan_node_id);
+    gaia::behavior::node_t::get(check_fan_node_id).children().connect(check_fan_speed_node_id);
+    gaia::behavior::node_t::get(check_fan_node_id).children().connect(adjust_fan_node_id);
 }
 
 void init_storage()

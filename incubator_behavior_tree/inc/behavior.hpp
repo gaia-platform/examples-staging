@@ -6,7 +6,7 @@
 // or at https://opensource.org/licenses/MIT.
 ////////////////////////////////////////////////////
 
-// Various enums for behavior tre implementation.
+// Various enums for behavior tree implementation.
 enum status_code
 {
     idle = 0,
