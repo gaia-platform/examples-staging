@@ -49,8 +49,6 @@ float c_fan_threshold = 0.7f;
 std::atomic<bool> g_in_simulation{false};
 std::atomic<int> g_timestamp{0};
 
-void add_fan_control_rule();
-
 gaia_id_t insert_incubator(const char* name, float min_temp, float max_temp)
 {
     incubator_writer w;
@@ -225,23 +223,10 @@ float adjust_temperature(float min_temp, float max_temp, float sensor_value, flo
     return new_fan_rpm;
 }
 
-void set_power(bool is_on)
-{
-    auto_transaction_t tx(auto_transaction_t::no_auto_restart);
-    for (auto i : incubator_t::list())
-    {
-        auto w = i.writer();
-        w.is_on = is_on;
-        w.update_row();
-    }
-    tx.commit();
-}
-
 void simulation()
 {
     auto start = std::chrono::steady_clock::now();
     begin_session();
-    set_power(true);
 
     while (g_in_simulation)
     {
@@ -267,7 +252,7 @@ void simulation()
             w.timestamp = g_timestamp;
             w.update_row();
         }
-
+        // Reset the status of all non running nodes and tick the root node as a new cycle.
         for (auto node : node_t::list())
         {
             auto node_writer = node.writer();
@@ -277,7 +262,7 @@ void simulation()
             }
             if (strcmp(node.name(), "root") == 0)
             {
-                node_writer.tick_flag = !node.tick_flag();
+                node_writer.tick_flag++;
             }
             node_writer.update_row();
         }
@@ -285,49 +270,7 @@ void simulation()
         tx.commit();
     }
 
-    set_power(false);
     end_session();
-}
-
-void list_rules()
-{
-    subscription_list_t subs;
-    const char* subscription_format = "%5s|%-20s|%-12s|%5s|%-10s|%5s\n";
-    list_subscribed_rules(nullptr, nullptr, nullptr, nullptr, subs);
-    std::cout << "Number of rules for incubator: " << subs.size() << "\n";
-    if (subs.size() > 0)
-    {
-        std::cout << "\n";
-        std::printf(subscription_format, "line", "ruleset", "rule", "type", "event", "field");
-        std::cout << "--------------------------------------------------------------\n";
-    }
-    std::map<event_type_t, const char*> event_names;
-    event_names[event_type_t::row_update] = "row update";
-    event_names[event_type_t::row_insert] = "row insert";
-    for (auto& s : subs)
-    {
-        std::printf(
-            subscription_format,
-            std::to_string(s->line_number).c_str(),
-            s->ruleset_name,
-            s->rule_name,
-            std::to_string(s->gaia_type).c_str(),
-            event_names[s->event_type],
-            std::to_string(s->field).c_str());
-    }
-    std::cout << std::endl;
-}
-
-void add_fan_control_rule()
-{
-    try
-    {
-        subscribe_ruleset("behavior_tree");
-    }
-    catch (const duplicate_rule&)
-    {
-        std::cout << "The ruleset has already been added." << std::endl;
-    }
 }
 
 void usage(const char* command)
@@ -344,23 +287,8 @@ public:
     // Main menu commands.
     static constexpr char c_cmd_begin_sim = 'b';
     static constexpr char c_cmd_end_sim = 'e';
-    static constexpr char c_cmd_list_rules = 'l';
-    static constexpr char c_cmd_disable_rules = 'd';
-    static constexpr char c_cmd_reenable_rules = 'r';
     static constexpr char c_cmd_print_state = 'p';
-    static constexpr char c_cmd_manage_incubators = 'm';
     static constexpr char c_cmd_quit = 'q';
-
-    // Choose incubator commands.
-    static constexpr char c_cmd_choose_chickens = 'c';
-    static constexpr char c_cmd_back = 'b';
-
-    // Change incubator commands.
-    const char* c_cmd_on = "on";
-    const char* c_cmd_off = "off";
-    const char* c_cmd_min = "min";
-    const char* c_cmd_max = "max";
-    static constexpr const char c_cmd_main = 'm';
 
     // Invalid input.
     const char* c_wrong_input = "Wrong input.";
@@ -386,11 +314,7 @@ public:
         std::cout << "\n";
         std::cout << "(" << c_cmd_begin_sim << ") | begin simulation\n";
         std::cout << "(" << c_cmd_end_sim << ") | end simulation \n";
-        std::cout << "(" << c_cmd_list_rules << ") | list rules\n";
-        std::cout << "(" << c_cmd_disable_rules << ") | disable rules\n";
-        std::cout << "(" << c_cmd_reenable_rules << ") | re-enable rules\n";
         std::cout << "(" << c_cmd_print_state << ") | print current state\n";
-        std::cout << "(" << c_cmd_manage_incubators << ") | manage incubators\n";
         std::cout << "(" << c_cmd_quit << ") | quit\n\n";
         std::cout << "main> ";
 
@@ -418,20 +342,6 @@ public:
             case c_cmd_end_sim:
                 stop();
                 break;
-            case c_cmd_list_rules:
-                list_rules();
-                break;
-            case c_cmd_reenable_rules:
-                add_fan_control_rule();
-                list_rules();
-                break;
-            case c_cmd_disable_rules:
-                unsubscribe_rules();
-                list_rules();
-                break;
-            case c_cmd_manage_incubators:
-                m_current_menu = menu_t::incubators;
-                break;
             case c_cmd_print_state:
                 dump_db();
                 break;
@@ -458,193 +368,6 @@ public:
         return true;
     }
 
-    void get_incubator(const char* name)
-    {
-        begin_transaction();
-        for (const auto& incubator : incubator_t::list())
-        {
-            if (strcmp(incubator.name(), name) == 0)
-            {
-                m_current_incubator = incubator;
-                break;
-            }
-        }
-        commit_transaction();
-        m_current_incubator_name = name;
-    }
-
-    bool handle_incubators()
-    {
-        std::cout << "\n";
-        std::cout << "(" << c_cmd_choose_chickens << ") | select chicken incubator\n";
-        std::cout << "(" << c_cmd_back << ") | go back\n"
-                  << std::endl;
-        std::cout << "manage incubators> ";
-
-        if (!read_input())
-        {
-            return false;
-        }
-
-        if (m_input.size() == 1)
-        {
-            switch (m_input[0])
-            {
-            case c_cmd_choose_chickens:
-                get_incubator(c_chicken);
-                m_current_menu = menu_t::settings;
-                break;
-            case c_cmd_back:
-                m_current_menu = menu_t::main;
-                break;
-            default:
-                wrong_input();
-                break;
-            }
-        }
-        else
-        {
-            wrong_input();
-        }
-
-        return true;
-    }
-
-    bool handle_incubator_settings()
-    {
-        std::cout << "\n";
-        std::cout << "(" << c_cmd_on << ")    | turn power on\n";
-        std::cout << "(" << c_cmd_off << ")   | turn power off\n";
-        std::cout << "(" << c_cmd_min << " #) | set minimum\n";
-        std::cout << "(" << c_cmd_max << " #) | set maximum\n";
-        std::cout << "(" << c_cmd_back << ")     | go back\n";
-        std::cout << "(" << c_cmd_main << ")     | main menu\n"
-                  << std::endl;
-        std::cout << m_current_incubator_name << "> ";
-
-        if (!read_input())
-        {
-            return false;
-        }
-
-        if (m_input.size() == 1)
-        {
-            switch (m_input[0])
-            {
-            case c_cmd_back:
-                m_current_menu = menu_t::incubators;
-                break;
-            case c_cmd_main:
-                m_current_menu = menu_t::main;
-                break;
-            default:
-                wrong_input();
-                break;
-            }
-            return true;
-        }
-
-        if (m_input.size() == strlen(c_cmd_on))
-        {
-            if (0 == m_input.compare(c_cmd_on))
-            {
-                adjust_power(true);
-                dump_db();
-            }
-            else
-            {
-                wrong_input();
-            }
-            return true;
-        }
-
-        if (m_input.size() == strlen(c_cmd_off))
-        {
-            if (0 == m_input.compare(c_cmd_off))
-            {
-                adjust_power(false);
-                dump_db();
-            }
-            else
-            {
-                wrong_input();
-            }
-            return true;
-        }
-
-        bool change_min = false;
-        if (0 == m_input.compare(0, 3, c_cmd_min))
-        {
-            change_min = true;
-        }
-        else if (0 == m_input.compare(0, 3, c_cmd_max))
-        {
-            change_min = false;
-        }
-        else
-        {
-            wrong_input();
-            return true;
-        }
-
-        float set_point = 0;
-        try
-        {
-            set_point = stof(m_input.substr(3, m_input.size() - 1));
-        }
-        catch (std::invalid_argument& ex)
-        {
-            std::cout << "Invalid temperature setting." << std::endl;
-            return true;
-        }
-
-        if (adjust_range(change_min, set_point))
-        {
-            dump_db();
-        }
-
-        return true;
-    }
-
-    void adjust_power(bool turn_on)
-    {
-        begin_transaction();
-        {
-            auto w = m_current_incubator.writer();
-            w.is_on = turn_on;
-            w.update_row();
-        }
-        commit_transaction();
-    }
-
-    bool adjust_range(bool change_min, float set_point)
-    {
-        bool changed = false;
-        begin_transaction();
-        {
-            incubator_writer w = m_current_incubator.writer();
-            if (change_min)
-            {
-                w.min_temp = set_point;
-            }
-            else
-            {
-                w.max_temp = set_point;
-            }
-            if (w.min_temp >= w.max_temp)
-            {
-                std::cout << "Max temp must be greater than min temp.\n";
-            }
-            else
-            {
-                w.update_row();
-                changed = true;
-            }
-        }
-        commit_transaction();
-        return changed;
-    }
-
     int run()
     {
         bool has_input = true;
@@ -654,12 +377,6 @@ public:
             {
             case menu_t::main:
                 has_input = handle_main();
-                break;
-            case menu_t::incubators:
-                has_input = handle_incubators();
-                break;
-            case menu_t::settings:
-                has_input = handle_incubator_settings();
                 break;
             default:
                 // do nothing
@@ -673,13 +390,10 @@ public:
 private:
     enum menu_t
     {
-        main,
-        incubators,
-        settings
+        main
     };
     std::string m_input;
     incubator_t m_current_incubator;
-    const char* m_current_incubator_name;
     std::unique_ptr<std::thread> m_simulation_thread;
     menu_t m_current_menu = menu_t::main;
 

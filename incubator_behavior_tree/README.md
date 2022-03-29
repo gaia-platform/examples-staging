@@ -1,6 +1,6 @@
 # Incubator Demo
 
-A demo of a rule-based system for controlling the temperature of an incubator using Behavior Tree.
+A demo of a rule-based system for controlling the temperature of an incubator using a Behavior Tree.
 
 For additional information about the Incubator Demo, see [Gaia incubator example](https://gaia-platform.github.io/gaia-platform-docs.io/articles/tutorials/gaia-incubator-example.html) in the Gaia developer documentation.
 
@@ -10,11 +10,11 @@ These instructions assume you have installed the SDK and have installed the *cla
 
 1. To preserve the initial state of the sample code, copy the source files to a new directory.
     ```shell
-    mkdir incubator
-    cd incubator
-    cp -r /opt/gaia/examples/incubator/* .
+    mkdir incubator_behavior_tree
+    cd incubator_behavior_tree
+    cp -r /opt/gaia/examples/incubator_behavior_tree/* .
     ```
-2. Create the build directory under the current `incubator/` directory and initiate the build.
+2. Create the build directory under the current `incubator_behavior_tree/` directory and initiate the build.
     ```shell
     mkdir build
     cd build/

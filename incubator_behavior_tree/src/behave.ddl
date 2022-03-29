@@ -9,14 +9,14 @@
 database behave
 
 table node (
-    -- a human readable name
+    -- A human readable name.
     name string,
-    -- success, failure, running, idle
+    -- Status of a node: success, failure, running, idle.
     status uint8,
-    -- selector, sequence, action
+    -- Type of a node: selector, sequence, action.
     node_type uint8,
 
-    tick_flag bool,
+    tick_flag uint64,
 
     argument uint8,
 
@@ -26,19 +26,20 @@ table node (
     parent references node
 );
 
+-- Tables to trigger actions asynchronously.
 table check_temperature_trigger (
-)
+);
 table set_fan_speed_trigger (
-)
+);
 table check_fan_speed_trigger (
-)
+);
 table adjust_fan_speed_trigger (
-)
+);
 
 create relationship if not exists check_temperature_trigger (
     node.check_temperature -> check_temperature_trigger,
     check_temperature_trigger.parent_node -> node
-);
+ );
 
 create relationship if not exists set_fan_speed_trigger (
     node.set_fan_speed -> set_fan_speed_trigger,

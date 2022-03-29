@@ -40,11 +40,13 @@ process_schema(
 
 # -- Translate ruleset into CPP --
 translate_ruleset(
-     RULESET_FILE ${BEHAVIOR_TREE_RULESET}
-     CLANG_PARAMS -I ${BEHAVIOR_TREE_INCLUDES}})
+  RULESET_FILE ${BEHAVIOR_TREE_RULESET}
+  CLANG_PARAMS -I ${BEHAVIOR_TREE_INCLUDES}}
+)
 
-add_executable(incubator
-    src/incubator.cpp
+add_executable(
+  incubator
+  src/incubator.cpp
 )
 
 target_add_gaia_generated_sources(incubator)
