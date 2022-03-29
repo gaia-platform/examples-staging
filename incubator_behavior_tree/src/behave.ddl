@@ -23,35 +23,23 @@ table node (
     order uint8,
 
     children references node[],
-    parent references node
-);
+    parent references node,
+    check_temperature references check_temperature_trigger,
+    set_fan_speed references set_fan_speed_trigger,
+    check_fan_speed references check_fan_speed_trigger,
+    adjust_fan_speed references adjust_fan_speed_trigger
+)
 
 -- Tables to trigger actions asynchronously.
 table check_temperature_trigger (
-);
+    parent_node references node
+)
 table set_fan_speed_trigger (
-);
+    parent_node references node
+)
 table check_fan_speed_trigger (
-);
+    parent_node references node
+)
 table adjust_fan_speed_trigger (
-);
-
-create relationship if not exists check_temperature_trigger (
-    node.check_temperature -> check_temperature_trigger,
-    check_temperature_trigger.parent_node -> node
- );
-
-create relationship if not exists set_fan_speed_trigger (
-    node.set_fan_speed -> set_fan_speed_trigger,
-    set_fan_speed_trigger.parent_node -> node
-);
-
-create relationship if not exists check_fan_speed_trigger (
-    node.check_fan_speed -> check_fan_speed_trigger,
-    check_fan_speed_trigger.parent_node -> node
-);
-
-create relationship if not exists adjust_fan_speed_trigger (
-    node.adjust_fan_speed -> adjust_fan_speed_trigger,
-    adjust_fan_speed_trigger.parent_node -> node
-);
+    parent_node references node
+)
