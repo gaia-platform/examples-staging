@@ -14,7 +14,7 @@ using std::string;
 namespace slam_sim
 {
 
-const double R2D = 180.0 / M_PI; 
+const double c_rad_to_deg = 180.0 / M_PI; 
 
 coord_list_t::coord_list_t(string file_name)
 {
@@ -52,7 +52,7 @@ coord_list_t::coord_list_t(string file_name)
             {
                 double dx = x - x_prev;
                 double dy = y - y_prev;
-                double theta = R2D * atan2(dx, dy);
+                double theta = c_rad_to_deg * atan2(dx, dy);
                 if (theta < 0.0)
                 {
                     theta += 360.0;

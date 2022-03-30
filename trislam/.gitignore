@@ -2,3 +2,5 @@ tmp
 *.o
 .*.swp
 build
+*.pgm
+*.jpg

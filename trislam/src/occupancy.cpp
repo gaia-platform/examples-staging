@@ -22,9 +22,6 @@ using std::vector;
 using std::string;
 using std::cerr;
 
-using utils::sensor_data_t;
-using utils::D2R;
-
 using gaia::slam::observations_t;
 using gaia::slam::positions_t;
 using gaia::slam::range_data_t;
@@ -151,10 +148,10 @@ void occupancy_grid_t::apply_radial(float radial_degs, float range_meters,
     // Set observed and boundary flags.
     // Measured distance on radial.
     double dist_meters = range_meters < 0.0 
-        ? RANGE_SENSOR_MAX_METERS : range_meters;
+        ? c_range_sensor_max_meters : range_meters;
     
     float s, c;
-    sincosf(D2R * radial_degs, &s, &c);
+    sincosf(c_deg_to_rad * radial_degs, &s, &c);
     // Number of points on radial to examine. Sample at a fraction of 
     //  the grid size.
     uint32_t num_steps = (uint32_t) 

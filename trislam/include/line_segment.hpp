@@ -16,37 +16,37 @@
 
 #pragma once
 
-namespace utils
+#include "constants.hpp"
+
+namespace slam_sim
 {
 
-constexpr double R2D = 180.0 / M_PI;
-constexpr double D2R = M_PI / 180.0;
 
 class line_segment_t
 {
 public:
-    line_segment_t(double x0, double y0, double x1, double y1);
+    line_segment_t(float x0, float y0, float x1, float y1);
 
-    double length()  { return m_len;   }
+    float length()  { return m_len;   }
 
     // Distance from x,y to the point of intersection on this line
     //  segment along the path theta_deg. If no intersection (e.g.,
     //  theta is moving away from segment, or if it's parallel)
     //  then a negative number is returned.
     // theta_deg is compass-based (0 is north, 90 is east, etc)
-    double intersect_range(double x, double y, double theta_deg);
+    float intersect_range(float x, float y, float theta_deg);
 
 //protected:
-    double m_x0, m_x1;
-    double m_y0, m_y1;
+    float m_x0, m_x1;
+    float m_y0, m_y1;
     // derived values
-    double m_a;  // A = y1 - y0 = dy
-    double m_b;  // B = x1 - x0 = dx
-    double m_c;  // C = A*x0 + B*y0
-    double m_len;
+    float m_a;  // A = y1 - y0 = dy
+    float m_b;  // B = x1 - x0 = dx
+    float m_c;  // C = A*x0 + B*y0
+    float m_len;
 };
 
 // Remaps degrees to be on [0,360)
-double unwrap_compass(double theta_degs);
+float unwrap_compass(float theta_degs);
 
-} // namespace utils
+} // namespace slam_sim

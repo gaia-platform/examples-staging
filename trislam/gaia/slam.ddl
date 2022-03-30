@@ -99,6 +99,7 @@ table graphs
 
 ------------------------------------------------
 -- Observation related
+-- TODO rename 'observations' to either 'nodes', 'poses', or 'vertices'.
 
 -- An observation from a point in the world, including sensor readings
 --  from this point and a link to other nearby observations. This is

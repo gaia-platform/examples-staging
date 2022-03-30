@@ -21,7 +21,6 @@
 constexpr const char* WORLD_MAP_FILE = "../data/map.json";
 
 using namespace slam_sim;
-using namespace utils;
 
 void print_sensor_data(sensor_data_t& data)
 {
@@ -60,7 +59,7 @@ int main(int argc, char** argv)
 
     ////////////////////////////////////////////////////////////////////
 
-    assert(NUM_RANGE_RADIALS == 45);
+    assert(c_num_range_radials == 45);
     load_world_map(WORLD_MAP_FILE);
     sensor_data_t data;
 
@@ -81,7 +80,7 @@ printf("Calculate range data\n");
     errs += check_radial(22, 90.0, 2.9, data);
     errs += check_radial(44, 135.0, -1.0, data);
 
-    for (uint32_t i=0; i<NUM_RANGE_RADIALS; i++)
+    for (uint32_t i=0; i<c_num_range_radials; i++)
     {
         printf("%2d  \t%7.2f  \t%7.2f\n", i, data.bearing_degs[i], data.range_meters[i]);
     }

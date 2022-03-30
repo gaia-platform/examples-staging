@@ -115,7 +115,7 @@ void build_map(const graphs_t& g, const observed_area_t& bounds)
         .x_meters = bounds.right_meters(),
         .y_meters = bounds.bottom_meters()
     };
-    occupancy_grid_t map(MAP_NODE_WIDTH_METERS, top_left, bottom_right);
+    occupancy_grid_t map(c_map_node_width_meters, top_left, bottom_right);
     // Iterate through observations in this graph and build a map.
     for (const observations_t& o: g.observations())
     {

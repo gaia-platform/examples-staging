@@ -21,22 +21,13 @@
 
 #include "gaia_slam.h"
 
+#include "constants.hpp"
 #include "coord_list.hpp"
 #include "occupancy.hpp"
 #include "sensor_data.hpp"
 
 namespace slam_sim
 {
-
-// Width (height) of grids in occupancy grid.
-constexpr float MAP_NODE_WIDTH_METERS = 0.1;
-
-// Max distance range sensors can get range data.
-constexpr double RANGE_SENSOR_MAX_METERS = 4.0;
-// Width of range sensor sweep in front of bot.
-constexpr double RANGE_SENSOR_SWEEP_DEGS = 90.0;
-constexpr int32_t NUM_RANGE_RADIALS = 45;
-
 
 ////////////////////////////////////////////////
 // Rules API
@@ -55,6 +46,7 @@ void optimize_graph(gaia::slam::graphs_t&);
 void build_map();
 void build_map(const gaia::slam::graphs_t&, const gaia::slam::observed_area_t&);
 
+
 ////////////////////////////////////////////////
 // Utility
 
@@ -67,7 +59,7 @@ void create_observation(map_coord_t& prev, map_coord_t& coord);
 void seed_database(float start_x_meters, float start_y_meters);
 
 void create_observation(map_coord_t& prev, map_coord_t& coord);
-void calculate_range_data(map_coord_t& coord, utils::sensor_data_t& data);
+void calculate_range_data(map_coord_t& coord, sensor_data_t& data);
 
 void load_world_map(const char* map_file);
 

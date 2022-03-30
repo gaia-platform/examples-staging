@@ -33,9 +33,6 @@ using std::vector;
 using std::string;
 using nlohmann::json;
 
-using utils::line_segment_t;
-using utils::sensor_data_t;
-
 // Line segments describing outline of all objects in the world.
 vector<line_segment_t> g_world_lines;
 
@@ -53,11 +50,11 @@ static void set_map(const char* map)
         for (uint32_t j=0; j<vertices.size()-1; j++)
         {
             const json& p0 = vertices[j];
-            double x0 = p0["x"];
-            double y0 = p0["y"];
+            float x0 = p0["x"];
+            float y0 = p0["y"];
             const json& p1 = vertices[j+1];
-            double x1 = p1["x"];
-            double y1 = p1["y"];
+            float x1 = p1["x"];
+            float y1 = p1["y"];
             g_world_lines.push_back(line_segment_t(x0, y0, x1, y1));
         }
     }
@@ -96,24 +93,24 @@ void calculate_range_data(map_coord_t& coord, sensor_data_t& data)
 {
     data.range_meters.clear();
     data.bearing_degs.clear();
-    data.num_radials = NUM_RANGE_RADIALS;
+    data.num_radials = c_num_range_radials;
 printf("RANGES from %.3f,%.3f  bearing %.3f\n", coord.x_meters, coord.y_meters, coord.heading_degs);
-    double step_degs = RANGE_SENSOR_SWEEP_DEGS / (NUM_RANGE_RADIALS - 1);
+    float step_degs = c_range_sensor_sweep_degs / (c_num_range_radials - 1);
     // Get range on each radial, and store both distance and radial degs.
-    for (uint32_t n=0; n<NUM_RANGE_RADIALS; n++)
+    for (uint32_t n=0; n<c_num_range_radials; n++)
     {
         // Get this radial and constrain to [0,360)
-        double theta_degs = coord.heading_degs - RANGE_SENSOR_SWEEP_DEGS/2.0
-            + (double) n * step_degs;
+        float theta_degs = coord.heading_degs - c_range_sensor_sweep_degs/2.0
+            + (float) n * step_degs;
         theta_degs = theta_degs >= 360.0 ? theta_degs - 360.0 : theta_degs;
         theta_degs = theta_degs < 0.0    ? theta_degs + 360.0 : theta_degs;
         // Measure distance on this radial
-        double min_meters = -1.0;
+        float min_meters = -1.0;
         int32_t line_num = -1;
         for (uint32_t i=0; i<g_world_lines.size(); i++)
         {
             line_segment_t& seg = g_world_lines[i];
-            double dist_meters =
+            float dist_meters =
                 seg.intersect_range(coord.x_meters, coord.y_meters, theta_degs);
             if (dist_meters > 0.0)
             {
@@ -125,7 +122,7 @@ printf("RANGES from %.3f,%.3f  bearing %.3f\n", coord.x_meters, coord.y_meters, 
             }
         }
 //printf("   %3d   %8.2f   %6.2f    %4d\n", n, theta_degs, min_meters, line_num);
-        if (min_meters > RANGE_SENSOR_MAX_METERS)
+        if (min_meters > c_range_sensor_max_meters)
         {
             min_meters = -1.0;
         }

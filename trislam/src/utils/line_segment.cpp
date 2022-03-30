@@ -24,11 +24,11 @@
 
 using namespace std;
 
-namespace utils
+namespace slam_sim
 {
 
 
-line_segment_t::line_segment_t(double x0, double y0, double x1, double y1)
+line_segment_t::line_segment_t(float x0, float y0, float x1, float y1)
 {
     m_x0 = x0;
     m_y0 = y0;
@@ -43,16 +43,16 @@ line_segment_t::line_segment_t(double x0, double y0, double x1, double y1)
     m_len = sqrt(m_a*m_a + m_b*m_b);
 }
 
-static double measure_distance(double dx, double dy)
+static float measure_distance(float dx, float dy)
 {
     return sqrt(dx*dx + dy*dy);
 }
 
 
 // returns value on [0,360)
-double unwrap_compass(double theta)
+float unwrap_compass(float theta)
 {
-    double degs = theta;
+    float degs = theta;
     while (degs < 0.0)
     {
         degs += 360.0;
@@ -65,23 +65,23 @@ double unwrap_compass(double theta)
 }
 
 
-double line_segment_t::intersect_range(double x, double y, double theta_deg)
+float line_segment_t::intersect_range(float x, float y, float theta_deg)
 {
     // move theta to [0,360)
-    double theta = unwrap_compass(theta_deg);
+    float theta = unwrap_compass(theta_deg);
     // Determine intersect point px,py
     // Algorithm from wikipedia.
     //    https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
     // Segment 1
-    double x1 = m_x0;
-    double x2 = m_x1;
-    double y1 = m_y0;
-    double y2 = m_y1;
+    float x1 = m_x0;
+    float x2 = m_x1;
+    float y1 = m_y0;
+    float y2 = m_y1;
     // Segment 2
-    double x3 = x;
-    double x4 = x3 + 10.0 * sin(D2R * theta);
-    double y3 = y;
-    double y4 = y + 10.0 * cos(D2R * theta);
+    float x3 = x;
+    float x4 = x3 + 10.0 * sin(c_deg_to_rad * theta);
+    float y3 = y;
+    float y4 = y + 10.0 * cos(c_deg_to_rad * theta);
 //printf("This segment:   %.1f,%.1f -> %.1f,%.1f\n", x1, y1, x2, y2);
 //printf(" -> line %.1f,%.1f at %.1f\n", x3, y3, theta);
 //printf("       other:   %.1f,%.1f -> %.4f,%.4f\n", x3, y3, x4, y4);
@@ -89,25 +89,25 @@ double line_segment_t::intersect_range(double x, double y, double theta_deg)
     // Py = ((x1y2 - y1x2)(y3-y4) - (y1-y2)(x3y4-y3x4)) / denom;
     // denom = (x1-x2)(y3-y4) - (y1-y2)(x3-x4);
     // breaking that down into smaller elements:
-    double x3_x4 = x3 - x4;
-    double x1_x2 = x1 - x2;
-    double y3_y4 = y3 - y4;
-    double y1_y2 = y1 - y2;
-    double xy12 = x1*y2 - x2*y1;
-    double xy34 = x3*y4 - y3*x4;
-    double denom = x1_x2*y3_y4 - y1_y2*x3_x4;
-    double dist = -1.0;
+    float x3_x4 = x3 - x4;
+    float x1_x2 = x1 - x2;
+    float y3_y4 = y3 - y4;
+    float y1_y2 = y1 - y2;
+    float xy12 = x1*y2 - x2*y1;
+    float xy34 = x3*y4 - y3*x4;
+    float denom = x1_x2*y3_y4 - y1_y2*x3_x4;
+    float dist = -1.0;
     // Before computing px,py, make sure denominator is non-zero.
     if (fabs(denom) > 1.0e-6)
     {
-        double px = (xy12 * x3_x4 - xy34 * x1_x2) / denom;
-        double py = (xy12 * y3_y4 - xy34 * y1_y2) / denom;
+        float px = (xy12 * x3_x4 - xy34 * x1_x2) / denom;
+        float py = (xy12 * y3_y4 - xy34 * y1_y2) / denom;
 //printf("  intersect point %.4f,%.4f\n", px, py);
         // Intersection may or may not be in the direction of theta.
         //  All this algorithm tells us is that the lines, infinitely
         //  expanded, meet at this point.
-        double inter_theta = unwrap_compass(R2D * atan2(px-x3, py-y3));
-        double delta_degs = inter_theta - theta;
+        float inter_theta = unwrap_compass(c_rad_to_deg * atan2(px-x3, py-y3));
+        float delta_degs = inter_theta - theta;
         if (delta_degs < -180.0)
         {
             delta_degs += 360.0;
@@ -120,8 +120,8 @@ double line_segment_t::intersect_range(double x, double y, double theta_deg)
         if (fabs(delta_degs) < 1.0)
         {
             // intersection point is in direction of theta
-            double dist0 = measure_distance(px-x1, py-y1);
-            double dist1 = measure_distance(px-x2, py-y2);
+            float dist0 = measure_distance(px-x1, py-y1);
+            float dist1 = measure_distance(px-x2, py-y2);
             if ((dist0 <= m_len) && (dist1 <= m_len))
             {
                 dist = measure_distance(px-x3, py-y3);
@@ -133,5 +133,5 @@ double line_segment_t::intersect_range(double x, double y, double theta_deg)
 }
 
 
-} // namespace utils
+} // namespace slam_sim
 

@@ -13,7 +13,7 @@
 
 using namespace std;
 
-using utils::line_segment_t;
+using slam_sim::line_segment_t;
 
 uint32_t check_distance(double len, double expected)
 {

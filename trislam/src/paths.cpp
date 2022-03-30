@@ -44,13 +44,11 @@ using gaia::slam::range_data_t;
 using gaia::slam::latest_observation_writer;
 using gaia::slam::observed_area_writer;
 
-using utils::sensor_data_t;
 
 ////////////////////////////////////////////////////////////////////////
 // Rule API
 // The functions here are expected to be called from within an active
 //  transaction
-
 
 static void update_observed_area(ego_t& ego, map_coord_t coord)
 {
@@ -61,14 +59,14 @@ static void update_observed_area(ego_t& ego, map_coord_t coord)
     float right_edge  = area.right_meters();
 printf("OBSERVED AREA at %.2f,%.2f\n", coord.x_meters, coord.y_meters);
 printf("   l/r  %.2f,%.2f\n", left_edge, right_edge);
-    if (floor(coord.x_meters - (RANGE_SENSOR_MAX_METERS+1)) < left_edge)
+    if (floor(coord.x_meters - (c_range_sensor_max_meters+1)) < left_edge)
     {
-        left_edge = floor(coord.x_meters - (RANGE_SENSOR_MAX_METERS+1));
+        left_edge = floor(coord.x_meters - (c_range_sensor_max_meters+1));
         change = true;
     }
-    if (ceil(coord.x_meters + (RANGE_SENSOR_MAX_METERS+1)) > right_edge)
+    if (ceil(coord.x_meters + (c_range_sensor_max_meters+1)) > right_edge)
     {
-        right_edge = floor(coord.x_meters + (RANGE_SENSOR_MAX_METERS+1));
+        right_edge = floor(coord.x_meters + (c_range_sensor_max_meters+1));
         change = true;
     }
 printf("   ->>  %.2f,%.2f\n", left_edge, right_edge);
@@ -76,14 +74,14 @@ printf("   ->>  %.2f,%.2f\n", left_edge, right_edge);
     float bottom_edge = area.bottom_meters();
     float top_edge    = area.top_meters();
 printf("   b/t  %.2f,%.2f\n", bottom_edge, top_edge);
-    if (floor(coord.y_meters - (RANGE_SENSOR_MAX_METERS+1)) < bottom_edge)
+    if (floor(coord.y_meters - (c_range_sensor_max_meters+1)) < bottom_edge)
     {
-        bottom_edge = floor(coord.y_meters - (RANGE_SENSOR_MAX_METERS+1));
+        bottom_edge = floor(coord.y_meters - (c_range_sensor_max_meters+1));
         change = true;
     }
-    if (ceil(coord.y_meters + (RANGE_SENSOR_MAX_METERS+1)) > top_edge)
+    if (ceil(coord.y_meters + (c_range_sensor_max_meters+1)) > top_edge)
     {
-        top_edge = floor(coord.y_meters + (RANGE_SENSOR_MAX_METERS+1));
+        top_edge = floor(coord.y_meters + (c_range_sensor_max_meters+1));
         change = true;
     }
 printf("   ->>  %.2f,%.2f\n", bottom_edge, top_edge);
@@ -183,10 +181,10 @@ void seed_database(float x_meters, float y_meters)
         0             // observation_id
     );
     gaia_id_t area_id = observed_area_t::insert_row(
-        floor(x_meters - (RANGE_SENSOR_MAX_METERS+1)),    // left_meters
-        ceil(x_meters + (RANGE_SENSOR_MAX_METERS+1)),     // right_meters
-        ceil(y_meters + (RANGE_SENSOR_MAX_METERS+1)),     // top_meters
-        floor(y_meters - (RANGE_SENSOR_MAX_METERS+1))     // bottom_meters
+        floor(x_meters - (c_range_sensor_max_meters+1)),    // left_meters
+        ceil(x_meters + (c_range_sensor_max_meters+1)),     // right_meters
+        ceil(y_meters + (c_range_sensor_max_meters+1)),     // top_meters
+        floor(y_meters - (c_range_sensor_max_meters+1))     // bottom_meters
     );
 
     ////////////////////////////////////////////

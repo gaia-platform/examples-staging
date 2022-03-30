@@ -16,18 +16,18 @@
 
 #include <vector>
 
-namespace utils
+namespace slam_sim
 {
 
 struct sensor_data_t
 {
     uint32_t num_radials;
 
-    double center_degs;
+    float center_degs;
 
     // Range on each radial. Range is -1 if there's no data.
     std::vector<float> range_meters;
     std::vector<float> bearing_degs;
 };
 
-} // namespace utils
+} // namespace slam_sim
