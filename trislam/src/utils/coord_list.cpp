@@ -16,7 +16,19 @@ namespace slam_sim
 
 const double c_rad_to_deg = 180.0 / M_PI; 
 
+coord_list_t::coord_list_t(const char* file_name)
+{
+    string name(file_name);
+    init(name);
+}
+
 coord_list_t::coord_list_t(string& file_name)
+{
+    init(file_name);
+}
+
+
+void coord_list_t::init(string& file_name)
 {
     std::ifstream in_file(file_name);
     if (!in_file)

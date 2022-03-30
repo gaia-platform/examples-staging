@@ -35,10 +35,24 @@ using gaia::slam::graphs_t;
 using gaia::slam::observations_t;
 using gaia::slam::error_corrections_t;
 
-//using gaia::slam::graphs_expr;
 
-
+// Observation creation and searching for neighbors to connect to can
+//  be done concurrently so no serail_group is required.
+// Note that creating edges with other observations may be subject to
+//  transaction rollbacks, but it is easy to try/catch/retry such problems.
 ruleset observation_ruleset
+{
+    on_insert(o: observations)
+    {
+        // TODO Perform spatial query in area of observation and see if
+        //  there are other observations to build edges with.
+    }
+}
+
+
+// Wrap edge and error-correction related rules in a serial group to 
+//  avoid race conditions in case multiple edges are created at the same time.
+ruleset edge_ruleset : serial_group()
 {
     on_insert(e: edges)
     {
@@ -49,11 +63,6 @@ ruleset observation_ruleset
         }
     }
 
-    on_insert(o: observations)
-    {
-        // TODO Perform spatial query in area of observation and see if
-        //  there are other observations to build edges with.
-    }
 
     on_insert(ec: error_corrections)
     {
