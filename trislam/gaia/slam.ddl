@@ -29,7 +29,7 @@ database slam;
 ------------------------------------------------------------------------
 -- Tables with single records (i.e., exactly one)
 
--- 
+-- Single record for storing bot state.
 table ego
 (
   current_graph_id uint32,
@@ -55,7 +55,6 @@ table observed_area
   top_meters float,
   bottom_meters float,
 
-  ----------------------------
   ego references ego
 )
 
@@ -74,17 +73,19 @@ table latest_observation
 
 
 ------------------------------------------------------------------------
--- Data tables
+-- Data tables (i.e., tables with multiple records)
 
 -- A collection of observations.
 table graphs
 (
   id uint32 unique,
 
-  ego references ego[],
-
   observations references observations[],
-  edges references edges[]
+  edges references edges[],
+
+  -- Reverse reference to ego (necessary until one-way references are 
+  --  supported)
+  ego references ego[]
 )
 
 
@@ -141,15 +142,16 @@ table error_corrections
 table observations
 (
   ----------------------------------------------
-  -- Static data. These values are set at creation and don't change.
+  -- Constant data. These values are set at creation and don't change.
+  --  This is relevant in the sense that, when evaluating for possible
+  --  transaction conflicts, these fields/references can be considered
+  --  safe.
   id uint32 unique,
 
   position references positions,
   range_data references range_data,
   motion references movements,
---  ego references ego,
 
-  -- This is set at creation and doesn't change.
   graph_id uint32,
   graph references graphs
       where graphs.id = observations.graph_id,
@@ -157,10 +159,14 @@ table observations
   ----------------------------------------------
   -- Dynamic fields. These can be modified asynchronously. Functions
   --  and rules that modify them (i.e., that add edges) should be designed 
-  --  and expect a possible transaction rollback.
+  --  to handle a possible transaction rollback unless the logic is
+  --  desgined to avoid that.
   in_edges references edges[],
   out_edges references edges[],
 
+  -- Reverse reference to 'latest_observation'. This is not used and
+  --  can be removed when one-way references are supported. The []
+  --  can be removed when 1:1 VLRs are supported.
   prev_observation references latest_observation[]
 )
 
@@ -169,22 +175,25 @@ table positions
 (
   -- The latest best guess of position. It may be modified in the future
   --  when we have better error estimates.
-  pos_x_meters float,
-  pos_y_meters float,
+  x_meters float,
+  y_meters float,
   heading_degs float,
 
+  -- Constant reference established at record creation time.
   observation references observations
 )
 
 
 table movements
 (
-  -- DR motion from previous observation. This is a placeholder for storing
-  --  dead reckoning data that could be used during graph optimization.
+  -- DR (dead reckoning) motion from previous observation. This is 
+  --  a placeholder for storing DR data that could be used during 
+  --  graph optimization.
   dx_meters float,
   dy_meters float,
   dheading_degs float,
 
+  -- Constant reference established at record creation time.
   observation references observations
 )
 
@@ -196,6 +205,7 @@ table range_data
   bearing_degs float[],
   distance_meters float[],
 
+  -- Constant reference established at record creation time.
   observation references observations
 )
 

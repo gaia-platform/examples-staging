@@ -51,6 +51,8 @@ ruleset observation_ruleset
 
     on_insert(o: observations)
     {
+        // TODO Perform spatial query in area of observation and see if
+        //  there are other observations to build edges with.
     }
 
     on_insert(ec: error_corrections)

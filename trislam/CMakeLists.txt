@@ -24,9 +24,6 @@ find_package(Threads REQUIRED)
 
 include("/opt/gaia/cmake/gaia.cmake")
 
-# Default compiler/linker flags.
-add_compile_options(-c -Wall -Wextra -ggdb)
-
 # --- Generate Direct Access classes from DDL---
 process_schema(
   DDL_FILE ${PROJECT_SOURCE_DIR}/gaia/slam.ddl
@@ -36,7 +33,6 @@ process_schema(
 # -- Translate ruleset into CPP --
 translate_ruleset(
   RULESET_FILE ${PROJECT_SOURCE_DIR}/gaia/slam.ruleset
-  DATABASE_NAME slam
   CLANG_PARAMS
     -I ${PROJECT_SOURCE_DIR}/include
 )
@@ -74,8 +70,6 @@ add_executable(test_coord_list
   src/utils/coord_list.cpp
 )
 
-set_target_properties(test_coord_list PROPERTIES COMPILE_FLAGS "${GAIA_COMPILE_FLAGS}")
-set_target_properties(test_coord_list PROPERTIES LINK_FLAGS "${GAIA_LINK_FLAGS}")
 target_include_directories(test_coord_list PRIVATE ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(test_coord_list PRIVATE rt)
 
@@ -88,8 +82,6 @@ add_executable(test_line_segment
   src/utils/line_segment.cpp
 )
 
-set_target_properties(test_line_segment PROPERTIES COMPILE_FLAGS "${GAIA_COMPILE_FLAGS}")
-set_target_properties(test_line_segment PROPERTIES LINK_FLAGS "${GAIA_LINK_FLAGS}")
 target_include_directories(test_line_segment PRIVATE ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(test_line_segment PRIVATE rt)
 
@@ -108,8 +100,6 @@ add_executable(test_analyze
 )
 target_add_gaia_generated_sources(test_analyze)
 
-set_target_properties(test_analyze PROPERTIES COMPILE_FLAGS "${GAIA_COMPILE_FLAGS}")
-set_target_properties(test_analyze PROPERTIES LINK_FLAGS "${GAIA_LINK_FLAGS}")
 target_include_directories(test_analyze PRIVATE ${GAIA_INC})
 target_include_directories(test_analyze PRIVATE ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(test_analyze PRIVATE ${GAIA_LIB} rt)

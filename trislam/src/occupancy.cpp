@@ -173,7 +173,6 @@ void occupancy_grid_t::apply_radial(float radial_degs, float range_meters,
         //  mark the boundary flag.
         if ((i == num_steps) && (range_meters > 0.0))
         {
-//printf("  Boundary on %.3f at %.2f,%.2f (%.2f, %.2f, %.2f)\n", radial_degs, x_pos, y_pos, pos_x_meters, pos_y_meters, dist);
             flags.boundary = 1;
         }
     }
@@ -191,10 +190,6 @@ void occupancy_grid_t::apply_flags()
         node.occupied += flags.occupied;
         node.observed += flags.observed;
         node.boundary += flags.boundary;
-//if (flags.occupied > 0)
-//{
-//    printf("OCCUPATION at idx=%d\n", i);
-//}
     }
 }
 
@@ -208,7 +203,7 @@ void occupancy_grid_t::apply_sensor_data(const observations_t& obs)
     for (int32_t i=0; i<r.num_radials(); i++)
     {
         apply_radial(r.bearing_degs()[i], r.distance_meters()[i], 
-            pos.pos_x_meters(), pos.pos_y_meters());
+            pos.x_meters(), pos.y_meters());
     }
 
     apply_flags();
