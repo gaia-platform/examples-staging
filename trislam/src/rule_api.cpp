@@ -79,6 +79,7 @@ void optimize_graph(graphs_t& graph)
         next_ec_id,         // id
         graph.id()          // graph_id
     );
+    next_ec_id++;
 }
 
 
@@ -88,7 +89,8 @@ void optimize_graph(graphs_t& graph)
 static void write_map_to_file(occupancy_grid_t& map)
 {
     static int32_t ctr = 0;
-    string fname("map_" + std::to_string(ctr) + ".pgm");
+    char fname[256];
+    sprintf(fname, "map_%03d.pgm", ctr);
     gaia_log::app().info("Building map {}", fname);
     map.export_as_pnm(fname);
     ctr++;

@@ -4,10 +4,10 @@ all:
 	mkdir -p ../build && cd ../build/ && cmake .. && make -j 4
 
 run: refresh_db
-	../build/slam_sim -m ../data/map.json -p ../data/path.txt
+	../build/slam_demo -m ../data/map.json -p ../data/path.txt
 
 drun: refresh_db
-	gdb --args ../build/slam_sim -m ../data/map.json -p ../data/path.txt
+	gdb --args ../build/slam_demo -m ../data/map.json -p ../data/path.txt
 
 
 # At present there's no method to delete the contents of the database

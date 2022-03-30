@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 3.16)
 
 enable_testing()
 
-project(slam_sim)
+project(slam_demo)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -39,26 +39,26 @@ translate_ruleset(
 
 # Application
 
-add_executable(slam_sim
+add_executable(slam_demo
   src/analyze.cpp
   src/occupancy.cpp
-  src/paths.cpp
+  src/main.cpp
+  src/support.cpp
   src/rule_api.cpp
-  src/slam_sim.cpp
   src/utils/coord_list.cpp
   src/utils/line_segment.cpp
 )
 
-target_add_gaia_generated_sources(slam_sim)
+target_add_gaia_generated_sources(slam_demo)
 
-target_include_directories(slam_sim PRIVATE
+target_include_directories(slam_demo PRIVATE
   ${GAIA_INC}
   ${PROJECT_SOURCE_DIR}/include
   ${PROJECT_SOURCE_DIR}/gaia/slam
 )
 
-target_link_directories(slam_sim PRIVATE ${GAIA_LIB_DIR})
-target_link_libraries(slam_sim PRIVATE ${GAIA_LIB} rt Threads::Threads)
+target_link_directories(slam_demo PRIVATE ${GAIA_LIB_DIR})
+target_link_libraries(slam_demo PRIVATE ${GAIA_LIB} rt Threads::Threads)
 
 
 ########################################################################
@@ -93,8 +93,8 @@ add_executable(test_analyze
   tests/test_analyze.cpp
   src/analyze.cpp
   src/occupancy.cpp
-  src/paths.cpp
   src/rule_api.cpp
+  src/support.cpp
   src/utils/coord_list.cpp
   src/utils/line_segment.cpp
 )

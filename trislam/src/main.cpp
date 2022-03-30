@@ -28,12 +28,12 @@ using std::string;
 namespace slam_sim
 {
 
-constexpr double RULE_WAIT_SEC = 0.1;
+constexpr double c_rule_wait_sec = 0.1;
 
 // If there is a transaction conflict when creating and observation then
 //  retry again a finite number of times. If those fail then wait for
 //  the next observation and try again.
-constexpr uint32_t NUM_OBSERVATION_TXN_RETRIES = 2;
+constexpr uint32_t c_num_observation_txn_retries = 2;
 
 static coord_list_t* s_path = NULL;
 
@@ -44,10 +44,9 @@ void move_bot_along_path()
     map_coord_t prev = (*s_path)[0];
     for (map_coord_t& latest: *s_path)
     {
-printf("Map position %.2f,%.2f  %.1f\n", latest.x_meters, latest.y_meters, latest.heading_degs);
         // Create observation at this location.
         //  observation to be made.
-        for (uint32_t i=0; i<NUM_OBSERVATION_TXN_RETRIES; i++)
+        for (uint32_t i=0; i<c_num_observation_txn_retries; i++)
         {
             try
             {
@@ -58,13 +57,12 @@ printf("Map position %.2f,%.2f  %.1f\n", latest.x_meters, latest.y_meters, lates
             }
             catch (gaia::db::transaction_update_conflict&)
             {
-printf("TXN CONFLICT\n");
                 // Take a brief nap and try again.
                 usleep(1000);
             }
         }
         // wait
-        usleep((uint32_t) (RULE_WAIT_SEC * 1.0e-6));
+        usleep((uint32_t) (c_rule_wait_sec * 1.0e-6));
         prev = latest;
     }
     // Output final map.
@@ -78,6 +76,7 @@ T get_single_record()
     return *(T::list().begin());
 }
 
+
 template <class T_object>
 void remove_all_rows()
 {
@@ -90,6 +89,7 @@ void remove_all_rows()
         this_it->delete_row(force_disconnect_of_related_rows);
     }
 }
+
 
 // Clean up the database.
 void clean_db()
