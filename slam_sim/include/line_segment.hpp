@@ -36,7 +36,7 @@ public:
     // theta_deg is compass-based (0 is north, 90 is east, etc)
     double intersect_range(double x, double y, double theta_deg);
 
-protected:
+//protected:
     double m_x0, m_x1;
     double m_y0, m_y1;
     // derived values

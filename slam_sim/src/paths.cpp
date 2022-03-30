@@ -30,14 +30,6 @@ namespace slam_sim
 
 extern int32_t g_quit;
 
-// Dev code. Hardcode destinations during development.
-
-constexpr double X0_METERS = 4.0;
-constexpr double Y0_METERS = 0.6;
-
-constexpr double X1_METERS = 5.5;
-constexpr double Y1_METERS = 7.5;
-
 static int32_t next_observation_id = 1;
 
 
@@ -54,12 +46,18 @@ using gaia::slam::area_map_t;
 using gaia::slam::local_map_t;
 using gaia::slam::working_map_t;
 using gaia::slam::landmark_sightings_t;
+using gaia::slam::landmarks_t;;
+using gaia::slam::sim_position_offset_t;
+using gaia::slam::sim_actual_position_t;
 
 using gaia::slam::ego_writer;
 using gaia::slam::paths_writer;
 using gaia::slam::destination_writer;
 using gaia::slam::estimated_position_writer;
 using gaia::slam::edges_writer;
+using gaia::slam::landmarks_writer;
+using gaia::slam::sim_position_offset_writer;
+using gaia::slam::sim_actual_position_writer;
 
 using utils::sensor_data_t;
 using utils::landmark_description_t;
@@ -69,71 +67,65 @@ using utils::landmark_description_t;
 // The functions here are expected to be called from within an active
 //  transaction
 
+// Dev code. Hardcode destinations during development.
+constexpr double X_DEST_OFFSET_METERS = 8.0;
+constexpr double Y_DEST_OFFSET_METERS = -8.8;
+
+
 void select_destination()
 {
-    // Move to predesignated position.
-    const double dest_x_meters = X1_METERS;
-    const double dest_y_meters = Y1_METERS;
-    for (ego_t& e: ego_t::list())
+    ego_t e = *(ego_t::list().begin());
+    // Sanity check
+    paths_t path = e.current_path();
+    assert(path.state() == PATH_STATE_ACTIVE);
+    // Estimate how long it should take to get to the destination.
+    estimated_position_t pos = e.position();
+    double dx_meters = X_DEST_OFFSET_METERS;
+    double dy_meters = Y_DEST_OFFSET_METERS;
+    double dist_meters = sqrt(dx_meters*dx_meters + dy_meters*dy_meters);
+    if (dist_meters < INTER_OBSERVATION_DIST_METERS)
     {
-        // Estimate how long it should take to get to the destination.
-        estimated_position_t pos = e.position();
-        double dx_meters = pos.x_meters() - dest_x_meters;
-        double dy_meters = pos.y_meters() - dest_y_meters;
-        double dist_meters = sqrt(dx_meters*dx_meters + dy_meters*dy_meters);
-        if (dist_meters < INTER_OBSERVATION_DIST_METERS)
-        {
-            dist_meters = INTER_OBSERVATION_DIST_METERS;
-        }
-        double hops = ceil(dist_meters / INTER_OBSERVATION_DIST_METERS);
-        // Pad the arrival time in case we have to take a non-direct route.
-        hops *= 1.5;
-
-        paths_t path = e.current_path();
-        assert(path.state() == PATH_STATE_ACTIVE);
-        for (destination_t& d: destination_t::list())
-        {
-            destination_writer writer = d.writer();
-            writer.x_meters = dest_x_meters;
-            writer.y_meters = dest_y_meters;
-            writer.expected_arrival = (int32_t) ceil(hops);
-            writer.update_row();
-            break;
-        }
-        break;
+        dist_meters = INTER_OBSERVATION_DIST_METERS;
     }
+    double hops = ceil(dist_meters / INTER_OBSERVATION_DIST_METERS);
+    // Pad the arrival time in case we have to take a non-direct route.
+    hops *= 1.5;
+    // Set destination coordinates.
+    destination_t d = *(destination_t::list().begin());
+    destination_writer writer = d.writer();
+    writer.x_meters = pos.x_meters() + X_DEST_OFFSET_METERS;
+    writer.y_meters = pos.y_meters() + Y_DEST_OFFSET_METERS;
+    writer.expected_arrival = (int32_t) ceil(hops);
+    writer.update_row();
+    gaia_log::app().info("Setting destination to {},{}",
+        d.x_meters(), d.y_meters());
 }
 
 
 void select_landmark_destination()
 {
-    // Move to (return to) predesignated position.
-    for (ego_t& e: ego_t::list())
+    // Return to starting point
+    ego_t e = *(ego_t::list().begin());
+    // Sanity check
+    paths_t path = e.current_path();
+    assert((path.state() & PATH_STATE_STARTING) == 0);
+    assert((path.state() & PATH_STATE_DONE) == 0);
+    // Set 'find-landmark' state if it's not already set.
+    if (path.state() == PATH_STATE_ACTIVE)
     {
-gaia_log::app().info("Selecting landmark destination");
-        paths_t path = e.current_path();
-        assert((path.state() & PATH_STATE_STARTING) == 0);
-        assert((path.state() & PATH_STATE_DONE) == 0);
-
-        // Set find-landmark state if it's not already set.
-        if (path.state() == PATH_STATE_ACTIVE)
-        {
-            paths_writer writer = path.writer();
-            writer.state = PATH_STATE_FIND_LANDMARK;
-            writer.update_row();
-gaia_log::app().info("  reset path state");
-        }
-
-        for (destination_t& d: destination_t::list())
-        {
-            destination_writer writer = d.writer();
-            writer.x_meters = X0_METERS;
-            writer.y_meters = Y0_METERS;
-            writer.update_row();
-            break;
-        }
-        break;
+        paths_writer writer = path.writer();
+        writer.state = PATH_STATE_FIND_LANDMARK;
+        writer.update_row();
     }
+    // Set destination coordinates.
+    sim_position_offset_t& spo = *(sim_position_offset_t::list().begin());
+    destination_t d = *(destination_t::list().begin());
+    destination_writer writer = d.writer();
+    writer.x_meters = spo.dx_meters();
+    writer.y_meters = spo.dy_meters();
+    writer.update_row();
+    gaia_log::app().info("Setting return destination to {},{}",
+        d.x_meters(), d.y_meters());
 }
 
 
@@ -205,6 +197,10 @@ void move_toward_destination()
 {
     // TODO Consult map and find new checkpoint to move to.
     // For now, move in the direction of the present destination.
+    // Update actual movement and perceived movement.
+    // For now these are one and the same .
+    // TODO Introduce error
+
     double dest_x_meters, dest_y_meters;
     for (destination_t& d: destination_t::list())
     {
@@ -237,12 +233,147 @@ void move_toward_destination()
     writer.dx_meters = dx;
     writer.dy_meters = dy;
     writer.update_row();
+gaia_log::app().info("Moving from {},{} by {},{}", pos_x_meters, pos_y_meters, dx, dy);
+
+    for (sim_actual_position_t& sap: sim_actual_position_t::list())
+    {
+        sim_actual_position_writer sapw = sap.writer();
+        sapw.x_meters = sap.x_meters() + dx;
+        sapw.y_meters = sap.y_meters() + dy;
+        sapw.update_row();
+    }
+}
+
+
+//// There are 2 positional reference frames for Alice, that of the world
+////  and that relative to Alice's starting point. The map is in world
+////  coordinates while Alice doesn't know the world coordinates and so
+////  uses the starting position as 0,0. This function returns the offset
+////  from Alice's coordinate frame to the world coordinate frame.
+//static void load_position_offset(double& dx_meters, double& dy_meters)
+//{
+//    // The positional offset doesn't change. Keep a cache of the offset
+//    //  to avoid having to look it up each time.
+//    // Initial position must be positive as world map doesn't have
+//    //  any negative coords.
+//    static double s_dx_meters = -1.0;
+//    static double s_dy_meters = -1.0;
+//    // 
+//    if (s_dx_meters < 0.0)
+//    {
+//        for (sim_position_offset_t& spo: sim_position_offset_t::list())
+//        {
+//            gaia_log::app().info("Reading position offset");
+//            s_dx_meters = spo.dx_meters();
+//            s_dy_meters = spo.dy_meters();
+//            break;
+//        }
+//    }
+//    dx_meters = s_dx_meters;
+//    dy_meters = s_dy_meters;
+//}
+
+
+// Helper function when creating an observation, to store landmark
+//  sightings and create new landmark records if necessary.
+static void update_landmarks(paths_t& path, double pos_x_meters,
+    double pos_y_meters, uint32_t obs_num, sensor_data_t& data)
+{
+    // Create landmark sighted records.
+    // Keep track of nearest one.
+    int32_t nearest_id = -1;
+    double nearest_meters = -1.0;
+    for (landmark_description_t& ld: data.landmarks_visible)
+    {
+        double dx = ld.x_meters - pos_x_meters;
+        double dy = ld.y_meters - pos_y_meters;
+        double range = sqrt(dx*dx + dy*dy);
+        double bearing = utils::R2D * atan2(dx, dy);
+        if (bearing < 0.0)
+        {
+            bearing += 360.0;
+        }
+        if ((nearest_meters < 0.0) || (range < nearest_meters))
+        {
+            nearest_id = ld.id;
+            nearest_meters = range;
+        }
+        landmark_sightings_t::insert_row(
+            range,            // range_meters
+            bearing,          // bearing_degs
+            obs_num,          // observaation_id
+            ld.id             // landmark_id
+        );
+    }
+    if ((path.num_observations() == 0) && (nearest_id < 0))
+    {
+        std::cerr << "Start position must be near visible landmark.\n";
+        exit(1);
+    }
+    // Create landmark records of sighted landmarks for those that don't
+    //  exist.
+    for (landmark_description_t& ld: data.landmarks_visible)
+    {
+        assert(nearest_id >= 0);
+        landmarks_t mark = *(landmarks_t::list()
+            .where(gaia::slam::landmarks_expr::id == (uint32_t) ld.id).begin());
+        if (!mark)
+        {
+gaia_log::app().info("Creating landmark {} at {},{}", ld.name, ld.x_meters, ld.y_meters);
+            // Landmark record doesn't exist. Create it.
+            float confidence = 0.1;
+            if ((path.num_observations() == 0) && (ld.id == nearest_id))
+            {
+                // This is the nearest landmark on the first observation.
+                // Use this as the anchor point.
+                confidence = 1.0;
+                assert(pos_x_meters == 0.0);
+                assert(pos_y_meters == 0.0);
+            }
+            landmarks_t::insert_row(
+                ld.id,            // landmark_id
+                ld.name.c_str(),  // description
+                ld.x_meters,      // x_meters
+                ld.y_meters,      // y_meters
+                confidence        // confidence
+            );
+        }
+        else if (mark.confidence() < 1.0)
+        {
+            // Update landmark position and confidence if sighting
+            //  is closer to landmark than previous sighting(s).
+            double dx = ld.x_meters - pos_x_meters;
+            double dy = ld.y_meters - pos_y_meters;
+            double range = sqrt(dx*dx + dy*dy);
+            double landmark_dx = ld.x_meters - pos_x_meters;
+            double landmark_dy = ld.y_meters - pos_y_meters;
+            double landmark_range = 
+                sqrt(landmark_dx*landmark_dx + landmark_dy*landmark_dy);
+            if (range < landmark_range)
+            {
+gaia_log::app().info("Updating landmark {} to {},{}", ld.name, ld.x_meters, ld.y_meters);
+                // Update record.
+                landmarks_writer writer = mark.writer();
+                writer.x_meters = dx;
+                writer.y_meters = dy;
+                writer.update_row();
+            }
+        }
+    }
 }
 
 
 void create_observation(paths_t& path)
 {
     // Get position and do a sensor sweep.
+    double actual_x_meters = -1.0;
+    double actual_y_meters = -1.0;
+    for (sim_actual_position_t& sap: sim_actual_position_t::list())
+    {
+        actual_x_meters = sap.x_meters();
+        actual_y_meters = sap.y_meters();
+        break;
+    }
     double pos_x_meters = -1.0;
     double pos_y_meters = -1.0;
     double dx_meters = -1.0;
@@ -257,16 +388,20 @@ void create_observation(paths_t& path)
     }
     double heading_degs = utils::R2D * atan2(pos_x_meters, pos_y_meters);
     double range_meters = sqrt(dx_meters*dx_meters + dy_meters*dy_meters);
-    gaia_log::app().info("Performing observation at {},{}", pos_x_meters, pos_y_meters);
+    gaia_log::app().info("Performing observation {} at {},{}", 
+        next_observation_id, pos_x_meters, pos_y_meters);
     sensor_data_t data;
-    perform_sensor_sweep(pos_x_meters, pos_y_meters, data);
+//    double x_offset_meters, y_offset_meters;
+//    load_position_offset(x_offset_meters, y_offset_meters);
+//    gaia_log::app().info("Position offset at {},{}", 
+//        x_offset_meters, y_offset_meters);
+printf("SENSOR sweep for obs %d\n", next_observation_id);
+    perform_sensor_sweep(actual_x_meters, actual_y_meters, data);
 
     // Create an observation record, storing sensor data.
-    // Make a copy of the number of observations.
-    int32_t number_of_observations = path.num_observations();
     // This is the ID of the new observation. Call it 'num' here so to not
     //  get confused with gaia IDs.
-    int32_t obs_num = next_observation_id++;
+    uint32_t obs_num = next_observation_id++;
     if (path.num_observations() == 0)
     {
         // For first observation, don't store position delta.
@@ -279,6 +414,8 @@ void create_observation(paths_t& path)
         obs_num,              // id
         pos_x_meters,         // pos_x_meters
         pos_y_meters,         // pos_y_meters
+        actual_x_meters,      // actual_x_meters
+        actual_y_meters,      // actual_y_meters
         dx_meters,            // dx_meters
         dy_meters,            // dy_meters
         heading_degs,         // heading_degs
@@ -288,26 +425,11 @@ void create_observation(paths_t& path)
     );
     observations_t new_obs = observations_t::get(new_obs_id);
 
-    // Create landmark sighted records.
-    for (landmark_description_t& ld: data.landmarks_visible)
-    {
-        double dx = ld.x_meters - pos_x_meters;
-        double dy = ld.y_meters - pos_y_meters;
-        double range = sqrt(dx*dx + dy*dy);
-        double bearing = utils::R2D * atan2(dx, dy);
-        if (bearing < 0.0)
-        {
-            bearing += 360.0;
-        }
-        landmark_sightings_t::insert_row(
-            range,            // range_meters
-            bearing,          // bearing_degs
-            obs_num,          // observaation_id
-            ld.id             // landmark_id
-        );
-    }
+    update_landmarks(path, pos_x_meters, pos_y_meters, obs_num, data);
 
     // Connect observation to path and to previous observation, if present.
+    // Make a copy of the number of observations while we modify path.
+    uint32_t number_of_observations = path.num_observations();
     paths_writer p_writer = path.writer();
     if (number_of_observations == 0)
     {
@@ -359,7 +481,7 @@ void request_new_destination(double x_meters, double y_meters)
 }
 
 
-void seed_database()
+void seed_database(double initial_x_meters, double initial_y_meters)
 {
     // There shouldn't be any transaction conflicts as this is the first
     //  operation on the database, so ignore the try/catch block.
@@ -371,13 +493,13 @@ void seed_database()
     ////////////////////////////////////////////
     // Position and destination
     gaia_id_t destination_id = destination_t::insert_row(
-        X0_METERS,    // x_meters
-        Y0_METERS,    // y_meters
+        0.0,          // x_meters
+        0.0,          // y_meters
         0             // expected_arrival
     );
     gaia_id_t position_id = estimated_position_t::insert_row(
-        X0_METERS,    // x_meters
-        Y0_METERS,    // y_meters
+        0.0,          // x_meters
+        0.0,          // y_meters
         0.0,          // x_meters
         0.0           // y_meters
     );
@@ -390,7 +512,6 @@ void seed_database()
     ////////////////////////////////////////////
     // Maps
     gaia_id_t area_map_id = area_map_t::insert_row(
-        0,        // blob_id
         0.0,      // left_meters
         0.0,      // right_meters
         0.0,      // top_meters
@@ -398,7 +519,6 @@ void seed_database()
         0         // change_counter
     );
     gaia_id_t local_map_id = local_map_t::insert_row(
-        0,        // blob_id
         0.0,      // left_meters
         0.0,      // right_meters
         0.0,      // top_meters
@@ -406,9 +526,21 @@ void seed_database()
         0         // change_counter
     );
     gaia_id_t working_map_id = working_map_t::insert_row(
-        0,        // blob_id
         0         // change_counter
     );
+
+    ////////////////////////////////////////////
+    // Simulation interface
+    sim_position_offset_t::insert_row(
+        initial_x_meters,   // dx_meters
+        initial_y_meters    // dy_meters
+    );
+
+    sim_actual_position_t::insert_row(
+        initial_x_meters,   // x_meters
+        initial_y_meters    // y_meters
+    );
+
 
     ////////////////////////////////////////////
     // Establish relationships

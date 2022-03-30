@@ -23,6 +23,7 @@
 #pragma once
 
 #include "gaia_slam.h"
+#include "occupancy.hpp"
 #include "sensor_data.hpp"
 
 namespace slam_sim
@@ -32,6 +33,17 @@ namespace slam_sim
 //  to quit it's set to 1.
 extern int32_t g_quit;
 constexpr int32_t EXIT_AFTER_X_PATHS = 3;
+
+// Low-res map Alice has created of the surroundings.
+extern occupancy_grid_t* g_area_map;
+
+constexpr float AREA_MAP_NODE_WIDTH_METERS = 0.25;
+constexpr float LOCAL_MAP_NODE_WIDTH_METERS = AREA_MAP_NODE_WIDTH_METERS / 4.0;
+
+// If world is AxB, have default size be (A+2)x(B+2)
+constexpr float DEFAULT_AREA_MAP_WIDTH_METERS = 16.0;
+constexpr float DEFAULT_AREA_MAP_HEIGHT_METERS = 12.0;
+
 
 // Flags to indicate state of Alice's movement. This information is
 //  stored in the present path.
@@ -60,7 +72,8 @@ constexpr double LANDMARK_DISTANCE_METERS = 1.0;
 ////////////////////////////////////////////////
 // Initialization
 
-void seed_database();
+// Params are Alice's starting point.
+void seed_database(double initial_x_meters, double iniital_y_meters);
 
 
 ////////////////////////////////////////////////
@@ -121,19 +134,19 @@ void calc_path_error(gaia::slam::paths_t& path);
 
 // Generates a low-res map off the area with path information to destination.
 // Stores in 'area_map' record.
-void build_area_map();
+void build_area_map(gaia::slam::area_map_t&);
 
 // Generates a high-res map of the area, based on previously acquired
 //  and calibrated data.
 // Stores output in 'local_map' record.
-void build_local_map();
+void build_local_map(gaia::slam::local_map_t&);
 
 // Generates a high-res map of the area using recently acquired sensor data,
 //  aligned as best as possible. Builds a path map to destination, using
 //  area map to provide boundary conditions, and obstacle information from
 //  local map to supplement recently acquired sensor data.
 // Updates working_map record.
-void build_working_map();
+void build_working_map(gaia::slam::working_map_t&);
 
 
 } // namespace slam_sim

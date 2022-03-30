@@ -1,4 +1,6 @@
 tmp
+out
+out2
 *.swp
 slam_sim
 *.o

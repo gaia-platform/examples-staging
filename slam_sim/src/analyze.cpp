@@ -27,6 +27,8 @@
 #include <mutex>
 #include <vector>
 
+#include <gaia/logger.hpp>
+
 #include "json.hpp"
 #include "line_segment.hpp"
 #include "sensor_data.hpp"
@@ -109,21 +111,21 @@ void load_world_map(const char* world_map)
     free(buf);
 }
 
-
 // Load map
 ////////////////////////////////////////////////////////////////////////
 // Build sensor view
-
 
 static void calculate_ranges(double x_meters, double y_meters,
     sensor_data_t& data)
 {
     data.range_meters.clear();
     data.num_radials = NUM_RANGE_RADIALS;
+printf("RANGES from %.3f,%.3f\n", x_meters, y_meters);
     for (uint32_t n=0; n<NUM_RANGE_RADIALS; n++)
     {
         double theta_degs = n * 360.0 / (double) NUM_RANGE_RADIALS;
         double min_meters = -1.0;
+        int32_t line_num = -1;
         for (uint32_t i=0; i<g_world_lines.size(); i++)
         {
             line_segment_t& seg = g_world_lines[i];
@@ -134,9 +136,11 @@ static void calculate_ranges(double x_meters, double y_meters,
                 if ((min_meters < 0.0) || (dist_meters < min_meters))
                 {
                     min_meters = dist_meters;
+                    line_num = i;
                 }
             }
         }
+printf("   %3d   %8.2f   %6.2f    %4d\n", n, theta_degs, min_meters, line_num);
         if (min_meters > utils::RANGE_SENSOR_MAX_METERS)
         {
             min_meters = -1.0;
@@ -170,6 +174,7 @@ static void calculate_landmarks(double x_meters, double y_meters,
 
 void perform_sensor_sweep(double x_meters, double y_meters, sensor_data_t& data)
 {
+    gaia_log::app().info("Sensor sweep at {},{}", x_meters, y_meters);
     // Perform 360-degree sensor sweep.
     calculate_ranges(x_meters, y_meters, data);
     calculate_landmarks(x_meters, y_meters, data);
