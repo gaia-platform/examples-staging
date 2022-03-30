@@ -7,9 +7,9 @@ namespace slam_sim
 
 struct map_coord_t
 {
-    double x_meters;
-    double y_meters;
-    double heading_degs;
+    float x_meters;
+    float y_meters;
+    float heading_degs;
 };
 
 // coord_list is a vector of type map_coord_t. Constructor initializes 
