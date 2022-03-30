@@ -1,3 +1,5 @@
+# Path coordinates. Note that +Y is upward (not downward in an image
+#   processing sense).
 -4 4
 -3 4
 -2.5 3.5
