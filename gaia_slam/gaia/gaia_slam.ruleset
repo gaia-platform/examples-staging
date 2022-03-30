@@ -1,0 +1,91 @@
+////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////
+
+#include <atomic>
+
+#include <gaia/logger.hpp>
+
+constexpr uint64_t c_first_vertex_id = 0;
+std::atomic<uint64_t> c_last_edge_id = 0;
+
+// The serial_group() keyword makes the rules in the ruleset run serially:
+// only one rule is executed at a time. This prevents transaction
+// conflicts when modifying the same data.
+ruleset data_processing : serial_group()
+{
+
+    // Process an incoming data event by creating a new vertex in the graph.
+    on_insert(incoming_data_event)
+    {
+        gaia_log::app().info("Processing incoming_data_event(id: {})", id);
+
+        // The loop below finds the maximum id value for existing edge ids.
+        // In practice, we wouldn't search the table each time to look for
+        //  a new ID. This is only done to provide an example of searching
+        //  a table.
+        // The leading slash '/' means to search through all records in the
+        //  specified table.
+        uint64_t max_vertex_id = c_first_vertex_id;
+        for (/v:vertex)
+        {
+            if (v.id > max_vertex_id)
+            {
+                max_vertex_id = v.id;
+            }
+        }
+
+        uint64_t new_vertex_id = max_vertex_id + 1;
+        gaia_log::app().info("Creating new vertex(id: {})", new_vertex_id);
+
+        // Create a vertex record
+        std::string graph_id_string("graph_1");
+        vertex.insert(
+            id: new_vertex_id,
+            type: incoming_data_event.type,
+            data: incoming_data_event.data,
+            pose_x: incoming_data_event.pose_x,
+            pose_y: incoming_data_event.pose_y,
+            graph_id: graph_id_string.c_str()
+        );
+    }
+
+    // Process each new vertex by creating an edge with the previous existing vertex.
+    on_insert(vertex)
+    {
+        gaia_log::app().info("Processing vertex(id: {})", id);
+
+        if (vertex.id == c_first_vertex_id)
+        {
+            return;
+        }
+
+        uint64_t prev_vertex_id = vertex.id - 1;
+        uint64_t new_edge_id = c_last_edge_id.fetch_add(1);
+        gaia_log::app().info(
+            "Creating edge(id: {}) with between vertex(id: {}) and vertex(id: {})",
+            new_edge_id, prev_vertex_id, vertex.id);
+
+        edge.insert(
+            id: new_edge_id,
+            graph_id: vertex.graph_id,
+            src_id: prev_vertex_id,
+            dest_id: vertex.id);
+    }
+}
+
+ruleset graph_processing
+{
+    // Reacts to the creation of an edge by just printing it.
+    // This rule could contain part of the SALM algorithm.
+    on_insert(edge)
+    {
+        gaia_log::app().info(
+            "Created edge(id: {}) vertex(id: {}) -> vertex(id: {})",
+                edge.id, edge.src_id, edge.dest_id);
+    }
+}
