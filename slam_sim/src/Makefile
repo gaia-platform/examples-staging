@@ -1,56 +1,20 @@
-include ../Makefile.inc
-
-TARGET = slam_sim
-
-TEST_TARGETS = test_analyze 
-
-OBJS = main.o paths.o navigation.o analyze.o
-EXT_OBJS = $(ROOT)/gaia/slam_rules.o $(ROOT)/gaia/gaia_slam.o
-
-LIBS = $(LIB_SLAM_UTILS) /usr/local/lib/libgaia.so -lcurl -pthread
-
 
 all:
-	mkdir -p ../build && cd ../build/ && cmake .. && make
+	mkdir -p ../build && cd ../build/ && cmake .. && make -j 4
 
 run: refresh_db
-	../build/slam_sim -m ../data/map.json
+	../build/slam_sim -m ../data/map.json -x -3.0 -y 4.4
 
 drun: refresh_db
-	gdb --args ../build/slam_sim -m ../data/map.json
+	gdb --args ../build/slam_sim -m ../data/map.json -x -3.0 -y 4.4
 
-
-all_old: $(OBJS)
-	cd utils && make
-	$(CXX) $(OBJS) $(EXT_OBJS) -o $(TARGET) $(LIBS)
-
-run_old: refresh_db
-	./slam_sim -m ../data/map.json
-
-drun_old: refresh_db
-	gdb --args ./slam_sim -m ../data/map.json
 
 # At present there's no method to delete the contents of the database
 #   from w/in the program, so add a way to do so outside.
+# NOTE: this may be implemented, but there may be a problem w/ that
+#   in regards to connected records
 refresh_db:
-	cd ../gaia/ && make gaiac
-
-
-test: $(TEST_TARGETS)
-
-
-test_analyze: analyze.cpp 
-	$(CXX) $(CPPFLAGS) analyze.cpp -o test_analyze -DTEST_ANALYZE $(LIBS)
-
-
-%.o: %.cpp 
-	$(CXX) $(INC) -c $(CPPFLAGS) $< 
-
-refresh: clean all
+	gaiac ../gaia/slam.ddl --db-name slam -g -o /tmp/slam
 
 clean:
-	cd utils && make clean
-	rm -f *.o $(TARGET) $(TEST_TARGETS)
-	rm -rf logs
-
-
+	rm *.pgm

@@ -46,9 +46,10 @@ translate_ruleset(
 add_executable(slam_sim
   src/analyze.cpp
   src/globals.cpp
-  src/main.cpp
   src/navigation.cpp
+  src/occupancy.cpp
   src/paths.cpp
+  src/slam_sim.cpp
   src/utils/blob_cache.cpp
   src/utils/landmark_description.cpp
   src/utils/line_segment.cpp
@@ -95,6 +96,7 @@ add_executable(test_analyze
   src/analyze.cpp
   src/globals.cpp
   src/navigation.cpp
+  src/occupancy.cpp
   src/paths.cpp
   src/utils/line_segment.cpp
   src/utils/landmark_description.cpp

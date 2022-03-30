@@ -26,6 +26,8 @@
 namespace slam_sim
 {
 
+using std::string;
+
 using gaia::slam::paths_t;
 using gaia::slam::observations_t;
 using gaia::slam::edges_t;
@@ -42,14 +44,12 @@ using gaia::slam::error_correction_writer;
 
 void calc_path_error(paths_t& path)
 {
-    gaia_log::app().info("Calculating error");
-
+gaia_log::app().info("Calculating error");
     observations_t head = path.first_observation();
-
-    gaia_log::app().info("Error calc start at {},{}", head.pos_x_meters(), head.pos_y_meters());
-
     edges_t e = head.forward_edge();
     observations_t next = e.next();
+    // TODO error can only be calculated when the start and end
+    //  landmark is the same.
     while (next)
     {
         // TODO do something to estimate error
@@ -70,20 +70,6 @@ void calc_path_error(paths_t& path)
         error_correction_writer writer = ec.writer();
         writer.correction_weight = ec.correction_weight() + 1.0;
         writer.update_row();
-        break;
-    }
-}
-
-void build_area_map()
-{
-    for (area_map_t& m: area_map_t::list())
-    {
-        // TODO rebuild the area map
-        // In the meantime, just 'touch' the record by updating the
-        //  change counter.
-        area_map_writer writer = m.writer();
-        writer.change_counter = m.change_counter() + 1;
-        writer.update_row();
 
         // This isn't necessary as there's only one record, but it does
         //  help keep the code more clear.
@@ -91,38 +77,65 @@ void build_area_map()
     }
 }
 
-void build_local_map()
-{
-    for (local_map_t& m: local_map_t::list())
-    {
-        // TODO rebuild the local map
-        // In the meantime, just 'touch' the record by updating the
-        //  change counter.
-        local_map_writer writer = m.writer();
-        writer.change_counter = m.change_counter() + 1;
-        writer.update_row();
 
-        // This isn't necessary as there's only one record, but it does
-        //  help keep the code more clear.
-        break;
-    }
+void export_area_map()
+{
+    static int32_t ctr = 0;
+    string fname("map_" + std::to_string(ctr) + ".pgm");
+    gaia_log::app().info("Building map {}", fname);
+    g_area_map->export_as_pnm(fname);
+    ctr++;
 }
 
-void build_working_map()
-{
-    for (working_map_t& m: working_map_t::list())
-    {
-        // TODO rebuild the working map
-        // In the meantime, just 'touch' the record by updating the
-        //  change counter.
-        working_map_writer writer = m.writer();
-        writer.change_counter = m.change_counter() + 1;
-        writer.update_row();
 
-        // This isn't necessary as there's only one record, but it does
-        //  help keep the code more clear.
-        break;
+void build_area_map(area_map_t& am)
+{
+    g_area_map->clear();
+    for (paths_t& p: paths_t::list())
+    {
+        observations_t obs = p.first_observation();
+        while (obs)
+        {
+            // TODO do something with observation data.
+            gaia_log::app().info("Pulling sensor data from {}:{}", 
+                p.id(), obs.id());
+            g_area_map->apply_sensor_data(obs);
+            if (!obs.forward_edge()) {
+                break;
+            }
+            obs = obs.forward_edge().next();
+        }
     }
+
+    // TODO rebuild the area map
+    // In the meantime, just 'touch' the record by updating the
+    //  change counter.
+    area_map_writer writer = am.writer();
+    writer.change_counter = am.change_counter() + 1;
+    writer.update_row();
+
+    export_area_map();
+}
+
+
+void build_local_map(local_map_t& lm)
+{
+    // TODO rebuild the local map
+    // In the meantime, just 'touch' the record by updating the
+    //  change counter.
+    local_map_writer writer = lm.writer();
+    writer.change_counter = lm.change_counter() + 1;
+    writer.update_row();
+}
+
+void build_working_map(working_map_t& wm)
+{
+    // TODO rebuild the working map
+    // In the meantime, just 'touch' the record by updating the
+    //  change counter.
+    working_map_writer writer = wm.writer();
+    writer.change_counter = wm.change_counter() + 1;
+    writer.update_row();
 }
 
 } // namespace slam_sim

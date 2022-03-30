@@ -6,8 +6,9 @@
 // or at https://opensource.org/licenses/MIT.
 ////////////////////////////////////////////////////
 
-#include <unistd.h>
 #include <getopt.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include <chrono>
 
@@ -30,12 +31,16 @@ namespace slam_sim
 
 constexpr uint32_t c_rule_wait_millis = 100;
 
+static float g_initial_x_meters = -1.0;
+static float g_initial_y_meters = -1.0;
+
 /**
- * Wait an arbitrary amount of time for rule execution to terminate.
- * Rules are triggered after commit and can take some time to fully execute.
+ * Wait for simulation to complete.
  */
-void wait_for_rules()
+void main_loop()
 {
+    // When the simulation completes it will set g_quit to 1. Then we can
+    //  exit. In the meantime, the simulation is being handled by rules.
     while (g_quit == 0)
     {
         sleep_for(std::chrono::milliseconds(c_rule_wait_millis));
@@ -71,13 +76,19 @@ void clear_data()
     clear_table<local_map_t>();
     clear_table<area_map_t>();
     clear_table<ego_t>();
+    clear_table<sim_position_offset_t>();
 }
 
 
 static void usage(int, char** argv)
 {
     printf("Gaia SLAM simulator\n\n");
-    printf("Usage: %s -m <map.json>\n", argv[0]);
+    printf("Usage: %s -m <file path> -x <coord> -y <coord>\n", argv[0]);
+    printf("  where\n");
+    printf("    -m    the json file describing the world (e.g., "
+        "data/map.json)\n");
+    printf("    -x    starting X coordinate of bot\n");
+    printf("    -y    starting Y coordinate of bot\n");
     exit(1);
 }
 
@@ -86,12 +97,36 @@ void parse_command_line(int argc, char** argv)
 {
     int opt;
     const char* map_file = NULL;
-    while ((opt = getopt(argc, argv, "hm:")) != -1)
+    bool have_x = false;
+    bool have_y = false;
+    while ((opt = getopt(argc, argv, "hm:x:y:")) != -1)
     {
         switch(opt)
         {
             case 'm':
                 map_file = optarg;
+                break;
+            case 'x':
+                try
+                {
+                    g_initial_x_meters = std::stod(optarg, NULL);
+                }
+                catch (std::invalid_argument& e)
+                {
+                    usage(argc, argv);
+                }
+                have_x = true;
+                break;
+            case 'y':
+                try
+                {
+                    g_initial_y_meters = std::stod(optarg, NULL);
+                }
+                catch (std::invalid_argument& e)
+                {
+                    usage(argc, argv);
+                }
+                have_y = true;
                 break;
             case 'h':
                 usage(argc, argv);
@@ -100,10 +135,13 @@ void parse_command_line(int argc, char** argv)
                 usage(argc, argv);
         }
     }
-    if (map_file == NULL)
+    if ((map_file == NULL) || !have_x || !have_y)
     {
         usage(argc, argv);
     }
+    gaia_log::app().info("Initial possition at {},{}", 
+        g_initial_x_meters, g_initial_y_meters);
+    gaia_log::app().info("Loading world map {}", map_file);
     load_world_map(map_file);
 }
 
@@ -113,7 +151,11 @@ void init_sim()
     // Seed database and then create first path.
     // Seeding function manages its own transaction.
     gaia_log::app().info("Seeding the database...");
-    seed_database();
+    seed_database(g_initial_x_meters, g_initial_y_meters);
+
+    // Create map(s).
+    g_area_map = new occupancy_grid_t(AREA_MAP_NODE_WIDTH_METERS,
+        DEFAULT_AREA_MAP_WIDTH_METERS, DEFAULT_AREA_MAP_HEIGHT_METERS);
 
     gaia_log::app().info("Creating initial path...");
     gaia::db::begin_transaction();
@@ -126,12 +168,12 @@ void init_sim()
 
 int main(int argc, char** argv)
 {
-    slam_sim::parse_command_line(argc, argv);
-
     gaia::system::initialize();
 
-    // We explicitly handle the transactions with begin_transaction() and commit_transaction()
-    // to trigger the rules.
+    slam_sim::parse_command_line(argc, argv);
+
+    // We explicitly handle the transactions with begin_transaction() 
+    //  and commit_transaction() to trigger the rules.
     gaia::db::begin_transaction();
     slam_sim::clear_data();
     gaia::db::commit_transaction();
@@ -139,7 +181,7 @@ int main(int argc, char** argv)
     gaia_log::app().info("Starting SLAM simulation...");
 
     slam_sim::init_sim();
-    slam_sim::wait_for_rules();
+    slam_sim::main_loop();
 
     gaia::system::shutdown();
 }

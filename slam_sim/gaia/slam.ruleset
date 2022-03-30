@@ -96,7 +96,7 @@ ruleset observation_ruleset
     //  no transaction conflict.
     on_update(ep: estimated_position)
     {
-        gaia_log::app().info("Estimated position changed. {},{}", ep.x_meters,
+        gaia_log::app().info("Estimated position changed to {},{}", ep.x_meters,
             ep.y_meters);
         create_observation(/ego.current_path->paths);
     }
@@ -146,7 +146,7 @@ gaia_log::app().info("  state={}", o.path->paths.state);
             // Defer check for expected arrival until we have a [new]
             //  destination.
             if ((o.path->paths.num_observations > 1) &&
-                (o.path->paths.num_observations > expected_arrival))
+                (o.path->paths.num_observations > (uint32_t) expected_arrival))
             {
                 gaia_log::app().info("Observation made beyond expected "
                     "arrival time at destination. Returning to landmark");
@@ -195,7 +195,7 @@ gaia_log::app().info("Landmark sighting. Range {}", ls.range_meters);
         // Destination hasn't changed. Rebuild the working map
         //  and proceed.
         gaia_log::app().info("Observation made. Building new local map.");
-        build_working_map();
+        build_working_map(/working_map);
     }
 
 
@@ -214,7 +214,7 @@ gaia_log::app().info("Landmark sighting. Range {}", ls.range_meters);
         //  This should save time generating local high-res map.
 
         gaia_log::app().info("Destination has changed. Rebuilding area map.");
-        build_area_map();
+        build_area_map(/area_map);
     }
 
 
@@ -234,7 +234,7 @@ gaia_log::app().info("Landmark sighting. Range {}", ls.range_meters);
     {
         // Local map was updated. Now rebuild working map.
         gaia_log::app().info("Area map built. Rebuilding local map.");
-        build_local_map();
+        build_local_map(/local_map);
     }
 
 
@@ -242,7 +242,7 @@ gaia_log::app().info("Landmark sighting. Range {}", ls.range_meters);
     {
         // Local map was updated. Now rebuild working map.
         gaia_log::app().info("Local map built. Rebuilding working map.");
-        build_working_map();
+        build_working_map(/working_map);
     }
 
 
