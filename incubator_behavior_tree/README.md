@@ -67,51 +67,12 @@ development or presentation of this demo.
 
 (b) | begin simulation
 (e) | end simulation
-(l) | list rules
-(d) | disable rules
-(r) | re-enable rules
 (p) | print current state
-(m) | manage incubators
 (q) | quit
 
 main>
 ```
 To run the simulation, type **b** and hit enter.  You can select **p** to print the current state of the incubators or run the incubator in show mode in a separate console window.
-
-In addition to beginning and ending the simulationy ou can also:
-* list the subscription information for the rules active in the system
-* disable rules by unsubscribing them (all or nothing in the demo)
-* re-enable the rules
-* manage the incubators - turn them on/off, adjust their temperature settings
-
-Below shows the series of screens and selections to manage the chicken incubator, for example:
-```
-(b) | begin simulation
-(e) | end simulation
-(l) | list rules
-(d) | disable rules
-(r) | re-enable rules
-(p) | print current state
-(m) | manage incubators
-(q) | quit
-
-main> m
-
-(c) | select chicken incubator
-(p) | select puppy incubator
-(b) | go back
-
-manage incubators> c
-
-(on)    | turn power on
-(off)   | turn power off
-(min #) | set minimum
-(max #) | set maximum
-(b)     | go back
-(m)     | main menu
-
-chicken>
-```
 
 Happy Incubating!
 
@@ -143,11 +104,7 @@ development or presentation of this demo.
 
 (b) | begin simulation
 (e) | end simulation
-(l) | list rules
-(d) | disable rules
-(r) | re-enable rules
 (p) | print current state
-(m) | manage incubators
 (q) | quit
 
 main> q
