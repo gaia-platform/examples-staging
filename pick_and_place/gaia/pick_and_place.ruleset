@@ -11,35 +11,50 @@
 ruleset pick_and_place_ruleset
 {
     {
+        // Executed when table 'state' has a record with
+        // pick == true && place == false.
         if (@pick && !@place)
         {
             gaia_log::app().info("Trigger pick.");
+
+            // Triggers the next rule: 'on_insert(pick_action)'
             pick_action.insert(done: false);
         }
     }
 
+    // Triggered every time a record in created in the pick_action table.
     on_insert(pick_action)
     {
         gaia_log::app().info("Picking...");
+        // The 'done' field is implicitly associated to the pick_action record.
+        // By setting it to true we trigger the next rule: 'if (@pick_action.done)'
         done = true;
     }
 
     {
+        // Executed when table 'pick_action' has a record with
+        // done == true.
         if (@pick_action.done)
         {
             gaia_log::app().info("Pick completed. Trigger move.");
             /state.pick = false;
+            // Triggers the next rule: 'on_insert(move_action)'
             move_action.insert(done: false);
         }
     }
 
+    // Triggered every time a record in created in the pick_action table.
     on_insert(move_action)
     {
         gaia_log::app().info("Moving...");
+        // The 'done' field is implicitly associated to the move_action record.
+        // By setting it to true we trigger the next rule: 'if (@move_action.done)'.
         done = true;
     }
 
     {
+        // Executed when table 'move_action' has a record with
+        // done == true.
         if (@move_action.done)
         {
             gaia_log::app().info("Move complete.");
@@ -48,6 +63,8 @@ ruleset pick_and_place_ruleset
     }
 
     {
+        // Executed when table 'state' has a record with
+        // pick == false && place == true.
         if (!@pick && @place)
         {
             gaia_log::app().info("Ready for next pick.");
