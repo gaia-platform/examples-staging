@@ -31,6 +31,9 @@ namespace slam_sim
 
 ////////////////////////////////////////////////
 // Rules API
+// This is the interface that is expected to invoked by rules
+//  (i.e., in the ruleset file). A transaction is expected to
+//  already be open when these are called.
 
 // Determines if it's time to perform a graph optimization.
 bool optimization_required();
@@ -40,10 +43,6 @@ bool optimization_required();
 void optimize_graph(gaia::slam::graphs_t&);
 
 // Generates a map (binary occupancy grid) and saves it to disk.
-// Version with no parameters manages its own transaction. The version
-//  with record references is meant to be called from w/in an existing
-//  transaction.
-void build_map();
 void build_map(const gaia::slam::graphs_t&, const gaia::slam::observed_area_t&);
 
 
@@ -51,6 +50,11 @@ void build_map(const gaia::slam::graphs_t&, const gaia::slam::observed_area_t&);
 // Utility
 
 void create_observation(map_coord_t& prev, map_coord_t& coord);
+
+// Similar to 'build_map(...)' above for the Rules API.
+// This version manages its own transactions and fetches necessary info
+//  from the database.
+void build_map();
 
 
 ////////////////////////////////////////////////

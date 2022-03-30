@@ -25,7 +25,7 @@ struct map_coord_t
 class coord_list_t : public std::vector<map_coord_t>
 {
 public:
-    coord_list_t(std::string file_name);
+    coord_list_t(std::string& file_name);
 };
 
 } // namespace slam_sim

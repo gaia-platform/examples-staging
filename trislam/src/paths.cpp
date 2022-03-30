@@ -46,9 +46,9 @@ using gaia::slam::observed_area_writer;
 
 
 ////////////////////////////////////////////////////////////////////////
-// Rule API
-// The functions here are expected to be called from within an active
-//  transaction
+// Background API that supports the contents of rule_api.cpp. Most
+//  importantly, this means that the functions here are expected to 
+//  be called from within an active transaction
 
 static void update_observed_area(ego_t& ego, map_coord_t coord)
 {
@@ -57,8 +57,6 @@ static void update_observed_area(ego_t& ego, map_coord_t coord)
     // Left and right bounds.
     float left_edge   = area.left_meters();
     float right_edge  = area.right_meters();
-printf("OBSERVED AREA at %.2f,%.2f\n", coord.x_meters, coord.y_meters);
-printf("   l/r  %.2f,%.2f\n", left_edge, right_edge);
     if (floor(coord.x_meters - (c_range_sensor_max_meters+1)) < left_edge)
     {
         left_edge = floor(coord.x_meters - (c_range_sensor_max_meters+1));
@@ -69,11 +67,9 @@ printf("   l/r  %.2f,%.2f\n", left_edge, right_edge);
         right_edge = floor(coord.x_meters + (c_range_sensor_max_meters+1));
         change = true;
     }
-printf("   ->>  %.2f,%.2f\n", left_edge, right_edge);
     // Top and bottom bounds.
     float bottom_edge = area.bottom_meters();
     float top_edge    = area.top_meters();
-printf("   b/t  %.2f,%.2f\n", bottom_edge, top_edge);
     if (floor(coord.y_meters - (c_range_sensor_max_meters+1)) < bottom_edge)
     {
         bottom_edge = floor(coord.y_meters - (c_range_sensor_max_meters+1));
@@ -84,7 +80,6 @@ printf("   b/t  %.2f,%.2f\n", bottom_edge, top_edge);
         top_edge = floor(coord.y_meters + (c_range_sensor_max_meters+1));
         change = true;
     }
-printf("   ->>  %.2f,%.2f\n", bottom_edge, top_edge);
     // If bounds were modified, update observed area record.
     if (change)
     {
@@ -103,7 +98,6 @@ void create_observation(map_coord_t& prev, map_coord_t& coord)
     gaia_log::app().info("Performing observation {} at {},{} heading {}", 
         obs_num, coord.x_meters, coord.y_meters, coord.heading_degs);
     sensor_data_t data;
-printf("SENSOR sweep for obs %d   %.2f,%.2f heading %.1f\n", obs_num, coord.x_meters, coord.y_meters, coord.heading_degs);
     calculate_range_data(coord, data);
 
     // Get ego
