@@ -39,11 +39,11 @@ std::shared_ptr<Aws::Crt::Mqtt::MqttConnection> g_connection;
 auto g_on_publish_complete = [](Mqtt::MqttConnection&, uint16_t packet_id, int error_code) {
     if (packet_id)
     {
-        gaia_log::app().debug("Operation on packet ID {} succeeded", packet_id);
+        gaia_log::app().debug("Operation on packet ID '{}' succeeded.", packet_id);
     }
     else
     {
-        gaia_log::app().error("Operation failed with error {}", aws_error_debug_str(error_code));
+        gaia_log::app().error("Operation failed with error '{}'.", aws_error_debug_str(error_code));
     }
 };
 
@@ -51,7 +51,7 @@ void publish_message(const string& topic, const string& payload)
 {
     if (g_connection)
     {
-        gaia_log::app().info("Publishing: topic: {} payload: {}", topic, trim_to_size(payload));
+        gaia_log::app().info("Publishing: topic: '{}' payload: '{}'.", topic, trim_to_size(payload));
         ByteBuf payload_buf = ByteBufFromArray(reinterpret_cast<const uint8_t*>(payload.data()), payload.length());
         g_connection->Publish(topic.c_str(), AWS_MQTT_QOS_AT_LEAST_ONCE, false, payload_buf, g_on_publish_complete);
     }
@@ -77,12 +77,18 @@ vector<string> split_topic(const string& topic)
     return result;
 }
 
-void on_message(Mqtt::MqttConnection&, const String& topic, const ByteBuf& payload, bool /*dup*/, Mqtt::QOS /*qos*/, bool /*retain*/)
+void on_message(
+    Mqtt::MqttConnection&,
+    const String& topic,
+    const ByteBuf& payload,
+    bool /*dup*/,
+    Mqtt::QOS /*qos*/,
+    bool /*retain*/)
 {
     vector<string> topic_vector = split_topic(topic.c_str());
     string payload_str(reinterpret_cast<char*>(payload.buffer), payload.len);
     payload_str += '\0';
-    gaia_log::app().info("Received topic: {} payload: {}", topic.c_str(), trim_to_size(payload_str));
+    gaia_log::app().info("Received topic: '{}' payload: '{}'.", topic.c_str(), trim_to_size(payload_str));
 
     begin_transaction();
     messages_t::insert_row(topic.c_str(), payload_str.c_str());
@@ -108,8 +114,8 @@ int main()
     Io::EventLoopGroup event_loop_group(1);
     if (!event_loop_group)
     {
-        fprintf(
-            stderr, "Event Loop Group Creation failed with error %s\n", ErrorDebugString(event_loop_group.LastError()));
+        gaia_log::app().error(
+            "Event Loop Group Creation failed with error '{}'.", ErrorDebugString(event_loop_group.LastError()));
         exit(-1);
     }
 
@@ -118,7 +124,7 @@ int main()
 
     if (!bootstrap)
     {
-        fprintf(stderr, "ClientBootstrap failed with error %s\n", ErrorDebugString(bootstrap.LastError()));
+        gaia_log::app().error("ClientBootstrap failed with error '{}'.", ErrorDebugString(bootstrap.LastError()));
         exit(-1);
     }
 
@@ -132,9 +138,7 @@ int main()
 
     if (!client_config)
     {
-        fprintf(
-            stderr,
-            "Client Configuration initialization failed with error %s\n",
+        gaia_log::app().error("Client Configuration initialization failed with error '{}'.",
             ErrorDebugString(client_config.LastError()));
         exit(-1);
     }
@@ -143,7 +147,8 @@ int main()
 
     if (!mqtt_client)
     {
-        fprintf(stderr, "MQTT Client Creation failed with error %s\n", ErrorDebugString(mqtt_client.LastError()));
+        gaia_log::app().error(
+            "MQTT Client Creation failed with error '{}'.", ErrorDebugString(mqtt_client.LastError()));
         exit(-1);
     }
 
@@ -151,29 +156,30 @@ int main()
 
     if (!g_connection)
     {
-        fprintf(stderr, "MQTT Connection Creation failed with error %s\n", ErrorDebugString(mqtt_client.LastError()));
+        gaia_log::app().error(
+            "MQTT Connection Creation failed with error '{}'.", ErrorDebugString(mqtt_client.LastError()));
         exit(-1);
     }
 
     std::promise<bool> connection_completed_promise;
     std::promise<void> connection_closed_promise;
 
-    auto on_connection_completed = [&connection_completed_promise](Mqtt::MqttConnection&, int error_code, Mqtt::ReturnCode returnCode, bool) {
+    auto on_connection_completed = [&connection_completed_promise](Mqtt::MqttConnection&, int error_code, Mqtt::ReturnCode return_code, bool) {
         if (error_code)
         {
-            fprintf(stdout, "Connection failed with error %s\n", ErrorDebugString(error_code));
+            gaia_log::app().error("Connection failed with error '{}'.", ErrorDebugString(error_code));
             connection_completed_promise.set_value(false);
         }
         else
         {
-            if (returnCode != AWS_MQTT_CONNECT_ACCEPTED)
+            if (return_code != AWS_MQTT_CONNECT_ACCEPTED)
             {
-                fprintf(stdout, "Connection failed with mqtt return code %d\n", static_cast<int>(returnCode));
+                gaia_log::app().error("Connection failed with MQTT return code '{}'.", static_cast<int>(return_code));
                 connection_completed_promise.set_value(false);
             }
             else
             {
-                fprintf(stdout, "Connection completed successfully.\n");
+                gaia_log::app().info("Connection completed successfully.");
                 gaia::system::initialize();
                 connection_completed_promise.set_value(true);
             }
@@ -181,16 +187,16 @@ int main()
     };
 
     auto on_interrupted = [&](Mqtt::MqttConnection&, int error) {
-        fprintf(stdout, "Connection interrupted with error %s\n", ErrorDebugString(error));
+        gaia_log::app().error("Connection interrupted with error '{}'.", ErrorDebugString(error));
     };
 
     auto on_resumed = [&](Mqtt::MqttConnection&, Mqtt::ReturnCode, bool) {
-        fprintf(stdout, "Connection resumed\n");
+        gaia_log::app().info("Connection resumed.");
     };
 
     auto on_disconnect = [&connection_closed_promise](Mqtt::MqttConnection&) {
         {
-            fprintf(stdout, "Disconnect completed\n");
+            gaia_log::app().info("Disconnect completed.");
             gaia::system::shutdown();
             connection_closed_promise.set_value();
         }
@@ -201,10 +207,11 @@ int main()
     g_connection->OnConnectionInterrupted = std::move(on_interrupted);
     g_connection->OnConnectionResumed = std::move(on_resumed);
 
-    fprintf(stdout, "Connecting...\n");
+    gaia_log::app().info("Connecting...");
     if (!g_connection->Connect(client_id.c_str(), false, 1000))
     {
-        fprintf(stderr, "MQTT Connection failed with error %s\n", ErrorDebugString(g_connection->LastError()));
+        gaia_log::app().error(
+            "MQTT Connection failed with error '{}'.", ErrorDebugString(g_connection->LastError()));
         exit(-1);
     }
 
@@ -212,22 +219,23 @@ int main()
     {
         std::promise<void> subscribe_finished_promise;
         auto on_sub_ack =
-            [&subscribe_finished_promise](Mqtt::MqttConnection&, uint16_t packet_id, const String& topic, Mqtt::QOS QoS, int errorCode) {
-                if (errorCode)
+            [&subscribe_finished_promise](Mqtt::MqttConnection&, uint16_t packet_id, const String& topic, Mqtt::QOS qos, int error_code) {
+                if (error_code)
                 {
-                    fprintf(stderr, "Subscribe failed with error %s\n", aws_error_debug_str(errorCode));
+                    gaia_log::app().error("Subscribe failed with error '{}'.", aws_error_debug_str(error_code));
                     exit(-1);
                 }
                 else
                 {
-                    if (!packet_id || QoS == AWS_MQTT_QOS_FAILURE)
+                    if (!packet_id || qos == AWS_MQTT_QOS_FAILURE)
                     {
-                        fprintf(stderr, "Subscribe rejected by the broker.");
+                        gaia_log::app().error("Subscribe rejected by the broker.");
                         exit(-1);
                     }
                     else
                     {
-                        fprintf(stdout, "Subscribe on topic %s on packetId %d Succeeded\n", topic.c_str(), packet_id);
+                        gaia_log::app().info(
+                            "Subscribe on topic '{}' on packet ID '{}' succeeded.", topic.c_str(), packet_id);
                     }
                 }
                 subscribe_finished_promise.set_value();
@@ -240,7 +248,7 @@ int main()
         String input;
         while (input != "x")
         {
-            fprintf(stdout, "Enter to see database. Enter 'x' to exit this program.\n");
+            gaia_log::app().info("Press Enter to see database. Enter 'x' to exit this program.");
             std::getline(std::cin, input);
             if (input != "x")
             {
