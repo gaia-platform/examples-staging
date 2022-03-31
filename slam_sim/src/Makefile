@@ -17,4 +17,4 @@ refresh_db:
 	gaiac ../gaia/slam.ddl --db-name slam -g -o /tmp/slam
 
 clean:
-	rm *.pgm
+	rm -f *.pgm

@@ -76,7 +76,6 @@ void move_toward_destination(gaia::slam::working_map_t&);
 void full_stop();
 
 
-
 ////////////////////////////////////////////////
 // Support API
 
@@ -92,7 +91,7 @@ void generate_sensor_data(double pos_x_meters, double pos_y_meters,
 
 // Generates and exports a map to disk. Filename will be based on ego's
 //  timestamp.
-void export_map_to_disk();
+void export_map_to_file();
 
 // External request to move to a specific location.
 void request_destination(double x_meters, double y_meters);

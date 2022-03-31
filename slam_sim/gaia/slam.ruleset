@@ -60,12 +60,12 @@ ruleset map_ruleset : serial_group()
     // We don't want multiple edges to be created at similar points in time
     //  and both realize that it's time to optimize the map, and do so 
     //  together, so keep the graph optimization check in a serial group.
-    on_insert(e: edges)
+    on_insert(edges)
     {
         // New edge created. See if it's time to run new graph optimization.
         if (optimization_required())
         {
-            optimize_graph(e.dest->observations.graph->graphs);
+            optimize_graph(edges.dest->observations.graph->graphs);
 
             // Whenever new error-correction data is available, regenerate
             //  maps. This can be triggered in a separate rule or simply
@@ -77,15 +77,15 @@ ruleset map_ruleset : serial_group()
 
 
     // Destination changed. Update working map and start moving toward it.
-    on_change(d: destination)
+    on_change(destination)
     {
-        build_working_map(d, /area_map);
+        build_working_map(destination, /area_map);
         move_toward_destination(/working_map);
     }
 
 
     // For each observation, update working map using new sensor data.
-    on_insert(o: observations)
+    on_insert(observations)
     {
         // If working map will go beyond border of area map, rebuild
         //  area map.
@@ -118,19 +118,19 @@ ruleset runtime_ruleset
     //  run in parallel, risking violation of (1).
 
 
-    on_insert(o: observations)
+    on_insert(observations)
     {
         // TODO Perform spatial query in area of observation and see if
         //  there are other observations to build edges with.
     }
 
-    on_insert(o: observations)
+    on_insert(observations)
     {
         // Determine if it's time to change destinations.
         select_new_destination();
     }
 
-    on_insert(c: collision_event)
+    on_insert(collision_event)
     {
         // A collision was detected, or the range sensor detected something
         //  closer than it's supposed to be. Initiate a stop, which will

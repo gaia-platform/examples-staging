@@ -25,17 +25,15 @@ As elsewhere in the code, positive coordinates are to the up and right.
 #include "gaia_slam.h"
 
 #include "sensor_data.hpp"
-#include "landmark_description.hpp"
 
 namespace slam_sim
 {
 
 // Characteristics of a node in the map, including distance from this node
 //  to a/the destination.
-// Occupied: how many times the node has been travelled through.
+// Occupied: how many times the node has been traveled through.
 // Observed: how many times the node has been seen.
 // Boundary: how many times the node had an obstruction detection in it.
-// Landmark: how many times the node had landmark reported in it.
 struct map_node_t
 {
     // Index of node that's one-closer to destination (-1 for no parent)
@@ -47,7 +45,6 @@ struct map_node_t
     float occupied;
     float observed;
     float boundary;
-    float landmarks;
 
     // Cost to traverse this node. This is computed as a function of the
     //  node's characteristics.
@@ -67,7 +64,6 @@ struct map_node_flags_t
     uint8_t occupied;
     uint8_t observed;
     uint8_t boundary;
-    uint8_t landmark;
 
     void clear();
 };
@@ -106,8 +102,8 @@ class occupancy_grid_t
 public:
     // Map center starts at 0,0 so map bounds are at +/- width/2 and 
     //  +/- height/2.
-    occupancy_grid_t(float node_width_meters, float width_meters, 
-        float height_meters);
+    occupancy_grid_t(float node_width_meters, world_coordinate_t top_left,
+        world_coordinate_t bottom_right);
     ~occupancy_grid_t();
 
     // Initialization
@@ -117,8 +113,6 @@ public:
     // This is meant to be used to build a higher resolution local map to use
     //  based on a larger lower resolution area map.
     //void embed(const occupancy_grid_t& surrounding);
-
-    //void resize(float width_meters, float height_meters);
 
     // Returns a reference to tne map node at the specified location.
     map_node_t& get_node(float x_meters, float y_meters);
@@ -131,8 +125,7 @@ public:
 
 protected:
     uint32_t get_node_index(float pos_x_meters, float pos_y_meters);
-    void apply_landmarks(const gaia::slam::observations_t&);
-    void apply_radial(uint32_t radial, float range_meters, 
+    void apply_radial(float radial_degs, float range_meters, 
         float pos_x_meters, float pos_y_meters);
     void apply_flags();
 
@@ -141,38 +134,13 @@ protected:
 
     map_size_t m_map_size;
     // Positive coordiantes are rightward and upward.
-    world_coordinate_t m_top_left;
-    world_coordinate_t m_bottom_right;
+    world_coordinate_t m_bottom_left;
 
     std::vector<map_node_t> m_grid;
     std::vector<map_node_flags_t> m_grid_flags;
 
     world_coordinate_t m_destination;
 };
-
-
-//////////////////////////////////////////////////////////////////////////
-//// API
-//
-//// Usage: initialize the map, apply sensor data to it, add destinations,
-////  and then compile. Map nodes will have vectors to move toward
-////  destination.
-//
-//void reset_map(occupancy_grid_t& map);
-//// Initializes inner map using outer map to set boundary conditions. This
-////  is meant to be used to build a higher resolution local map to use
-////  based on a larger lower resolution area map.
-//void embed_map(const occupancy_grid_t& outer, occupancy_grid_t& inner);
-//
-//// Apply sensor data to it.
-//void apply_sensor_data_to_map(occupancy_grid_t& map, sensor_data_t& data);
-//
-//// Add destination to the map.
-//void add_destination(occupancy_grid_t& map, double x_meters, y_meters);
-//
-//// Build distances to destination(s) and directional vectors.
-//void compile_map(occupancy_grid_t& map);
-//
 
 } // namespace slam_sim
 

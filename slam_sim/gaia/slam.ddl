@@ -34,6 +34,7 @@ database slam;
 --    area_map              Map of the known world.
 --    working_map           Version of world map with recent sensor overlay.
 --    destination           Location that bot is moving to.
+--    observed_area         Bounds of observed world.
 --
 -- Event tables:
 --    pending_destination   Destination requested externally.
@@ -62,7 +63,8 @@ table ego
   current_graph references graphs
       where ego.current_graph_id = graphs.id,
 
-  timestamp_sec double,
+  -- Most recent timestmap is stored in most recent observation
+  --  (referenced below).
 
   -- Explicitly created references.
   -- Keep most of ego data in different tables so that updates to
@@ -74,12 +76,10 @@ table ego
   latest_observation references latest_observation,
 
   -- Position oriented.
-  world references observed_area
   destination references destination,
   world references observed_area,
 
   -- Map oriented.
-  world references observed_area
   low_res_map references area_map,
   working_map references working_map
 )
@@ -136,6 +136,21 @@ table destination
   departure_time_sec  float,
 
   -- References
+  ego references ego
+)
+
+
+-- Bounds of known world size. When maps are generated, they can use these
+--  values for map bounds.
+table observed_area
+(
+  -- Bounding polygon
+  -- Uses world coordinates, with increasing X,Y being rightward/upward.
+  left_meters float,
+  right_meters float,
+  top_meters float,
+  bottom_meters float,
+
   ego references ego
 )
 
