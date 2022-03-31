@@ -1,30 +1,20 @@
-////////////////////////////////////////////////////
-// Copyright (c) Gaia Platform LLC
-//
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE.txt file
-// or at https://opensource.org/licenses/MIT.
-////////////////////////////////////////////////////
-
 #include <gaia/logger.hpp>
 
 ruleset hello_ruleset
 {
-    // Rule 1: Whenever a name is inserted,
-    // insert a new greeting into the greetings table.
-    on_insert(names)
+    // Rule 1: Triggered every time a record is inserted in the table person.
+    on_insert(person)
     {
-        // Form the greeting using the name.
-        gaia_log::app().info("{} inserted!", names.name);
+        gaia_log::app().info("{} inserted!", person.name);
 
-        // Insert the greeting.
-        greetings.insert(name: names.name);
+        // Insert a greeting record which trigger 'Rule 2'.
+        greetings.insert(name: person.name);
     }
 
-    // Rule 2: Whenever a greeting is inserted,
-    // print Hello World to the console.
-    on_insert(greetings)
-    {
-      gaia_log::app().info("Hello World {}!", greetings.name);
-    }
+    // Rule 2: Triggered every time a record is inserted in the table greetings.
+    // [Try to uncomment the following lines and see how the program output changes]
+    // on_insert(greetings)
+    // {
+    //   gaia_log::app().info("Hello World {}!", greetings.name);
+    // }
 }
