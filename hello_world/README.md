@@ -1,7 +1,7 @@
 # Writing a Gaia Application
 
-Writing a Gaia application involves defining a schema and writing rules to act on your application's data. The schema 
-and the rules are processed by Gaia tools, `gaiac` and `gaiat` respectively,  to generate C++ code to be used in your 
+Writing a Gaia application involves defining a schema and writing rules to act on your application's data. The schema
+and the rules are processed by Gaia tools (`gaiac` and `gaiat` respectively) to generate C++ code to be used in your 
 application. The Sandbox takes care of these steps for you. 
 
 Please refer to 
@@ -49,7 +49,7 @@ ruleset hello_ruleset
     }
 ```
 
-The Gaia Rules Engine takes care of scheduling the rules, running the rules into a transaction, and rescheduling them
+The Gaia Rules Engine takes care of scheduling the rules, running the rules in a transaction, and rescheduling them
 in case of error.
 
 ## The main application
