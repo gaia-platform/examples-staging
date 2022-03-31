@@ -47,6 +47,7 @@ ruleset hello_ruleset
     {
         gaia_log::app().info("{} inserted!", person.name);
     }
+}
 ```
 
 The Gaia Rules Engine takes care of scheduling the rules, running the rules in a transaction, and rescheduling them
