@@ -8,7 +8,7 @@
 
 #include "gaia/logger.hpp"
 
-ruleset pick_and_place_ruleset : serial_group()
+ruleset pick_and_place_ruleset
 {
     {
         // Executed when table 'state' has a record with
@@ -26,8 +26,8 @@ ruleset pick_and_place_ruleset : serial_group()
     on_insert(pick_action)
     {
         gaia_log::app().info("Picking...");
-        // The done field is implicitly associated to the pick_action record.
-        // By setting it to trie we trigger the next rule: 'if (@pick_action.done)'
+        // The 'done' field is implicitly associated to the pick_action record.
+        // By setting it to true we trigger the next rule: 'if (@pick_action.done)'
         done = true;
     }
 
@@ -47,8 +47,8 @@ ruleset pick_and_place_ruleset : serial_group()
     on_insert(move_action)
     {
         gaia_log::app().info("Moving...");
-        // The done field is implicitly associated to the move_action record.
-        // By setting it to trie we trigger the next rule: 'if (@move_action.done)'.
+        // The 'done' field is implicitly associated to the move_action record.
+        // By setting it to true we trigger the next rule: 'if (@move_action.done)'.
         done = true;
     }
 
