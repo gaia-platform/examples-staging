@@ -57,9 +57,9 @@ in case of error.
 The lifecycle of a Gaia application starts in your application's C++ code. Rules react to database changes, so you need
 to mutate the database from your C++ code to trigger the first rule.
 
-The following snippet initializes the Gaia system, and inserts a record into the `person` table. As soon as the 
-transaction is committed (`gaia::db::commit_transaction()`), the rules engine will enqueue and execute the 
-`on_insert(person)` rule, passing the `"Alice"` record asynchronously.
+The following snippet initializes the Gaia system and inserts a record into the `person` table. As soon as the 
+transaction is committed (`gaia::db::commit_transaction()`), the rules engine enqueue and execute the 
+`on_insert(person)` rule asynchronously, passing the `"Alice"` record.
 
 `gaia::system::shutdown()` waits for all enqueued rules to be executed and then shuts down the Gaia system.
 ```cpp
@@ -77,8 +77,8 @@ int main()
 
 # Now it's your turn!
 
-You can build the Hello World example by pressing the `Build` button. Once the build is completed you can press `Run` to 
-run it.
+You can build the Hello World example by pressing the `Build` button. Once the build completes, you can press `Run` to 
+run the example.
 
 You can try to:
 1. Uncomment `Rule 2` in the ruleset file.
