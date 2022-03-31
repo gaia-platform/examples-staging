@@ -28,30 +28,57 @@
 
 database slam;
 
--- unit suffixes
---    meters
---    degs (degress)
---    sec (seconds)
---    pct (percentage)
+-- Table list
+-- Single record tables:
+--    ego                   Stores state of the bot.
+--    area_map              Map of the known world.
+--    working_map           Version of world map with recent sensor overlay.
+--    destination           Location that bot is moving to.
+--
+-- Event tables:
+--    pending_destination   Destination requested externally.
+--    collision_event       Sensors detected imminent collision.
+--
+-- Data tables:
+--    graphs                Group of observations to produce pose graph.
+--    observations          Synonymous with node, pose, vertex.
+--      positions               Position associated with observation.
+--      movements               Movement to reach this observation.
+--      range_data              Sensor range data for an observation.
+--    edges                 Connects two observations.
+--    error_corrections     Information from graph optimization round.
 
 
 ------------------------------------------------------------------------
 -- Tables with single records (i.e., exactly one)
 
+-- Record for the bot, storing its state and references to information.
 table ego
 (
-  current_path_id uint32,
-  current_path references paths where ego.current_path_id=paths.id,
+  -- Reference to the active graph. Unlike the references below, this is
+  --  a value-linked (implicit) reference that is automatically updated
+  --  by updating the 'current_graph_id'.
+  current_graph_id uint32,
+  current_graph references graphs
+      where ego.current_graph_id = graphs.id,
 
   -- Explicitly created references.
   -- Keep most of ego data in different tables so that updates to
   --  one field don't risk conflict and txn rollback.
-  position references estimated_position,
-  destination references destination,
-  error references error_correction,
+  -- The references here are for conveninece, as once the 'ego' record
+  --  is held there's a direct link to the other tables. Because those
+  --  other tables have only one record, they can easily be retrieved
+  --  directly (as an alternative to using references).
+  latest_observation references latest_observation,
 
+  -- Position oriented.
+  world references observed_area
+  destination references destination,
+  world references observed_area,
+
+  -- Map oriented.
+  world references observed_area
   low_res_map references area_map,
-  high_res_map references local_map,
   working_map references working_map
 )
 
@@ -61,6 +88,10 @@ table ego
 --  manage concurrent access manually.
 table area_map
 (
+  // Reference to in-memory blob that stores 2D map.
+  // Blob ID changes on each map update.
+  uint32_t blob_id;
+
   -- Bounding polygon
   -- Uses world coordinates, with increasing X,Y being rightward/upward.
   left_meters float,
@@ -68,18 +99,17 @@ table area_map
   top_meters float,
   bottom_meters float,
 
-  -- An on_change rule needs a field to change to fire the rule. Use this
-  --  field to guarantee that a change is made so the rule is fired. Note
-  --  that a record being "touched" is not sufficient to trigger a change
-  --  rule as an actual value change is required.
-  change_counter int32,
-  ----------------------------
   ego references ego
+  working_map references working_map
 )
 
 
-table local_map
+table working_map
 (
+  // Reference to in-memory blob that stores 2D map.
+  // Blob ID changes on each map update.
+  uint32_t blob_id;
+
   -- Bounding polygon
   -- Uses world coordinates, with increasing X,Y being rightward/upward
   left_meters float,
@@ -87,27 +117,9 @@ table local_map
   top_meters float,
   bottom_meters float,
 
-  -- An on_change rule needs a field to change to fire the rule. Use this
-  --  field to guarantee that a change is made so the rule is fired. Note
-  --  that a record being "touched" is not sufficient to trigger a change
-  --  rule as an actual value change is required.
-  change_counter int32,
-  ----------------------------
+  -- References
   ego references ego,
-  working_map references working_map
-)
-
-
-table working_map
-(
-  -- An on_change rule needs a field to change to fire the rule. Use this
-  --  field to guarantee that a change is made so the rule is fired. Note
-  --  that a record being "touched" is not sufficient to trigger a change
-  --  rule as an actual value change is required.
-  change_counter int32,
-  ----------------------------
-  local_map references local_map,
-  ego references ego
+  area_map references area_map
 )
 
 
@@ -117,40 +129,26 @@ table destination
   x_meters float,
   y_meters float,
 
-  -- Expected arrival time, in numbers of observations to be taken
-  --  on this path. This is useful for aborting trying to reach a
-  --  destination.
-  -- When set to -1, this means return to a landmark.
-  expected_arrival int32,
-  ----------------------------
+  -- Keep track of when we left for this destination. If too much time
+  --  has elapsed looking for it, abort and go somewhere else.
+  departure_time_sec  float,
+
+  -- References
   ego references ego
 )
 
 
-table estimated_position
+-- Represents the most recently created observation. 
+-- In the context of evaluating the data model for possible transaction
+--  conflicts, If multiple observations are not created simultaneously 
+--  (which they shouldn't be) then it's not possible to get a transaction
+--  collision updating the single record in this table.
+-- Represents the most recently created observation.
+table latest_observation
 (
-  -- Uses world coordinates, with increasing X,Y being rightward/upward.
-  x_meters float,
-  y_meters float,
-
-  -- Intended/believed motion
-  dx_meters float,
-  dy_meters float,
-
-  ----------------------------
-  ego references ego
-)
-
-
--- Parameters to estimate tracking errors. This is a running average
---  as estimated over all paths.
-table error_correction
-(
-  drift_correction float,
-  forward_correction float,
-  correction_weight float,
-
-  ----------------------------
+  observation_id uint32,
+  observation references observations
+      where latest_observation.observation_id = observations.id,
   ego references ego
 )
 
@@ -177,159 +175,148 @@ table collision_event
 
 
 ------------------------------------------------------------------------
--- Data tables
+-- Data tables (i.e., tables with multiple records)
 
--- A sequence of observations between a known start and end point.
---  Start/end points are at distinguishable landmarks.
-table paths
+-- A collection of observations.
+table graphs
 (
   id uint32 unique,
 
-  ego references ego[],
+  observations references observations[],
+  edges references edges[],
 
-  state int32,
-
-  -- Observations that are part of this path.
-  num_observations uint32,
-  start_obs_id uint32,
-  latest_obs_id uint32,
-  first_observation references observations
-    where paths.start_obs_id = observations.id,
-  latest_observation references observations
-    where paths.latest_obs_id = observations.id
+  -- Reverse reference to ego (necessary until one-way references are 
+  --  supported)
+  ego references ego[]
 )
 
+
+------------------------------------------------
+-- Observation related
+-- TODO rename 'observations' to either 'nodes', 'poses', or 'vertices'.
 
 -- An observation from a point in the world, including sensor readings
---  from this point and a link to observations that occurred immediately
---  before and after.
--- This is more typically known as a 'Node' in SLAM. The
---  name difference is because this represents the sensor data from
---  an individual position only. It is not linked together to form
---  a graph of an arbitrary number of nearby pose points, only the
---  previous and next observations. In future iterations, a generic 'node'
---  will be defined, based on their typical definition. It is expected
---  that the node will be similar to an observation.
+--  from this point and a link to other nearby observations. This is
+--  more commonly known as a "node", "pose", or "vertex".
+-- Most of observation data in kept different tables so that updates to
+--  one field don't risk conflict and txn rollback if others are
+--  modified.
 table observations
 (
+  ------------------------------
+  -- Constant data. These values are set at creation and don't change.
+  --  This is relevant in the sense that, when evaluating for possible
+  --  transaction conflicts, these fields/references can be considered
+  --  safe.
   id uint32 unique,
 
-  -- Estimated position. This is the latest best guess. It may be modified
-  --  in the future when we have better error estimates.
-  pos_x_meters float,
-  pos_y_meters float,
+  position references positions,
+  range_data references range_data,
+  motion references movements,
 
-  -- Actual position data.
-  actual_x_meters float,
-  actual_y_meters float,
-
-  -- DR motion from previous observation.
-  dx_meters float,
-  dy_meters float,
-
-  -- DR motion in polar coordinates.
-  heading_degs float,
-  dist_meters float,
-
-
-  path references paths[] using latest_observation,
-  path_dup references paths[] using first_observation,
+  graph_id uint32,
+  graph references graphs
+      where graphs.id = observations.graph_id,
 
   ------------------------------
-  -- Sensing
+  -- Dynamic fields. These can be modified asynchronously. Functions
+  --  and rules that modify them (i.e., that add edges) should be designed 
+  --  to handle a possible transaction rollback unless the logic is
+  --  desgined to avoid that.
+  in_edges references edges[],
+  out_edges references edges[],
 
-  -- Range finder
-  num_radials int32,
-  distance_meters float[],
-
-  landmark_sightings references landmark_sightings[],
-
-  -- As noted, an observation is only connected to two other observations.
-  -- A node would instead have a single 'references edges[]'
-  -- Forward is the edge connecting this observation to the next one, and
-  --  reverse connects this observation to the previous.
-  forward_edge references edges,
-  reverse_edge references edges
+  -- Reverse reference to 'latest_observation'. This is not used and
+  --  can be removed when one-way references are supported. The []
+  --  can be removed when 1:1 VLRs are supported.
+  prev_observation references latest_observation[]
 )
 
 
-table edges
+table positions
 (
-  -- ID is the same as that of target (next) observation.
-  id uint32,
-
-  -- For sequential observations O1 and O2, this edge attaches to
-  --  O1.forward_edge and O2.reverse_edge, so 'next' is O2.reverse_edge
-  --  and 'prev' is O1.forward_edge.
-  next references observations using reverse_edge,
-  prev references observations using forward_edge
-)
-
-
--- A salient feature of the environment that is uniquely identifiable and
---  that can be used to generate a position fix.
-table landmarks
-(
-  id uint32 unique,
-  description string unique,
-
-  -- Position of landmark. If this is not supplied externally then it is
-  --  generated by Alice. If positions are supplied externally then
-  --  their confidence is 1.0. Otherwise, the first landmark encountered
-  --  will be assigned a position relative to Alice's position and a 
-  --  confidence of 1.0. Subsequent landmarks will have confidences less 
-  --  than 1.0 and will have approximate positions that are subject to
-  --  being updated.
+  -- The latest best guess of position. It may be modified in the future
+  --  when we have better error estimates.
   x_meters float,
   y_meters float,
+  heading_degs float,
 
-  confidence float,
-
-  -- Times that this landmark was sighted.
-  sightings references landmark_sightings[]
-)
-
-
--- Locations of observed landmarks.
--- Note that measured distance and range to the landmark will be more
---  accurate the closer Alice is to it.
-table landmark_sightings
-(
-  range_meters float,
-  bearing_degs float,
-
-  -- Observation corresponding to this sighting.
-  observation_id uint32,
+  -- Constant reference established at record creation time.
   observation references observations
-    where landmark_sightings.observation_id = observations.id,
-
-  -- Landmark that was sighted.
-  landmark_id uint32,
-  landmark references landmarks
-    where landmark_sightings.landmark_id = landmarks.id
 )
 
 
-------------------------------------------------------------------------
--- Used by simulator shell
-
--- Alice's initial position in the world is 0,0. This is the coordinate
---  mapping to get from 0,0 to the physical start point.
--- There is exactly one record in this table.
-table sim_position_offset
+table movements
 (
-  -- Based on world coordinates, with increasing X,Y being rightward/upward
+  -- DR (dead reckoning) motion from previous observation. This is 
+  --  a placeholder for storing DR data that could be used during 
+  --  graph optimization.
   dx_meters float,
-  dy_meters float
+  dy_meters float,
+  dheading_degs float,
+
+  -- Constant reference established at record creation time.
+  observation references observations
 )
 
 
--- Alice's actual position in Alice's reference frame.
--- There is exactly one record in this table.
-table sim_actual_position
+table range_data
 (
-  -- World coordinates, with increasing X,Y being rightward/upward
-  x_meters float,
-  y_meters float
+  -- This can be stored in a blob or in dedicated fields.
+  num_radials int32,
+  bearing_degs float[],
+  distance_meters float[],
+
+  -- Constant reference established at record creation time.
+  observation references observations
+)
+
+
+------------------------------------------------
+-- Other supporting tables.
+
+-- Connects two observations.
+table edges
+(
+  graph_id uint32,
+  graph references graphs
+      where edges.graph_id = graphs.id,
+
+  -- An edge connects two observations, source and destination. These
+  --  have names indicating that they are directed, as they sometimes
+  --  will be (observation X -> Y -> Z), but it is noted that many times
+  --  they won't be (e.g., if an edge is formed between observation Y
+  --  and existing observation M).
+  src_id uint32,
+  src references observations
+      using out_edges where edges.src_id = observations.id,
+
+  dest_id uint32,
+  dest references observations
+      using in_edges where edges.dest_id = observations.id
+)
+
+
+-- Created whenever an optimization is performed. Table can store data
+--  from that optimization, but more relevantly creating this record also 
+--  generates as an event to do post-optimization things, like creating a
+--  new map.
+table error_corrections
+(
+  id uint32 unique,
+  graph_id uint32
+
+  -- A reference can be made to graphs if necesasry. However, if it's
+  --  unlikely to be used, or be used infrequently, might be better
+  --  to avoid having reference, to avoid possible transaction conflicts
+  --  if modifying graph_id in a transaction that has computationally
+  --  intensive actions associated with it.
+  -- In the absense of a reference, the correct graph can always be
+  --  reached using the following direct access approach:
+  --    graphs_t g = *(graphs_t::list()
+  --        .where(graphs_t::expr::id == ec.graph_id).begin());
+  --  for error_corrections record 'ec'.
+
+  -- Addional data fields here, as necessary.
 )
 

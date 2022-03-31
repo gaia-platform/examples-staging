@@ -23,71 +23,81 @@
 #include "slam_sim.hpp"
 
 
-using slam_sim::select_destination;
-using slam_sim::select_landmark_destination;
+//using slam_sim::select_destination;
+//using slam_sim::select_landmark_destination;
+
+// Brings Alice to a halt. Creates new observation at present position.
 using slam_sim::full_stop;
+
+// Instructs Alice to beging trek to destination. Motion control is
+//  managed at lower level, using direction data determined in rules.
 using slam_sim::move_toward_destination;
 
-using slam_sim::create_new_path;
-using slam_sim::create_observation;
-using slam_sim::init_path;
+//using slam_sim::create_new_path;
+//using slam_sim::create_observation;
+//using slam_sim::init_path;
+//
+//using slam_sim::calc_path_error;
+//using slam_sim::build_area_map;
+//using slam_sim::build_local_map;
+//using slam_sim::build_working_map;
+//
+//using gaia::slam::pending_destination_t;
+//using gaia::slam::estimated_position_t;
+//using gaia::slam::destination_t;
+//using gaia::slam::paths_t;
+//
+//using gaia::slam::paths_writer;
 
-using slam_sim::calc_path_error;
-using slam_sim::build_area_map;
-using slam_sim::build_local_map;
-using slam_sim::build_working_map;
 
-using gaia::slam::pending_destination_t;
-using gaia::slam::estimated_position_t;
-using gaia::slam::destination_t;
-using gaia::slam::paths_t;
+// Wrap error correction and map creation in a serial group as these are
+//  expensive operations and we want to avoid concurrent operations 
+//  experiencing a txn conflict, and avoid race conditions.
+ruleset map_ruleset : serial_group()
+{
+    // We don't want multiple edges to be created at similar points in time
+    //  and both realize that it's time to optimize the map, and do so 
+    //  together, so keep the graph optimization check in a serial group.
+    on_insert(e: edges)
+    {
+        // New edge created. See if it's time to run new graph optimization.
+        if (optimization_required())
+        {
+            optimize_graph(e.dest->observations.graph->graphs);
 
-using gaia::slam::paths_writer;
+            // Whenever new error-correction data is available, regenerate
+            //  maps. This can be triggered in a separate rule or simply
+            //  done here, so do it here.
+            build_area_map(/area_map, /observed_area);
+            build_working_map(/destination, /area_map);
+        }
+    }
+
+
+    // Destination changed. Update working map and start moving toward it.
+    on_change(d: destination)
+    {
+        build_working_map(d, /area_map);
+        move_toward_destination(/working_map);
+    }
+
+
+    // For each observation, update working map using new sensor data.
+    on_insert(o: observations)
+    {
+        // If working map will go beyond border of area map, rebuild
+        //  area map.
+        if (need_to_extend_area_map())
+        {
+            build_area_map(/area_map, /observed_area);
+        }
+        build_working_map(g, /area_map);
+    }
+}
 
 
 ruleset observation_ruleset
 {
-    ////////////////////////////////////////////
-    // Change of path state
-
-    on_change(paths.state)
-    {
-        if ((state == slam_sim::PATH_STATE_STARTING) && (slam_sim::g_quit == 0))
-        {
-            gaia_log::app().info("Path changed state to STARTING. "
-                "Creating initial observation");
-            // Sanity check. A new path should have no observations.
-            uint32_t n = 0xffffffff;
-            n = paths.num_observations;
-            assert(n == 0);
-
-            // Create first observation. That will trigger the sequence
-            //  of events moving toward the destination.
-            create_observation(paths);
-        }
-    }
-
-
-    on_update(paths.state)
-    {
-        if (paths.state == slam_sim::PATH_STATE_DONE)
-        {
-            gaia_log::app().info("Path changed state to DONE. "
-                "Calculating path error");
-            // Path just completed. Calculate error and store results
-            //  in error_correction. There should be no transaction
-            //  conflicts as this is the only code path altering
-            //  the record in that table. Once error is calculated
-            //  a new area map can be created.
-            // TODO make sure this is a complete path (i.e., w/ landmark
-            //  at beginning and end) so that DR errors can be estimated
-            //  from it.
-            calc_path_error(paths);
-            gaia_log::app().info("DONE Path changed state to DONE.");
-        }
-    }
-
-
     ////////////////////////////////////////////
     // Creating observations
 
@@ -98,165 +108,25 @@ ruleset observation_ruleset
     {
         gaia_log::app().info("Estimated position changed to {},{}", ep.x_meters,
             ep.y_meters);
-        create_observation(/ego.current_path->paths);
-    }
 
+        // Determine if it's time to build another observation.
+        if (should_build_new_observation())
+        {
+            create_observation(/ego.current_path->paths);
+        }
+    }
 
     on_insert(o: observations)
     {
-        // An observation of the surroundings was made. Now we need to
-        //  move on towards our destination.
-        // There are several things to consider. Updating the destination
-        //  record will trigger a rebuilding of the local maps, which will
-        //  in turn have Alice move toward the destination.
-
-gaia_log::app().info("on_insert(observation);");
-gaia_log::app().info("  state={}", o.path->paths.state);
-        for (/pending_destination) {
-            // If there's a new destination request pending, set that as the
-            //  destination.
-            gaia_log::app().info("Observation found pending destination "
-                "change request");
-
-            // TODO modify destination record
-            assert(1 == 0); // induce a fault until this is supported
-            
-            return;
-        }
-
-        if (o.path->paths.state == slam_sim::PATH_STATE_STARTING)
-        {
-            gaia_log::app().info("Observation created in new path. "
-                "Selecting destination");
-            // This is a newly created path. Select a destination.
-            // Add this observation to the path
-            init_path(o);
-            // Path initization changes the state to active. This change
-            //  doesn't trigger any side actions, so there's nothing to
-            //  worry about if we modify another row that will induce
-            //  a cascade of rule executions.
-            // Select a destination.
-            select_destination();
-            return;
-        }
-
-        if (o.path->paths.state == slam_sim::PATH_STATE_ACTIVE)
-        {
-            // First observation in path made before a destination is selected.
-            // Defer check for expected arrival until we have a [new]
-            //  destination.
-            if ((o.path->paths.num_observations > 1) &&
-                (o.path->paths.num_observations > (uint32_t) expected_arrival))
-            {
-                gaia_log::app().info("Observation made beyond expected "
-                    "arrival time at destination. Returning to landmark");
-                // We're exploring and should have reached our destination
-                //  already. Give up and go back to a landmark.
-                select_landmark_destination();
-                return;
-            }
-        }
-
-        // If we're close enought to a landmark right now, terminate
-        //  the path.
-        for (o.landmark_sightings->ls:landmark_sightings) {
-gaia_log::app().info("Landmark sighting. Range {}", ls.range_meters);
-            if (ls.range_meters < slam_sim::LANDMARK_DISTANCE_METERS) {
-                gaia_log::app().info("Observation made made near "
-                    "landmark. Terminating path");
-                o.path->paths.state = slam_sim::PATH_STATE_DONE;
-                return;
-            }
-        }
-
-        // If position is sufficiently close to destination then stop
-        //  exploring and go find a landmark (or if we arrived where one
-        //  should be, go look for another one).
-        // Both destination and estimated position tables have exactly
-        //  on record, so we can use a shortcut to access the fields
-        //  in these records directly.
-        double dx = 0.0;
-        double dy = 0.0;
-        dx = /destination.x_meters - /estimated_position.x_meters;
-        dy = /destination.y_meters - /estimated_position.y_meters;
-        double dist_2 = dx*dx + dy*dy;
-        double radius_2 = slam_sim::DESTINATION_RADIUS_METERS
-            * slam_sim::DESTINATION_RADIUS_METERS;
-        if (dist_2 < radius_2)
-        {
-            gaia_log::app().info("Observation made at destination. "
-                "Returning to landmark.");
-            // Arrived at destination. Find a landmark to calibrate
-            //  position and then update map.
-            select_landmark_destination();
-            return;
-        }
-
-        // Destination hasn't changed. Rebuild the working map
-        //  and proceed.
-        gaia_log::app().info("Observation made. Building new local map.");
-        build_working_map(/working_map);
+        // TODO Consult working map and update path toward destination.
     }
 
-
-    ////////////////////////////////////////////
-    // Setting destination and error correction
-
-    on_update(d: destination)
+    on_insert(o: observations)
     {
-        // make sure destination and location are w/in map......
-        // TODO FIXME using high-res map good for collision avoidance
-        //  but it's not sufficient for navigation, e.g., it cannot
-        //  guide around long penninsula.
-        // Maybe have high-res map that's very local to Alice and
-        //  build that from low-res map. Don't worry about destination
-        //  being in map. Coarse path can be inheritted from low-res map.
-        //  This should save time generating local high-res map.
-
-        gaia_log::app().info("Destination has changed. Rebuilding area map.");
-        build_area_map(/area_map);
+        // TODO Perform spatial query in area of observation and see if
+        //  there are other observations to build edges with.
     }
 
-
-    on_update(e: error_correction)
-    {
-        // TODO decide what to do next.
-        // For now, start a new path and keep exploring.
-        gaia_log::app().info("Error has been updated. Start a new path.");
-        create_new_path();
-    }
-
-
-    ////////////////////////////////////////////
-    // Map updates
-
-    on_update(a: area_map)
-    {
-        // Local map was updated. Now rebuild working map.
-        gaia_log::app().info("Area map built. Rebuilding local map.");
-        build_local_map(/local_map);
-    }
-
-
-    on_update(m: local_map)
-    {
-        // Local map was updated. Now rebuild working map.
-        gaia_log::app().info("Local map built. Rebuilding working map.");
-        build_working_map(/working_map);
-    }
-
-
-    on_update(w: working_map)
-    {
-        // Working map was updated. Based on contents of map, move
-        //  toward destination.
-        // Alice control drops down to procedural code here, with
-        //  direction setting, forward motion, and distance travelled
-        //  managed at procedural level. When Alice has moved far enough
-        //  forward, an observation record will be made.
-        gaia_log::app().info("Working map built. Moving toward destination.");
-        move_toward_destination();
-    }
 
 
     ////////////////////////////////////////////
