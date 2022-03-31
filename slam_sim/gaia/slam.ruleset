@@ -23,31 +23,33 @@
 #include "slam_sim.hpp"
 
 
-//using slam_sim::select_destination;
-//using slam_sim::select_landmark_destination;
+using slam_sim::optimization_required;
+using slam_sim::optimize_graph;
 
-// Brings Alice to a halt. Creates new observation at present position.
+using slam_sim::need_to_extend_map;
+using slam_sim::build_area_map;
+using slam_sim::build_working_map;
+
+using slam_sim::select_new_destination;
+using slam_sim::move_toward_destination;
 using slam_sim::full_stop;
 
-// Instructs Alice to beging trek to destination. Motion control is
-//  managed at lower level, using direction data determined in rules.
-using slam_sim::move_toward_destination;
 
-//using slam_sim::create_new_path;
-//using slam_sim::create_observation;
-//using slam_sim::init_path;
-//
-//using slam_sim::calc_path_error;
-//using slam_sim::build_area_map;
-//using slam_sim::build_local_map;
-//using slam_sim::build_working_map;
-//
-//using gaia::slam::pending_destination_t;
-//using gaia::slam::estimated_position_t;
-//using gaia::slam::destination_t;
-//using gaia::slam::paths_t;
-//
-//using gaia::slam::paths_writer;
+/***********************************************************************
+Rules
+
+map_ruleset serial_group
+  on_insert(edges)        If optimization required, do so and rebuild maps.
+  on_change(destination)  Rebuild working map, move to destination.
+  on_insert(observation)  Extend map if needed, rebuild working map.
+
+ruleset
+  on_insert(observation)  Spatial query to link to other nodes.
+  on_insert(observation)  Determine if it's time to change destination.
+  on_insert(collision_event)  Full stop and create observation.
+ 
+
+***********************************************************************/
 
 
 // Wrap error correction and map creation in a serial group as these are
@@ -91,35 +93,30 @@ ruleset map_ruleset : serial_group()
         {
             build_area_map(/area_map, /observed_area);
         }
-        build_working_map(g, /area_map);
+        build_working_map(/destination, /area_map);
     }
 }
 
 
-ruleset observation_ruleset
+ruleset runtime_ruleset
 {
-    ////////////////////////////////////////////
-    // Creating observations
+    // Observations are created at a lower infrastructure level. The
+    //  decision to do so is based on the following assumptions about
+    //  when an observation is made:
+    //  1) Observations (nodes) are generated at locations that provide
+    //    non-redundant information about the environment, such as range
+    //    data that covers previously unexplored territory or being
+    //    near salient landmark to form closures with other nearby
+    //    observations.
+    //  2) Sensor data is read at a rate higher than observations are
+    //    created.
+    //  3) The time required to evaluate whether or not to make an
+    //    observation may be longer than the interval between successive
+    //    packets of sensor data.
+    // This latter assumption means that one can't directly use a rule
+    //  triggering of sensor data to build observations as these must
+    //  run in parallel, risking violation of (1).
 
-    // When our position is updated a new observation will be created.
-    // Note that this is a relatively slow operation so hopefully there's
-    //  no transaction conflict.
-    on_update(ep: estimated_position)
-    {
-        gaia_log::app().info("Estimated position changed to {},{}", ep.x_meters,
-            ep.y_meters);
-
-        // Determine if it's time to build another observation.
-        if (should_build_new_observation())
-        {
-            create_observation(/ego.current_path->paths);
-        }
-    }
-
-    on_insert(o: observations)
-    {
-        // TODO Consult working map and update path toward destination.
-    }
 
     on_insert(o: observations)
     {
@@ -127,10 +124,11 @@ ruleset observation_ruleset
         //  there are other observations to build edges with.
     }
 
-
-
-    ////////////////////////////////////////////
-    // Async events
+    on_insert(o: observations)
+    {
+        // Determine if it's time to change destinations.
+        select_new_destination();
+    }
 
     on_insert(c: collision_event)
     {
@@ -141,3 +139,4 @@ ruleset observation_ruleset
         full_stop();
     }
 }
+

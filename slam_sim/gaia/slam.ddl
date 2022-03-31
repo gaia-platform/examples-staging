@@ -62,6 +62,8 @@ table ego
   current_graph references graphs
       where ego.current_graph_id = graphs.id,
 
+  timestamp_sec double,
+
   -- Explicitly created references.
   -- Keep most of ego data in different tables so that updates to
   --  one field don't risk conflict and txn rollback.
@@ -217,6 +219,8 @@ table observations
   graph_id uint32,
   graph references graphs
       where graphs.id = observations.graph_id,
+
+  timestamp_sec double,
 
   ------------------------------
   -- Dynamic fields. These can be modified asynchronously. Functions
