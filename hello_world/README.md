@@ -1,16 +1,17 @@
 # Writing a Gaia Application
 
-Writing a Gaia application involves defining a schema and writing rules to act on your application's data. The schema
-and the rules are processed by Gaia tools (`gaiac` and `gaiat` respectively) to generate C++ code to be used in your 
+Writing a Gaia application involves defining a database schema and writing rules to act on your application's data. The schema
+and the rules are processed by Gaia tools (`gaiac` and `gaiat` respectively) to generate C++ code that will be used in your 
 application. The Sandbox takes care of these steps for you. 
 
 Please refer to 
-[Writing your first Gaia application](https://gaia-platform.github.io/gaia-platform-docs.io/articles/tutorials/writing-first-gaia-application.html)
+[Writing your first Gaia application](https://gaia-platform.github.io/gaia-platform-docs.io/articles/tutorials/writing-first-gaia-application.html),
 to build Gaia applications locally.
 
-## Define the schema
+## Define the Database Schema
 
-Gaia provides a SQL-like Data Definition Language (DDL) to define your application's data model. The DDL is processed by 
+Gaia provides a SQL-like Data Definition Language (DDL) to define your application's data model, which is also known as 
+a database schema. The DDL is processed by 
 [`gaiac`](https://gaia-platform.github.io/gaia-platform-docs.io/articles/tools/tool-gaiac.html) which loads the table
 definitions into the database and generates the C++ code 
 ([Direct Access Classes](https://gaia-platform.github.io/gaia-platform-docs.io/articles/apps-direct-access.html)) 
@@ -28,12 +29,12 @@ table person
 ```
 
 `gaiac` processes this definition and generates the class `gaia::hello_world::person_t` to perform CRUD operations on the
-table `person` from your C++ code. The same thing happens with all the tables defined in the DDL.
+table `person` from within your C++ code. The same thing happens for all the tables defined in the DDL.
 
 ## Define the rules
 
 Gaia rules encode your application's logic. Rules are written in Gaia Declarative C++, which is a schema-aware superset 
-of C++ that makes it straightforward to interact with data". The ruleset (the file that contains the rules) is processed
+of C++ that makes it straightforward to interact with data. The ruleset (the file that contains the rules) is processed
 by [`gaiat`](https://gaia-platform.github.io/gaia-platform-docs.io/articles/tools/tool-gaiat.html), which translates the
 rules into C++ code
 
@@ -56,11 +57,11 @@ in case of error.
 ## The main application
 
 The lifecycle of a Gaia application starts in your application's C++ code. Rules react to database changes, so you need
-to mutate the database from your C++ code to trigger the first rule.
+to make a change to the database from your C++ code to trigger the first rule.
 
 The following snippet initializes the Gaia system and inserts a record into the `person` table. As soon as the 
-transaction is committed (`gaia::db::commit_transaction()`), the rules engine enqueue and execute the 
-`on_insert(person)` rule asynchronously, passing the `"Alice"` record.
+transaction is committed (`gaia::db::commit_transaction()`), the rules engine enqueues and executes the 
+`on_insert(person)` rule asynchronously, passing it the `"Alice"` record.
 
 `gaia::system::shutdown()` waits for all enqueued rules to be executed and then shuts down the Gaia system.
 ```cpp
