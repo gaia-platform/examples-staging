@@ -85,6 +85,21 @@ table ego
 )
 
 
+-- Bounds of known world size. When maps are generated, they can use these
+--  values for map bounds.
+table observed_area
+(
+  -- Bounding polygon
+  -- Uses world coordinates, with increasing X,Y being rightward/upward.
+  left_meters float,
+  right_meters float,
+  top_meters float,
+  bottom_meters float,
+
+  ego references ego
+)
+
+
 -- Maps would ideally store map content as blobs but max blob size is
 --  presently too small. Instead, store pointer to current map and
 --  manage concurrent access manually.
@@ -100,6 +115,9 @@ table area_map
   right_meters float,
   top_meters float,
   bottom_meters float,
+  -- Grid size
+  n_rows uint32,
+  n_cols uint32,
 
   ego references ego
   working_map references working_map
@@ -118,6 +136,9 @@ table working_map
   right_meters float,
   top_meters float,
   bottom_meters float,
+  -- Grid size
+  n_rows uint32,
+  n_cols uint32,
 
   -- References
   ego references ego,
@@ -136,21 +157,6 @@ table destination
   departure_time_sec  float,
 
   -- References
-  ego references ego
-)
-
-
--- Bounds of known world size. When maps are generated, they can use these
---  values for map bounds.
-table observed_area
-(
-  -- Bounding polygon
-  -- Uses world coordinates, with increasing X,Y being rightward/upward.
-  left_meters float,
-  right_meters float,
-  top_meters float,
-  bottom_meters float,
-
   ego references ego
 )
 

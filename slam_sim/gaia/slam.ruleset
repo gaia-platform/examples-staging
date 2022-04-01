@@ -41,7 +41,7 @@ Rules
 map_ruleset serial_group
   on_insert(edges)        If optimization required, do so and rebuild maps.
   on_change(destination)  Rebuild working map, move to destination.
-  on_insert(observation)  Extend map if needed, rebuild working map.
+  on_insert(observation)  Extend area map if necessary.
 
 ruleset
   on_insert(observation)  Spatial query to link to other nodes.
@@ -115,7 +115,8 @@ ruleset runtime_ruleset
     //    packets of sensor data.
     // This latter assumption means that one can't directly use a rule
     //  triggering of sensor data to build observations as these must
-    //  run in parallel, risking violation of (1).
+    //  run in parallel, risking violation of (1), as other observations
+    //  made during processing will be invisible to the rule's txn.
 
 
     on_insert(observations)
