@@ -28,7 +28,13 @@ namespace slam_sim
 
 using std::this_thread::sleep_for;
 
-constexpr uint32_t c_rule_wait_millis = 100;
+static constexpr uint32_t c_rule_wait_millis = 100;
+
+
+// Globals for this namespace
+int32_t g_quit = 0;
+float g_initial_x_meters = 0.0;
+float g_initial_y_meters = 0.0;
 
 
 /**
@@ -58,7 +64,7 @@ void remove_all_rows()
 }
 
 
-void clear_data()
+void clean_db()
 {
     gaia::db::begin_transaction();
     remove_all_rows<gaia::slam::ego_t>();

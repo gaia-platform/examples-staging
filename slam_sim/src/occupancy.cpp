@@ -18,6 +18,8 @@
 #include <fstream>
 #include <iostream>
 
+#include "blob_cache.hpp"
+#include "constants.hpp"
 #include "line_segment.hpp"
 #include "occupancy.hpp"
 #include "slam_sim.hpp"
@@ -60,8 +62,8 @@ occupancy_grid_t::occupancy_grid_t(float node_width_meters,
     uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
     // Signal that this owns the memory allocation.
     m_blob_id = -1;
-    m_grid = malloc(num_nodes * sizeof *m_grid);
-    m_grid_flags = malloc(num_nodes * sizeof *m_grid_flags);
+    m_grid = (map_node_t*) malloc(num_nodes * sizeof *m_grid);
+    m_grid_flags = (map_node_flags_t*) malloc(num_nodes * sizeof *m_grid_flags);
     clear();
 }
 
@@ -79,24 +81,23 @@ occupancy_grid_t::occupancy_grid_t(area_map_t& am)
     // Recover memory from blob cache.
     uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
     m_blob_id = am.blob_id();
-    blob_t* blob = blob_cache_t::get_blob(m_blob_id);
+    blob_t* blob = blob_cache_t::get()->get_blob(m_blob_id);
     if (blob == NULL)
     {
         // Blob doesn't exist yet. Create it.
         size_t sz = num_nodes * (sizeof *m_grid + sizeof *m_grid_flags);
-        blob = blob_cache_t::create_or_reset_blob(am.blob_id(), sz);
+        blob = blob_cache_t::get()->create_or_reset_blob(am.blob_id(), sz);
     }
-    uint8_t* blob = (uint8_t*) blob->data();
-    m_grid = (map_node_t*) blob;
+    m_grid = (map_node_t*) blob->data;
     size_t flag_offset = num_nodes * sizeof *m_grid_flags;
-    m_grid_flags = (map_node_t*) blob[flag_offset];
+    m_grid_flags = (map_node_flags_t*) &blob->data[flag_offset];
     clear();
 }
 
 
 occupancy_grid_t::occupancy_grid_t(working_map_t& wm)
 {
-    m_node_size_meters = c_area_map_node_width_meters;
+    m_node_size_meters = c_working_map_node_width_meters;
     // Get map size and bounds.
     m_grid_size.rows = wm.num_rows();
     m_grid_size.cols = wm.num_cols();
@@ -107,17 +108,16 @@ occupancy_grid_t::occupancy_grid_t(working_map_t& wm)
     // Recover memory from blob cache.
     uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
     m_blob_id = wm.blob_id();
-    blob_t* blob = blob_cache_t::get_blob(m_blob_id);
+    blob_t* blob = blob_cache_t::get()->get_blob(m_blob_id);
     if (blob == NULL)
     {
         // Blob doesn't exist yet. Create it.
         size_t sz = num_nodes * (sizeof *m_grid + sizeof *m_grid_flags);
-        blob = blob_cache_t::create_or_reset_blob(wm.blob_id(), sz);
+        blob = blob_cache_t::get()->create_or_reset_blob(wm.blob_id(), sz);
     }
-    uint8_t* blob = (uint8_t*) blob->data();
-    m_grid = (map_node_t*) blob;
+    m_grid = (map_node_t*) blob->data;
     size_t flag_offset = num_nodes * sizeof *m_grid_flags;
-    m_grid_flags = (map_node_t*) blob[flag_offset];
+    m_grid_flags = (map_node_flags_t*) &blob->data[flag_offset];
     clear();
 }
 
@@ -160,11 +160,12 @@ void map_node_flags_t::clear()
 
 void occupancy_grid_t::clear()
 {
-    for (uint32_t i=0; i<m_grid.size(); i++)
+    uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
+    for (uint32_t i=0; i<num_nodes; i++)
     {
         m_grid[i].clear();
     }
-    for (uint32_t i=0; i<m_grid_flags.size(); i++)
+    for (uint32_t i=0; i<num_nodes; i++)
     {
         m_grid_flags[i].clear();
     }
@@ -258,7 +259,8 @@ void occupancy_grid_t::apply_radial(float radial_degs, float range_meters,
 // Increments map_node_t values from contents of map_node_flags_t.
 void occupancy_grid_t::apply_flags()
 {
-    for (uint32_t i=0; i<m_grid.size(); i++)
+    uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
+    for (uint32_t i=0; i<num_nodes; i++)
     {
         map_node_flags_t& flags = m_grid_flags[i];
         map_node_t& node = m_grid[i];

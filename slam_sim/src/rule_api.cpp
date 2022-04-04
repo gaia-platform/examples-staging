@@ -19,6 +19,7 @@
 
 #include "gaia_slam.h"
 
+#include "constants.hpp"
 #include "occupancy.hpp"
 #include "slam_sim.hpp"
 
@@ -27,12 +28,15 @@ namespace slam_sim
 
 using std::string;
 
+using gaia::slam::destination_t;
 using gaia::slam::edges_t;
 using gaia::slam::ego_t;
 using gaia::slam::error_corrections_t;
 using gaia::slam::graphs_t;
 using gaia::slam::observed_area_t;
 using gaia::slam::observations_t;
+using gaia::slam::area_map_t;
+using gaia::slam::working_map_t;
 
 
 // Determine if a new graph optimization is necessary.
@@ -95,12 +99,32 @@ void optimize_graph(graphs_t& graph)
 ////////////////////////////////////////////////////////////////////////
 // Map building
 
-static void write_map_to_file(occupancy_grid_t& map)
+// Determines if sensor data extends beyond present area map and returns
+//  'true' if so.
+bool need_to_extend_map()
+{
+    assert(1 == 0);
+    return false;
+}
+
+
+static void build_map(const graphs_t& g, const world_coordinate_t& top_left,
+    const world_coordinate_t bottom_right)
 {
     static int32_t ctr = 0;
+    occupancy_grid_t map(c_standard_map_node_width_meters, 
+        top_left, bottom_right);
+    // Iterate through observations in this graph and build a map.
+    for (const observations_t& o: g.observations())
+    {
+        gaia_log::app().info("Applying sensor data from observation {}", 
+            o.id());
+        map.apply_sensor_data(o);
+    }
     // There are C++ ways to format a number to a string (e.g.,
     //  fmt::format or std::stringstream, but the C approach is
     //  nice in its simplicity.
+// TODO get timestamp to use for name
     char fname[256];
     sprintf(fname, "map_%03d.pgm", ctr++);
     gaia_log::app().info("Building map {}", fname);
@@ -112,44 +136,19 @@ void export_map_to_file()
 {
     gaia::db::begin_transaction();
     ego_t ego = *(ego_t::list().begin());
-    observed_area_t& area = *(observed_area_t::list().begin());
-    // TODO remove padding from bounds before printing
-
-
+    area_map_t& am = *(area_map_t::list().begin());
     world_coordinate_t top_left = {
-        .x_meters = area.left_meters(),
-        .y_meters = area.top_meters()
+        .x_meters = am.left_meters(),
+        .y_meters = am.top_meters()
     };
     world_coordinate_t bottom_right = {
-        .x_meters = area.right_meters(),
-        .y_meters = area.bottom_meters()
+        .x_meters = am.right_meters(),
+        .y_meters = am.bottom_meters()
     };
     build_map(ego.current_graph(), top_left, bottom_right);
     gaia::db::commit_transaction();
 }
 
-
-void build_map(const graphs_t& g, const world_coordinate_t& top_left,
-    const world_coordinate_type bottom_right)
-{
-    world_coordinate_t top_left = {
-        .x_meters = bounds.left_meters(),
-        .y_meters = bounds.top_meters()
-    };
-    world_coordinate_t bottom_right = {
-        .x_meters = bounds.right_meters(),
-        .y_meters = bounds.bottom_meters()
-    };
-    occupancy_grid_t map(c_map_node_width_meters, top_left, bottom_right);
-    // Iterate through observations in this graph and build a map.
-    for (const observations_t& o: g.observations())
-    {
-        gaia_log::app().info("Applying sensor data from observation {}", 
-            o.id());
-        map.apply_sensor_data(o);
-    }
-    write_map_to_file(map);
-}
 
 } // namespace slam_sim
 

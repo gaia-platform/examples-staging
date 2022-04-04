@@ -10,13 +10,18 @@ endif
 
 TARGET = slam_sim
 
-OBJS = main.o analyze.o navigation.o occupancy.o rule_api.o 
+OBJS = main.o analyze.o occupancy.o rule_api.o 
 EXT_OBJS = ../gaia/slam_rules.o ../gaia/gaia_slam.o
-LIBS = /usr/local/lib/libgaia.so -pthread -lcurl
+LIBS = $(LIB_SLAM_UTILS) /usr/local/lib/libgaia.so -pthread -lcurl
 
 all: $(OBJS) 
+	cd utils && make
 	$(CXX) $(OBJS) $(EXT_OBJS) -o $(TARGET) $(LIBS)
 	#cp $(TARGET) ../runtime/sim_shell
+
+run:
+	./$(TARGET) -m ../data/map.json -x -3.0 -y -3.0
+
 
 %.o: %.cpp 
 	$(CXX) $(INC) -c $(CPPFLAGS) $< 
@@ -24,6 +29,7 @@ all: $(OBJS)
 refresh: clean all
 
 clean:
+	cd utils && make clean
 	rm -f *.o $(TARGET)
 	rm -rf logs
 
