@@ -50,8 +50,8 @@ ruleset hello_ruleset
 }
 ```
 
-The Gaia Rules Engine takes care of scheduling the rules, running the rules in a transaction, and rescheduling them
-in case of error.
+The Gaia Rules Engine takes care of scheduling the rules, running the rules in a transaction, and retrying them should 
+they encounter an error.
 
 ## The Main application
 
