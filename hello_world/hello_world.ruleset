@@ -1,0 +1,20 @@
+#include <gaia/logger.hpp>
+
+ruleset hello_ruleset
+{
+    // Rule 1: Triggered every time a record is inserted in the table 'person'.
+    on_insert(person)
+    {
+        gaia_log::app().info("{} inserted!", person.name);
+
+        // Insert a 'greeting' record which triggers 'Rule 2'.
+        greetings.insert(name: person.name);
+    }
+
+    // Rule 2: Triggered every time a record is inserted in the table 'greetings'.
+    // [Try uncommenting the following lines and see how the program output changes]
+    // on_insert(greetings)
+    // {
+    //   gaia_log::app().info("Hello World {}!", greetings.name);
+    // }
+}
