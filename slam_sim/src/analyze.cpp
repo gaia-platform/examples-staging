@@ -21,6 +21,7 @@
 
 #include <gaia/logger.hpp>
 
+#include "constants.hpp"
 #include "json.hpp"
 #include "line_segment.hpp"
 #include "sensor_data.hpp"
@@ -93,10 +94,9 @@ void calculate_range_data(map_coord_t& coord, sensor_data_t& data)
 {
     data.range_meters.clear();
     data.bearing_degs.clear();
-    data.num_radials = c_num_range_radials;
-    float step_degs = c_range_sensor_sweep_degs / (c_num_range_radials - 1);
+    float step_degs = c_range_sensor_sweep_degs / (data.num_radials - 1);
     // Get range on each radial, and store both distance and radial degs.
-    for (uint32_t n=0; n<c_num_range_radials; n++)
+    for (uint32_t n=0; n<data.num_radials; n++)
     {
         // Get this radial and constrain to [0,360)
         float theta_degs = coord.heading_degs - c_range_sensor_sweep_degs/2.0

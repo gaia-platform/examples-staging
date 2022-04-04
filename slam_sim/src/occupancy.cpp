@@ -33,6 +33,9 @@ using gaia::slam::observations_t;
 using gaia::slam::positions_t;
 using gaia::slam::range_data_t;
 
+using gaia::slam::area_map_t;;
+using gaia::slam::working_map_t;;
+
 
 ////////////////////////////////////////////////////////////////////////
 // Constructors and destructors
@@ -55,13 +58,78 @@ occupancy_grid_t::occupancy_grid_t(float node_width_meters,
     m_bottom_left.y_meters = bottom_right.y_meters;
     //
     uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
-    m_grid.resize(num_nodes);
-    m_grid_flags.resize(num_nodes);
+    // Signal that this owns the memory allocation.
+    m_blob_id = -1;
+    m_grid = malloc(num_nodes * sizeof *m_grid);
+    m_grid_flags = malloc(num_nodes * sizeof *m_grid_flags);
     clear();
 }
 
+
+occupancy_grid_t::occupancy_grid_t(area_map_t& am)
+{
+    m_node_size_meters = c_area_map_node_width_meters;
+    // Get map size and bounds.
+    m_grid_size.rows = am.num_rows();
+    m_grid_size.cols = am.num_cols();
+    m_map_size.x_meters = am.right_meters() - am.left_meters();
+    m_map_size.y_meters = am.top_meters() - am.bottom_meters();
+    m_bottom_left.x_meters = am.left_meters();
+    m_bottom_left.y_meters = am.bottom_meters();
+    // Recover memory from blob cache.
+    uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
+    m_blob_id = am.blob_id();
+    blob_t* blob = blob_cache_t::get_blob(m_blob_id);
+    if (blob == NULL)
+    {
+        // Blob doesn't exist yet. Create it.
+        size_t sz = num_nodes * (sizeof *m_grid + sizeof *m_grid_flags);
+        blob = blob_cache_t::create_or_reset_blob(am.blob_id(), sz);
+    }
+    uint8_t* blob = (uint8_t*) blob->data();
+    m_grid = (map_node_t*) blob;
+    size_t flag_offset = num_nodes * sizeof *m_grid_flags;
+    m_grid_flags = (map_node_t*) blob[flag_offset];
+    clear();
+}
+
+
+occupancy_grid_t::occupancy_grid_t(working_map_t& wm)
+{
+    m_node_size_meters = c_area_map_node_width_meters;
+    // Get map size and bounds.
+    m_grid_size.rows = wm.num_rows();
+    m_grid_size.cols = wm.num_cols();
+    m_map_size.x_meters = wm.right_meters() - wm.left_meters();
+    m_map_size.y_meters = wm.top_meters() - wm.bottom_meters();
+    m_bottom_left.x_meters = wm.left_meters();
+    m_bottom_left.y_meters = wm.bottom_meters();
+    // Recover memory from blob cache.
+    uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
+    m_blob_id = wm.blob_id();
+    blob_t* blob = blob_cache_t::get_blob(m_blob_id);
+    if (blob == NULL)
+    {
+        // Blob doesn't exist yet. Create it.
+        size_t sz = num_nodes * (sizeof *m_grid + sizeof *m_grid_flags);
+        blob = blob_cache_t::create_or_reset_blob(wm.blob_id(), sz);
+    }
+    uint8_t* blob = (uint8_t*) blob->data();
+    m_grid = (map_node_t*) blob;
+    size_t flag_offset = num_nodes * sizeof *m_grid_flags;
+    m_grid_flags = (map_node_t*) blob[flag_offset];
+    clear();
+}
+
+
 occupancy_grid_t::~occupancy_grid_t()
 {
+    if (m_blob_id < 0)
+    {
+        // Memory is owned by this.
+        free(m_grid);
+        free(m_grid_flags);
+    }
 }
 
 

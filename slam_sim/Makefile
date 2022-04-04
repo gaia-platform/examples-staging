@@ -1,6 +1,7 @@
 
 all:
-	mkdir -p build && cd build && cmake .. && make -j 4
+	#mkdir -p build && cd build && cmake .. && make -j 4
+	cd src && make
 
 run: 
 	cd src && make run

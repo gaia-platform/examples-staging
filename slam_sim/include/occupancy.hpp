@@ -100,10 +100,10 @@ struct map_size_t
 class occupancy_grid_t
 {
 public:
-    // Map center starts at 0,0 so map bounds are at +/- width/2 and 
-    //  +/- height/2.
     occupancy_grid_t(float node_width_meters, world_coordinate_t top_left,
         world_coordinate_t bottom_right);
+    occupancy_grid_t(gaia::slam::area_map_t&);
+    occupancy_grid_t(gaia::slam::working_map_t&);
     ~occupancy_grid_t();
 
     // Initialization
@@ -129,15 +129,24 @@ protected:
         float pos_x_meters, float pos_y_meters);
     void apply_flags();
 
+    // This will be fixed for a given map resolution.
     float m_node_size_meters;
+
+    // These fields are data dependent. A copy of them is stored in the DB
+    //  alongside a pointer to the memory blob storing the grid itself.
     grid_size_t m_grid_size;
-
     map_size_t m_map_size;
-    // Positive coordiantes are rightward and upward.
     world_coordinate_t m_bottom_left;
+    // Note that positive coordiantes are rightward and upward.
 
-    std::vector<map_node_t> m_grid;
-    std::vector<map_node_flags_t> m_grid_flags;
+    // Manage array memory directly, so it can be cached in a blob and 
+    //  rehydrated as necessary. If ID is <0 then memory is owned by
+    //  this object, if >=0 then memory is owned by blob_cache.
+    int32_t m_blob_id;
+    map_node_t* m_grid;
+    map_node_flags_t* m_grid_flags;
+    //std::vector<map_node_t> m_grid;
+    //std::vector<map_node_flags_t> m_grid_flags;
 
     world_coordinate_t m_destination;
 };

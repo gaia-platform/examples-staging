@@ -61,7 +61,8 @@ void build_area_map(gaia::slam::area_map_t&, gaia::slam::observed_area_t&);
 //  and collision avoidance, and uses the area map for the map's path 
 //  boundary conditions.
 // Stores output 'working_map' record.
-void build_working_map(gaia::slam::working_map_t&);
+void build_working_map(gaia::slam::destination_t&, gaia::slam::area_map_t&,
+    gaia::slam::working_map_t&);
 
 
 // Checks to see if it's time to select a new destination. If so, the
@@ -87,7 +88,7 @@ void create_observation(const slam_sim::sensor_data_t& data);
 //  pushed up from the sensor/hardware layer, but polling for it makes
 //  the simulation more straightforward.
 void generate_sensor_data(double pos_x_meters, double pos_y_meters,
-    slam_sim::sensor_data_t& data);
+    sensor_data_t& data);
 
 // Generates and exports a map to disk. Filename will be based on ego's
 //  timestamp.

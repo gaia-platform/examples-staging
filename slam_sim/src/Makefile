@@ -1,20 +1,30 @@
+include ../Makefile.inc
 
-all:
-	mkdir -p ../build && cd ../build/ && cmake .. && make -j 4
-
-run: refresh_db
-	../build/slam_sim -m ../data/map.json -x -3.0 -y 4.4
-
-drun: refresh_db
-	gdb --args ../build/slam_sim -m ../data/map.json -x -3.0 -y 4.4
+# Make sure that we're not using g++. If so then environment variables
+#   aren't correctly set.
+GXX_NAME = g++
+ifeq ($(CXX), $(GXX_NAME))
+    $(error Using g++. Environment variables are not correctly configured)
+endif
 
 
-# At present there's no method to delete the contents of the database
-#   from w/in the program, so add a way to do so outside.
-# NOTE: this may be implemented, but there may be a problem w/ that
-#   in regards to connected records
-refresh_db:
-	gaiac ../gaia/slam.ddl --db-name slam -g -o /tmp/slam
+TARGET = slam_sim
+
+OBJS = main.o analyze.o navigation.o occupancy.o rule_api.o 
+EXT_OBJS = ../gaia/slam_rules.o ../gaia/gaia_slam.o
+LIBS = /usr/local/lib/libgaia.so -pthread -lcurl
+
+all: $(OBJS) 
+	$(CXX) $(OBJS) $(EXT_OBJS) -o $(TARGET) $(LIBS)
+	#cp $(TARGET) ../runtime/sim_shell
+
+%.o: %.cpp 
+	$(CXX) $(INC) -c $(CPPFLAGS) $< 
+
+refresh: clean all
 
 clean:
-	rm -f *.pgm
+	rm -f *.o $(TARGET)
+	rm -rf logs
+
+

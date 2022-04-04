@@ -24,7 +24,7 @@
 
 using namespace std;
 
-namespace utils
+namespace slam_sim
 {
 
 
@@ -133,5 +133,5 @@ double line_segment_t::intersect_range(double x, double y, double theta_deg)
 }
 
 
-} // namespace utils
+} // namespace slam_sim
 

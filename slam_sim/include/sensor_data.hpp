@@ -16,13 +16,15 @@
 
 #include <vector>
 
-#include "landmark_description.hpp"
-
-namespace utils
+namespace slam_sim
 {
 
-// How close Alice has to be to see the landmark.
-constexpr double LANDMARK_VISIBILITY_METERS = 3.0;
+struct map_coord_t
+{
+    float x_meters;
+    float y_meters;
+    float heading_degs;
+};
 
 // Max range of range sensor.
 constexpr double RANGE_SENSOR_MAX_METERS = 4.0;
@@ -34,8 +36,8 @@ struct sensor_data_t
     // Range on each radial. Range is -1 if there's no data.
     std::vector<float> range_meters;
 
-    // 0 or more landmarks are visible
-    std::vector<landmark_description_t> landmarks_visible;
+    // Radials for each measured range.
+    std::vector<float> bearing_degs;
 };
 
-} // namespace utils
+} // namespace slam_sim

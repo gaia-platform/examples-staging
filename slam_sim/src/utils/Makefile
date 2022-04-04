@@ -2,7 +2,7 @@ include ../../Makefile.inc
 
 TEST_TARGETS = test_line_segment 
 
-OBJS = line_segment.o landmark_description.o blob_cache.o
+OBJS = line_segment.o blob_cache.o
 
 
 all: $(OBJS) 

@@ -71,7 +71,7 @@ ruleset map_ruleset : serial_group()
             //  maps. This can be triggered in a separate rule or simply
             //  done here, so do it here.
             build_area_map(/area_map, /observed_area);
-            build_working_map(/destination, /area_map);
+            build_working_map(/destination, /area_map, /working_map);
         }
     }
 
@@ -79,7 +79,7 @@ ruleset map_ruleset : serial_group()
     // Destination changed. Update working map and start moving toward it.
     on_change(destination)
     {
-        build_working_map(destination, /area_map);
+        build_working_map(/destination, /area_map, /working_map);
         move_toward_destination(/working_map);
     }
 
@@ -89,11 +89,11 @@ ruleset map_ruleset : serial_group()
     {
         // If working map will go beyond border of area map, rebuild
         //  area map.
-        if (need_to_extend_area_map())
+        if (need_to_extend_map())
         {
             build_area_map(/area_map, /observed_area);
         }
-        build_working_map(/destination, /area_map);
+        build_working_map(/destination, /area_map, /working_map);
     }
 }
 

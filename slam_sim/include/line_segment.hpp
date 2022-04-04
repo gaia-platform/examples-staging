@@ -16,7 +16,7 @@
 
 #pragma once
 
-namespace utils
+namespace slam_sim
 {
 
 constexpr double R2D = 180.0 / M_PI;
@@ -49,4 +49,4 @@ public:
 // Remaps degrees to be on [0,360)
 double unwrap_compass(double theta_degs);
 
-} // namespace utils
+} // namespace slam_sim

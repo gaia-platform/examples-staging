@@ -108,17 +108,29 @@ static void write_map_to_file(occupancy_grid_t& map)
 }
 
 
-void build_map()
+void export_map_to_file()
 {
     gaia::db::begin_transaction();
     ego_t ego = *(ego_t::list().begin());
     observed_area_t& area = *(observed_area_t::list().begin());
-    build_map(ego.current_graph(), area);
+    // TODO remove padding from bounds before printing
+
+
+    world_coordinate_t top_left = {
+        .x_meters = area.left_meters(),
+        .y_meters = area.top_meters()
+    };
+    world_coordinate_t bottom_right = {
+        .x_meters = area.right_meters(),
+        .y_meters = area.bottom_meters()
+    };
+    build_map(ego.current_graph(), top_left, bottom_right);
     gaia::db::commit_transaction();
 }
 
 
-void build_map(const graphs_t& g, const observed_area_t& bounds)
+void build_map(const graphs_t& g, const world_coordinate_t& top_left,
+    const world_coordinate_type bottom_right)
 {
     world_coordinate_t top_left = {
         .x_meters = bounds.left_meters(),

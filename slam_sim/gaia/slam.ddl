@@ -105,9 +105,10 @@ table observed_area
 --  manage concurrent access manually.
 table area_map
 (
-  // Reference to in-memory blob that stores 2D map.
-  // Blob ID changes on each map update.
-  uint32_t blob_id;
+  -- Reference to in-memory blob that stores 2D map.
+  -- Blob ID changes on each map update.
+  -- Area map must be seeded with a different blob_id than working map.
+  blob_id uint32,
 
   -- Bounding polygon
   -- Uses world coordinates, with increasing X,Y being rightward/upward.
@@ -116,19 +117,20 @@ table area_map
   top_meters float,
   bottom_meters float,
   -- Grid size
-  n_rows uint32,
-  n_cols uint32,
+  num_rows uint32,
+  num_cols uint32,
 
-  ego references ego
+  ego references ego,
   working_map references working_map
 )
 
 
 table working_map
 (
-  // Reference to in-memory blob that stores 2D map.
-  // Blob ID changes on each map update.
-  uint32_t blob_id;
+  -- Reference to in-memory blob that stores 2D map.
+  -- Blob ID changes on each map update.
+  -- Working map must be seeded with a different blob_id than area map.
+  blob_id uint32,
 
   -- Bounding polygon
   -- Uses world coordinates, with increasing X,Y being rightward/upward
@@ -137,8 +139,8 @@ table working_map
   top_meters float,
   bottom_meters float,
   -- Grid size
-  n_rows uint32,
-  n_cols uint32,
+  num_rows uint32,
+  num_cols uint32,
 
   -- References
   ego references ego,
