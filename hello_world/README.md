@@ -87,7 +87,7 @@ You can try to:
 2. Add more `person` records in the `CPP` file.
 
 # Next Steps
-- [Direct Access Tutorial](https://sandbox.gaiaplatform.io/?scenario=direct_access): Learn how to interact with the Gaia
+- [Direct Access Tutorial](https://sandbox.gaiaplatform.io/?scenario=direct_access): Interact with the Gaia
   Database using the Direct Access API.
-- [Rules Tutorial](https://sandbox.gaiaplatform.io/?scenario=rules): Learn how to implement you business logic using the
+- [Rules Tutorial](https://sandbox.gaiaplatform.io/?scenario=rules): Implement you business logic using the
   Gaia Declarative Language.
