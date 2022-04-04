@@ -1,7 +1,7 @@
 # Writing a Gaia Application
 
 Writing a Gaia application involves defining a schema and writing rules that react to your application's data changes.
-The schema and the rules are processed by Gaia tools (`gaiac` and `gaiat` respectively) to generate C++ code used in 
+The schema and the rules are processed by Gaia tools (`gaiac` and `gaiat` respectively) to generate the C++ code used in 
 your application. The Sandbox takes care of these build steps for you. 
 
 Please refer to 
@@ -11,13 +11,13 @@ to build Gaia applications locally.
 ## Define your Database Schema
 
 Gaia provides a SQL-like Data Definition Language (DDL) to define your application's data model. The DDL is processed by 
-[`gaiac`](https://gaia-platform.github.io/gaia-platform-docs.io/articles/tools/tool-gaiac.html) which loads the table
+[`gaiac`](https://gaia-platform.github.io/gaia-platform-docs.io/articles/tools/tool-gaiac.html), which loads the table
 definitions into the database and generates the C++ code 
 ([Direct Access Classes](https://gaia-platform.github.io/gaia-platform-docs.io/articles/apps-direct-access.html))
 to enable copy-free reads as well as update, insert, and delete functionality to your data objects in a transactional, 
 and thread-safe manner.
 
-The following snippet defines the database `hello_world` and creates the table `person` in it. 
+The following snippet defines the database `hello_world` and creates the table `person`. 
 ```sql
 database hello_world
 
@@ -90,5 +90,5 @@ couple of suggestions:
 # Next Steps
 - [Direct Access Tutorial](https://sandbox.gaiaplatform.io/?scenario=direct_access): Interact with the Gaia
   Database using the Direct Access API.
-- [Rules Tutorial](https://sandbox.gaiaplatform.io/?scenario=rules): Implement you business logic using the
+- [Rules Tutorial](https://sandbox.gaiaplatform.io/?scenario=rules): Implement your business logic using the
   Gaia Declarative Language.
