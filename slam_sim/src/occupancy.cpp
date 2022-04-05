@@ -39,6 +39,11 @@ using gaia::slam::area_map_t;;
 using gaia::slam::working_map_t;;
 
 
+// During porting, pull in the file inline. Once it's cleaned up and
+//  compiles, merge the contents in here.
+#include "utils/path_map.cpp"
+
+
 ////////////////////////////////////////////////////////////////////////
 // Constructors and destructors
 

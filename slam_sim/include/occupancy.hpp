@@ -20,6 +20,7 @@ As elsewhere in the code, positive coordinates are to the up and right.
 ***********************************************************************/
 #include <stdint.h>
 
+#include <queue>
 #include <vector>
 
 #include "gaia_slam.h"
@@ -50,9 +51,10 @@ struct map_node_t
     //  node's characteristics.
     float traversal_cost;
 
-    // Total cost to reach destination.
-    float distance;
-
+    // Total cost to reach destination. This is a unitless measure that
+    //  includes biases to avoid heavily trafficed areas to encourage
+    //  exploration
+    float path_cost;
 
     void clear();
 };
@@ -97,6 +99,19 @@ struct map_size_t
 };
 
 
+struct node_offset_t
+{
+    int32_t dx;
+    int32_t dy;
+};
+
+struct grid_index_t
+{
+    uint32_t idx;
+};
+
+
+
 class occupancy_grid_t
 {
 public:
@@ -106,7 +121,7 @@ public:
     occupancy_grid_t(gaia::slam::working_map_t&);
     ~occupancy_grid_t();
 
-    // Initialization
+     / Initialization
     // Resets the map grid.
     void clear();
     // Initializes as inner map using outer map to set boundary conditions.
@@ -147,6 +162,13 @@ protected:
     map_node_flags_t* m_grid_flags;
     //std::vector<map_node_t> m_grid;
     //std::vector<map_node_flags_t> m_grid_flags;
+
+    ////////////////////////////////////////////
+    // Path-finding. This is an algorithm derived from D*, ported from
+    //  different project (used w/ permission).
+    std::queue<map_node_t*> m_queue;
+    void add_node_to_stack(map_node* root_node, grid_index_t root_idx, 
+        node_offset_t offset, const float traverse_wt = 1.0f);
 
     world_coordinate_t m_destination;
 };

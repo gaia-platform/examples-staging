@@ -20,5 +20,11 @@ constexpr float c_area_map_node_width_meters = 0.25f;
 constexpr float c_working_map_node_width_meters = 0.05f;
 constexpr float c_standard_map_node_width_meters = 0.05f;
 
+// Path finding.
+// Bias factor for seeking out new areas to explore. This is the increase
+//  in cost to traverse a node for each time it's been observed.
+constexpr float c_path_penalty_per_observation = 0.05f;
+
+
 } // namespace slam_sim
 
