@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 namespace slam_sim
 {
@@ -25,6 +26,12 @@ constexpr float c_standard_map_node_width_meters = 0.05f;
 //  in cost to traverse a node for each time it's been observed.
 constexpr float c_path_penalty_per_observation = 0.05f;
 
+// The Dijkstra-like path finding algorithms are very rough on the local
+//  scale, having at most 8 directions to move away from a node in the map.
+//  The approach here to smooth that out is to look at the path necessary
+//  to trace out X nodes from a given location and use that to generate
+//  the directional vector from each node. The constant here is that X.
+constexpr uint32_t c_num_ancestors_for_direction = 5;
 
 } // namespace slam_sim
 

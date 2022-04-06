@@ -79,8 +79,11 @@ struct node_offset_t
 // Storage index of a node w/in the 2D grid.
 struct grid_index_t
 {
+    // The index here is unsigned in order to help detect improper usage 
+    //  (e.g., index of -1). 
     uint32_t idx;
 };
+constexpr uint32_t c_invalid_grid_idx = 0xffffffff;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -116,7 +119,7 @@ struct map_node_t
     grid_coordinate_t pos;
 
     // Index of node that's one-closer to destination (-1 for no parent)
-    int32_t parent_idx;
+    grid_index_t parent_idx;
     // Direction toward destination. This is moving toward a node that's
     //  X-parents removed (e.g., 5)
     float direction_degs;
@@ -166,7 +169,7 @@ public:
     //  embedded in larger map, the larger map is used to set boundary
     //  conditions for this map.
     void trace_routes(world_coordinate_t destination,
-        const occupancy_grid_t& parent_map);
+        occupancy_grid_t& parent_map);
     void trace_routes(world_coordinate_t destination);
 
 protected:
@@ -199,17 +202,16 @@ protected:
     // FIFO queue for collecting list of which nodes need to be processed
     //  and either be assigned a cost to reach destination or update that
     //  cost. It's incorrectly referred to as a 'stack' sometimes.
-    std::queue<map_node_t*> m_queue;
+    std::queue<grid_index_t> m_queue;
 
     // Add node to queue for future processing.
-    void add_node_to_stack(map_node_t& root_node, grid_index_t root_idx, 
-        node_offset_t offset, const float traverse_wt = 1.0f);
+    void add_node_to_stack(const grid_index_t root_idx, 
+        const node_offset_t offset, const float traverse_wt = 1.0f);
 
     // Check diagonal node to see if it should be added to queue, and
     //  do so if so.
-    void add_node_to_stack_diag(const map_node_t& root_node, 
-        const grid_index_t root_idx, const node_offset_t offset,
-        const float traversal_cost);
+    void add_node_to_stack_diag(const grid_index_t root_idx, 
+        const node_offset_t offset);
 
     // Pop the next node off the stack and process it.
     void process_next_stack_node();

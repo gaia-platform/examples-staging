@@ -132,7 +132,7 @@ occupancy_grid_t::~occupancy_grid_t()
 
 void map_node_t::clear()
 {
-    this->parent_idx = -1;
+    this->parent_idx.idx = c_invalid_grid_idx;
     this->direction_degs = 0.0f;
 
     this->occupied = 0.0f;
