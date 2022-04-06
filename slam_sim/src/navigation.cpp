@@ -42,39 +42,26 @@ using gaia::slam::working_map_writer;
 using gaia::slam::error_correction_writer;
 
 
-void calc_path_error(paths_t& path)
+// Mock function to calculate error and optimize graph.
+void optimize_graph(graphs_t& graph)
 {
-gaia_log::app().info("Calculating error");
-    observations_t head = path.first_observation();
-    edges_t e = head.forward_edge();
-    observations_t next = e.next();
-    // TODO error can only be calculated when the start and end
-    //  landmark is the same.
-    while (next)
+    gaia_log::app().info("Calculating error (mock)");
+    for (observations_t o: graph.observations())
     {
-        // TODO do something to estimate error
-        // For now, just iterate through the observations in the path.
-        gaia_log::app().info("Error obs {} at {},{}", next.id(),
-            next.pos_x_meters(), next.pos_y_meters());
-
-        if (!next.forward_edge())
-        {
-            break;
-        }
-        next = next.forward_edge().next();
+        // Just iterate through the observations in the graph to show
+        //  how it's done.
+        gaia_log::app().info("Observaation {} at {},{}", o.id(),
+            o.position().pos_x_meters(), o.position().pos_y_meters());
     }
-
-    // Updated error correction table.
-    for (error_correction_t& ec: error_correction_t::list())
+    for (edges_t e: graph.edges())
     {
-        error_correction_writer writer = ec.writer();
-        writer.correction_weight = ec.correction_weight() + 1.0;
-        writer.update_row();
-
-        // This isn't necessary as there's only one record, but it does
-        //  help keep the code more clear.
-        break;
+        // Just iterate through the edges in the graph to show
+        //  how it's done.
+        gaia_log::app().info("Edge connecting observations {} and {}",
+            e.src().id(), e.dest().id());
     }
+    // When the graph is optimized, the position data for each observation
+    //  is expected to be updated.
 }
 
 

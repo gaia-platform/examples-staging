@@ -156,7 +156,7 @@ void init_sim()
     // Seed database and then create first path.
     // Seeding function manages its own transaction.
     gaia_log::app().info("Seeding the database...");
-    seed_database(g_initial_x_meters, g_initial_y_meters);
+    slam_sim::seed_database(g_initial_x_meters, g_initial_y_meters);
 }
 
 } // namespace slam_sim;
