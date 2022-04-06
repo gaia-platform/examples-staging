@@ -39,11 +39,6 @@ using gaia::slam::area_map_t;;
 using gaia::slam::working_map_t;;
 
 
-// During porting, pull in the file inline. Once it's cleaned up and
-//  compiles, merge the contents in here.
-#include "utils/path_map.cpp"
-
-
 ////////////////////////////////////////////////////////////////////////
 // Constructors and destructors
 
@@ -68,7 +63,6 @@ occupancy_grid_t::occupancy_grid_t(float node_width_meters,
     // Signal that this owns the memory allocation.
     m_blob_id = -1;
     m_grid = (map_node_t*) malloc(num_nodes * sizeof *m_grid);
-    m_grid_flags = (map_node_flags_t*) malloc(num_nodes * sizeof *m_grid_flags);
     clear();
 }
 
@@ -90,12 +84,10 @@ occupancy_grid_t::occupancy_grid_t(area_map_t& am)
     if (blob == NULL)
     {
         // Blob doesn't exist yet. Create it.
-        size_t sz = num_nodes * (sizeof *m_grid + sizeof *m_grid_flags);
+        size_t sz = num_nodes * sizeof *m_grid;
         blob = blob_cache_t::get()->create_or_reset_blob(am.blob_id(), sz);
     }
     m_grid = (map_node_t*) blob->data;
-    size_t flag_offset = num_nodes * sizeof *m_grid_flags;
-    m_grid_flags = (map_node_flags_t*) &blob->data[flag_offset];
     clear();
 }
 
@@ -117,12 +109,10 @@ occupancy_grid_t::occupancy_grid_t(working_map_t& wm)
     if (blob == NULL)
     {
         // Blob doesn't exist yet. Create it.
-        size_t sz = num_nodes * (sizeof *m_grid + sizeof *m_grid_flags);
+        size_t sz = num_nodes * sizeof *m_grid;
         blob = blob_cache_t::get()->create_or_reset_blob(wm.blob_id(), sz);
     }
     m_grid = (map_node_t*) blob->data;
-    size_t flag_offset = num_nodes * sizeof *m_grid_flags;
-    m_grid_flags = (map_node_flags_t*) &blob->data[flag_offset];
     clear();
 }
 
@@ -133,7 +123,6 @@ occupancy_grid_t::~occupancy_grid_t()
     {
         // Memory is owned by this.
         free(m_grid);
-        free(m_grid_flags);
     }
 }
 
@@ -150,8 +139,10 @@ void map_node_t::clear()
     this->observed = 0.0f;
     this->boundary = 0.0f;
 
-    this->traversal_cost = 0.0f;
-    this->distance = 0.0f;
+    this->flags.clear();
+
+    this->traversal_cost = 1.0f;
+    this->path_cost = 0.0f;
 }
 
 
@@ -160,19 +151,21 @@ void map_node_flags_t::clear()
     this->occupied = 0;
     this->observed = 0;
     this->boundary = 0;
+    this->state = 0;
 }
 
 
 void occupancy_grid_t::clear()
 {
-    uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
-    for (uint32_t i=0; i<num_nodes; i++)
+    for (uint32_t y=0; y<m_grid_size.rows; y++)
     {
-        m_grid[i].clear();
-    }
-    for (uint32_t i=0; i<num_nodes; i++)
-    {
-        m_grid_flags[i].clear();
+        for (uint32_t x=0; x<m_grid_size.cols; x++)
+        {
+            uint32_t idx = x + y * m_grid_size.cols;
+            m_grid[idx].clear();
+            m_grid[idx].pos.x = x;
+            m_grid[idx].pos.y = y;
+        }
     }
 }
 
@@ -182,7 +175,7 @@ void occupancy_grid_t::clear()
 
 
 // Returns index of map node at specified location. Location uses 
-uint32_t occupancy_grid_t::get_node_index(float x_meters, float y_meters)
+grid_index_t occupancy_grid_t::get_node_index(float x_meters, float y_meters)
 {
     // x index.
     float left_inset_meters = x_meters - m_bottom_left.x_meters;;
@@ -199,22 +192,23 @@ uint32_t occupancy_grid_t::get_node_index(float x_meters, float y_meters)
     {
         y_idx = m_grid_size.rows - 1;
     }
-    return x_idx + y_idx * m_grid_size.cols;
+    grid_index_t idx = { .idx = x_idx + y_idx * m_grid_size.cols };
+    return idx;
 }
 
 
 map_node_t& occupancy_grid_t::get_node(float x_meters, float y_meters)
 {
-    uint32_t idx = get_node_index(x_meters, y_meters);
-    return m_grid[idx];
+    grid_index_t idx = get_node_index(x_meters, y_meters);
+    return m_grid[idx.idx];
 }
 
 
 map_node_flags_t& occupancy_grid_t::get_node_flags(
     float x_meters, float y_meters)
 {
-    uint32_t idx = get_node_index(x_meters, y_meters);
-    return m_grid_flags[idx];
+    grid_index_t idx = get_node_index(x_meters, y_meters);
+    return m_grid[idx.idx].flags;
 }
 
 
@@ -267,11 +261,28 @@ void occupancy_grid_t::apply_flags()
     uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
     for (uint32_t i=0; i<num_nodes; i++)
     {
-        map_node_flags_t& flags = m_grid_flags[i];
+        map_node_flags_t& flags = m_grid[i].flags;
         map_node_t& node = m_grid[i];
         node.occupied += flags.occupied;
         node.observed += flags.observed;
         node.boundary += flags.boundary;
+        // Set 'inpassable' flag if boundary was observed in this node.
+        if (node.boundary > 0.0)
+        {
+            // Make an exception if it's rarely observed, as it could have
+            //  been a measurement error.
+            if (flags.boundary != 0)
+            {
+                // Boundary was just seen. Observe it regardless of any
+                //  flukes in the past.
+                node.flags.state |= PATH_NODE_FLAG_IMPASSABLE;
+            }
+            else if (node.boundary / node.observed > 0.1)
+            {
+                assert(node.observed > 0.0);
+                node.flags.state |= PATH_NODE_FLAG_IMPASSABLE;
+            }
+        }
     }
 }
 

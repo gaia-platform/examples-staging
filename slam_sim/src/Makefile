@@ -10,7 +10,7 @@ endif
 
 TARGET = slam_sim
 
-OBJS = main.o analyze.o occupancy.o rule_api.o 
+OBJS = main.o analyze.o occupancy.o rule_api.o  path_map.o
 EXT_OBJS = ../gaia/slam_rules.o ../gaia/gaia_slam.o
 LIBS = $(LIB_SLAM_UTILS) /usr/local/lib/libgaia.so -pthread -lcurl
 
