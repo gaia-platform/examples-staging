@@ -27,7 +27,7 @@ Rules
 
 map_ruleset serial_group
   on_insert(edges)        If optimization required, do so and rebuild maps.
-  on_change(destination)  Rebuild working map, move to destination.
+  on_change(destination)  Rebuild area map, move toward new destination.
   on_insert(vertices)     Extend area map if necessary.
 
 ruleset
@@ -43,9 +43,9 @@ using slam_sim::optimize_graph;
 
 using slam_sim::need_to_extend_map;
 using slam_sim::build_area_map;
-using slam_sim::build_working_map;
+//using slam_sim::build_working_map;
 
-using slam_sim::select_new_destination;
+using slam_sim::reassess_destination;
 using slam_sim::move_toward_destination;
 using slam_sim::full_stop;
 
@@ -69,7 +69,7 @@ ruleset map_ruleset : serial_group()
             //  maps. This can be triggered in a separate rule or simply
             //  done here, so do it here.
             build_area_map(/destination, /area_map, /observed_area);
-            build_working_map(/destination, /area_map, /working_map);
+//            build_working_map(/destination, /area_map, /working_map);
         }
     }
 
@@ -77,8 +77,8 @@ ruleset map_ruleset : serial_group()
     // Destination changed. Update working map and start moving toward it.
     on_change(destination)
     {
-        build_working_map(/destination, /area_map, /working_map);
-        move_toward_destination(/working_map);
+        build_area_map(/destination, /area_map, /observed_area);
+        move_toward_destination(/destination, /area_map);
     }
 
 
@@ -91,7 +91,7 @@ ruleset map_ruleset : serial_group()
         {
             build_area_map(/destination, /area_map, /observed_area);
         }
-        build_working_map(/destination, /area_map, /working_map);
+//        build_working_map(/destination, /area_map, /working_map);
     }
 }
 
@@ -126,7 +126,7 @@ ruleset runtime_ruleset
     on_insert(vertices)
     {
         // Determine if it's time to change destinations.
-        select_new_destination();
+        reassess_destination();
     }
 
     on_insert(collision_event)

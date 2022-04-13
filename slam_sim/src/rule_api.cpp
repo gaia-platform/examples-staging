@@ -20,6 +20,7 @@
 #include "gaia_slam.h"
 
 #include "constants.hpp"
+#include "globals.hpp"
 #include "occupancy.hpp"
 #include "slam_sim.hpp"
 
@@ -37,10 +38,10 @@ using gaia::slam::area_map_t;
 using gaia::slam::destination_t;
 using gaia::slam::error_corrections_t;
 using gaia::slam::observed_area_t;
-using gaia::slam::working_map_t;
+//using gaia::slam::working_map_t;
 
 using gaia::slam::area_map_writer;
-using gaia::slam::working_map_writer;
+//using gaia::slam::working_map_writer;
 
 // Determine if a new graph optimization is necessary.
 // In a live example, this function would apply logic to determine if
@@ -155,7 +156,7 @@ void build_area_map(destination_t& dest, area_map_t& am,
     observed_area_t& bounds)
 {
     // Each time we build an area map 
-    area_grid_t area_map(am, bounds);
+    occupancy_grid_t area_map(am, bounds);
     for (graphs_t& g: graphs_t::list())
     {
         for (vertices_t& v: g.vertices())
@@ -181,27 +182,106 @@ void build_area_map(destination_t& dest, area_map_t& am,
 ////////////////////////////////////////////////////////////////////////
 // YET TO FINISH
 
-void build_working_map(destination_t& dest, area_map_t& am, working_map_t& wm)
+void build_working_map(occupancy_grid_t& working_map,
+    destination_t& dest, area_map_t& am)
 {
-    // TODO rebuild the working map
-    // In the meantime, just 'touch' the record by updating the
-    //  change counter.
-//    working_map_writer writer = wm.writer();
-//    writer.change_counter = wm.change_counter() + 1;
-//    writer.update_row();
+    occupancy_grid_t area_grid(am);
+    // Set boundary conditions.
+    // Iterate through boundary nodes of grid. Look up path values
+    //  from area map.
+    grid_size_t sz = working_map.get_grid_size();
+    for (uint32_t y=0; y<sz.rows; y++)
+    {
+        for (uint32_t x=0; x<sz.cols; x++)
+        {
+            // For middle rows, only seed first and last column.
+            if ((y != 0) && (y != sz.rows-1))
+            {
+                // In one of middle rows. Check if in first or last col.
+                if ((x != 0) && (x != sz.cols-1))
+                {
+                    // Nope -- nothing to do here.
+                    continue;
+                }
+            }
+            // Get node from working map.
+            grid_index_t idx = { .idx = x + y * sz.cols };
+            map_node_t& local_node = working_map.get_node(idx);
+            // Get corresponding node from area map.
+            grid_coordinate_t xy = { .x=x, .y=y };
+            world_coordinate_t pos = working_map.get_node_position(xy);
+            map_node_t& world_node = 
+                area_grid.get_node(pos.x_meters, pos.y_meters);
+            local_node.path_cost = world_node.path_cost;
+        }
+    }
+    // TODO Enter observation data since area map was generated.
+    
+
+
+
+
+    // Find paths toward destination.
+    world_coordinate_t dest_coord = {
+        .x_meters = dest.x_meters(),
+        .y_meters = dest.y_meters()
+    };
+    area_grid.trace_routes(dest_coord);
 }
+
 
 void full_stop()
 {
-    // TODO Take and observation and stop moving.
+    // TODO Take observation and stop moving.
+    // TODO Need way to decide when to move_toward_destination() again.
 }
 
-void move_toward_destination(working_map_t& wm)
+
+// Infrastructure has info on latest position so no need to query DB
+//  (infra is what sent that info to the DB).
+
+static void create_keyframe()
 {
-    // TODO Relocate to new position and take and observation.
+    // TODO add vertex to DB
 }
 
-bool select_new_destination()
+void move_toward_destination(destination_t& dest, area_map_t& am)
+{
+    // Need position, area map, destination
+    // Generate working map.
+    world_coordinate_t bottom_left = {
+        .x_meters = floorf(-c_range_sensor_max_meters),
+        .y_meters = floorf(-c_range_sensor_max_meters)
+    };
+    float right_meters = ceilf(c_range_sensor_max_meters);
+    float top_meters = ceilf(c_range_sensor_max_meters);
+    float width_meters = right_meters - bottom_left.x_meters;
+    float height_meters = top_meters - bottom_left.y_meters;
+    occupancy_grid_t working_map(c_working_map_node_width_meters,
+        bottom_left, width_meters, height_meters);
+    build_working_map(working_map, dest, am);
+    // Make several small steps.
+    for (uint32_t i=0; i<c_num_steps_between_keyframes; i++)
+    {
+        // Get direction to head from map.
+        map_node_t& node = working_map.get_node(g_position.x_meters, 
+            g_position.y_meters);
+        float heading_degs = node.direction_degs;
+        // Move in that direction.
+        float dist_meters = c_step_meters;
+        float s, c;
+        sincosf(c_deg_to_rad * heading_degs, &s, &c);
+        float dx_meters = s * dist_meters;
+        float dy_meters = c * dist_meters;
+        g_position.x_meters += dx_meters;
+        g_position.y_meters += dy_meters;
+        gaia_log::app().info("Moving {},{} meters to {},{}", dx_meters,
+            dy_meters, g_position.x_meters, g_position.y_meters);
+    }
+    create_keyframe();
+}
+
+bool reassess_destination()
 {
     // TODO Determine if it's time to change destinations.
     return false;

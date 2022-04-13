@@ -9,6 +9,7 @@
 #pragma once
 
 #include "blob_cache.hpp"
+#include "occupancy.hpp"
 
 namespace slam_sim
 {
@@ -19,7 +20,11 @@ extern int32_t g_quit;
 
 // Blob caches for area maps and working maps.
 extern blob_cache_t g_area_blobs;
-extern blob_cache_t g_working_blobs;
+
+// Bot's position. This is known at the 'infrastructure' level (e.g., ROS)
+//  which is where position data is fed to the DB from. This is the current
+//  (estimated) position of the bot.
+extern world_coordinate_t g_position;
 
 } // namespace slam_sim
 

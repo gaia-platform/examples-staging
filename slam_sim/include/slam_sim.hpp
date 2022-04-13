@@ -54,21 +54,22 @@ bool need_to_extend_map();
 void build_area_map(gaia::slam::destination_t&, gaia::slam::area_map_t&, 
     gaia::slam::observed_area_t&);
 
-// Generates a higher-res map of the local area for local route planning
-//  and collision avoidance, and uses the area map for the map's path 
-//  boundary conditions.
-// Stores output 'working_map' record.
-void build_working_map(gaia::slam::destination_t&, gaia::slam::area_map_t&,
-    gaia::slam::working_map_t&);
+//// Generates a higher-res map of the local area for local route planning
+////  and collision avoidance, and uses the area map for the map's path 
+////  boundary conditions.
+//// Stores output 'working_map' record.
+//void build_working_map(gaia::slam::destination_t&, gaia::slam::area_map_t&,
+//    gaia::slam::working_map_t&);
 
 
 // Checks to see if it's time to select a new destination. If so, the
 //  destination record is updated and the function returns 'true'. Otherwise
 //  returns 'false'.
-bool select_new_destination();
+bool reassess_destination();
 
 // Instructs hardware layer to move toward destination.
-void move_toward_destination(gaia::slam::working_map_t&);
+void move_toward_destination(gaia::slam::destination_t&, 
+    gaia::slam::area_map_t&);
 
 // Instructs bot to stop. An observation will be taken here.
 void full_stop();

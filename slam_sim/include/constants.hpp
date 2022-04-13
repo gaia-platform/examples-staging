@@ -33,5 +33,10 @@ constexpr float c_path_penalty_per_observation = 0.05f;
 //  the directional vector from each node. The constant here is that X.
 constexpr uint32_t c_num_ancestors_for_direction = 5;
 
+// Distance between each step. Keyframes are taken after several steps.
+constexpr float c_step_meters = 2.0f * c_working_map_node_width_meters;
+
+constexpr uint32_t c_num_steps_between_keyframes = 5;
+
 } // namespace slam_sim
 

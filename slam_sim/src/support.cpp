@@ -42,7 +42,6 @@ using gaia::slam::latest_observation_t;
 //using gaia::slam::observations_t;
 using gaia::slam::observed_area_t;
 using gaia::slam::observed_area_t;
-using gaia::slam::working_map_t;
 //using gaia::slam::positions_t;
 //using gaia::slam::range_data_t;
 //
@@ -205,25 +204,25 @@ void seed_database(float x_meters, float y_meters)
         0         // num_cols
     );
 
-    // Working map record.
-    // Working map has only one blob as it doesn't change size, which
-    //  is id=1.
-    // Create an empty working map to get map dimensions from.
-    working_grid_t map;
-    world_coordinate_t bl = map.get_bottom_left();
-    map_size_t size = map.get_map_size();
-    grid_size_t dims = map.get_grid_size();
-    gaia_id_t working_id = working_map_t::insert_row(
-        1,                                  // blob_id
-        bl.x_meters,                        // left_meters
-        bl.x_meters + size.x_meters,        // right_meters
-        bl.y_meters + size.y_meters,        // top_meters
-        bl.y_meters,                        // bottom_meters
-        dims.rows,                          // num_rows
-        dims.cols                           // num_cols
-    );
-    // Don't create blob here. Blob will be created and initialized
-    //  when it's first needed.
+//    // Working map record.
+//    // Working map has only one blob as it doesn't change size, which
+//    //  is id=1.
+//    // Create an empty working map to get map dimensions from.
+//    working_grid_t map;
+//    world_coordinate_t bl = map.get_bottom_left();
+//    map_size_t size = map.get_map_size();
+//    grid_size_t dims = map.get_grid_size();
+//    gaia_id_t working_id = working_map_t::insert_row(
+//        1,                                  // blob_id
+//        bl.x_meters,                        // left_meters
+//        bl.x_meters + size.x_meters,        // right_meters
+//        bl.y_meters + size.y_meters,        // top_meters
+//        bl.y_meters,                        // bottom_meters
+//        dims.rows,                          // num_rows
+//        dims.cols                           // num_cols
+//    );
+//    // Don't create blob here. Blob will be created and initialized
+//    //  when it's first needed.
 
     gaia_id_t destination_id = destination_t::insert_row(
         x_meters,     // x_meters
@@ -236,8 +235,8 @@ void seed_database(float x_meters, float y_meters)
     ego.destination().connect(destination_id);
     ego.world().connect(world_id);
     ego.latest_observation().connect(latest_observation_id);
-    ego.low_res_map().connect(area_id);
-    ego.working_map().connect(working_id);
+    ego.map().connect(area_id);
+//    ego.working_map().connect(working_id);
 
     ////////////////////////////////////////////
     // All done

@@ -34,8 +34,7 @@ static constexpr uint32_t c_rule_wait_millis = 100;
 
 // Globals for this namespace
 int32_t g_quit = 0;
-float g_initial_x_meters = 0.0;
-float g_initial_y_meters = 0.0;
+world_coordinate_t g_position = { .x_meters = 0.0, .y_meters = 0.0 };
 
 
 /**
@@ -70,7 +69,7 @@ void clean_db()
     gaia::db::begin_transaction();
     remove_all_rows<gaia::slam::ego_t>();
     remove_all_rows<gaia::slam::area_map_t>();
-    remove_all_rows<gaia::slam::working_map_t>();
+//    remove_all_rows<gaia::slam::working_map_t>();
     remove_all_rows<gaia::slam::destination_t>();
     remove_all_rows<gaia::slam::observed_area_t>();
     remove_all_rows<gaia::slam::pending_destination_t>();
@@ -115,7 +114,7 @@ void parse_command_line(int argc, char** argv)
             case 'x':
                 try
                 {
-                    g_initial_x_meters = std::stod(optarg, NULL);
+                    g_position.x_meters = std::stod(optarg, NULL);
                 }
                 catch (std::invalid_argument& e)
                 {
@@ -126,7 +125,7 @@ void parse_command_line(int argc, char** argv)
             case 'y':
                 try
                 {
-                    g_initial_y_meters = std::stod(optarg, NULL);
+                    g_position.y_meters = std::stod(optarg, NULL);
                 }
                 catch (std::invalid_argument& e)
                 {
@@ -146,7 +145,7 @@ void parse_command_line(int argc, char** argv)
         usage(argc, argv);
     }
     gaia_log::app().info("Initial possition at {},{}", 
-        g_initial_x_meters, g_initial_y_meters);
+        g_position.x_meters, g_position.y_meters);
     gaia_log::app().info("Loading world map {}", map_file);
     load_world_map(map_file);
 }
@@ -157,7 +156,7 @@ void init_sim()
     // Seed database and then create first path.
     // Seeding function manages its own transaction.
     gaia_log::app().info("Seeding the database...");
-    slam_sim::seed_database(g_initial_x_meters, g_initial_y_meters);
+    slam_sim::seed_database(g_position.x_meters, g_position.y_meters);
 }
 
 } // namespace slam_sim;

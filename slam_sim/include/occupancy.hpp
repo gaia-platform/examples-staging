@@ -42,6 +42,7 @@ namespace slam_sim
 //  different contexts.
 
 // Physical location in world space.
+// NOTE: this is in world coordinates (i.e., increasing x,y is up/right).
 struct world_coordinate_t
 {
     float x_meters;
@@ -49,6 +50,7 @@ struct world_coordinate_t
 };
 
 // Bounding area of map in world space.
+// NOTE: this is in world coordinates (i.e., increasing x,y is up/right).
 struct map_size_t
 {
     float x_meters;
@@ -63,6 +65,7 @@ struct grid_size_t
 };
 
 // Node location in grid.
+// NOTE: this is in image coordinates (i.e., 0,0 is top left).
 struct grid_coordinate_t
 {
     uint32_t x;
@@ -70,6 +73,7 @@ struct grid_coordinate_t
 };
 
 // Distance from one grid node to another, in units of grid coordinates.
+// NOTE: this is in image coordiantes (i.e., increasing x,y is down/right).
 struct node_offset_t
 {
     int32_t dx;
@@ -150,6 +154,13 @@ public:
     // Creates new uncached map.
     occupancy_grid_t(float node_width_meters, world_coordinate_t bottom_left,
         float width_meters, float height_meters);
+    // Constructors to be called by rules.
+    // Loads existing map, if present (map will be blank if it's doesn't
+    //  exist yet).
+    occupancy_grid_t(gaia::slam::area_map_t&);
+    // Purges existing map and rebuilds a new one, using observed area as
+    //  bounds.
+    occupancy_grid_t(gaia::slam::area_map_t&, gaia::slam::observed_area_t&);
 
     ~occupancy_grid_t();
 
@@ -158,7 +169,14 @@ public:
 
     // Returns a reference to tne map node at the specified location.
     map_node_t& get_node(float x_meters, float y_meters);
+    map_node_t& get_node(grid_index_t idx);
     map_node_flags_t& get_node_flags(float x_meters, float y_meters);
+    map_node_flags_t& get_node_flags(grid_index_t idx);
+
+    grid_index_t get_node_index(float pos_x_meters, float pos_y_meters);
+
+    // Returns the center of the grid node at the specified coordinates.
+    world_coordinate_t get_node_position(grid_coordinate_t& pos);
 
     // Apply sensor data to map from vertex.
     void apply_sensor_data(const gaia::slam::vertices_t&);
@@ -197,7 +215,6 @@ protected:
     //  managed externally.
     void allocate_own_grid();
 
-    grid_index_t get_node_index(float pos_x_meters, float pos_y_meters);
     void apply_radial(float radial_degs, float range_meters, 
         float pos_x_meters, float pos_y_meters);
     void apply_flags();
@@ -254,30 +271,30 @@ protected:
 };
 
 
-class area_grid_t : public occupancy_grid_t
-{
-public:
-    // Constructors to be called by rules.
-    // Loads existing map, if present (map will be blank if it's doesn't
-    //  exist yet).
-    area_grid_t(gaia::slam::area_map_t&);
-    // Purges existing map and rebuilds a new one, using observed area as
-    //  bounds.
-    area_grid_t(gaia::slam::area_map_t&, gaia::slam::observed_area_t&);
-};
-
-
-class working_grid_t : public occupancy_grid_t
-{
-public:
-    // Creates a grid that's not associated w/ database record.
-    working_grid_t();
-
-    // Constructor to be called by rules.
-    // Loads existinig working map. If this is to be embedded in larger
-    //  map, that must be done separately.
-    working_grid_t(gaia::slam::working_map_t&);
-};
+//class area_grid_t : public occupancy_grid_t
+//{
+//public:
+//    // Constructors to be called by rules.
+//    // Loads existing map, if present (map will be blank if it's doesn't
+//    //  exist yet).
+//    area_grid_t(gaia::slam::area_map_t&);
+//    // Purges existing map and rebuilds a new one, using observed area as
+//    //  bounds.
+//    area_grid_t(gaia::slam::area_map_t&, gaia::slam::observed_area_t&);
+//};
+//
+//
+//class working_grid_t : public occupancy_grid_t
+//{
+//public:
+//    // Creates a grid that's not associated w/ database record.
+//    working_grid_t();
+//
+//    // Constructor to be called by rules.
+//    // Loads existinig working map. If this is to be embedded in larger
+//    //  map, that must be done separately.
+//    working_grid_t(gaia::slam::working_map_t&);
+//};
 
 } // namespace slam_sim
 
