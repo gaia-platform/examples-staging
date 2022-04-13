@@ -75,7 +75,7 @@ void clean_db()
     remove_all_rows<gaia::slam::pending_destination_t>();
     remove_all_rows<gaia::slam::collision_event_t>();
     remove_all_rows<gaia::slam::graphs_t>();
-    remove_all_rows<gaia::slam::observations_t>();
+    remove_all_rows<gaia::slam::vertices_t>();
     remove_all_rows<gaia::slam::positions_t>();
     remove_all_rows<gaia::slam::movements_t>();
     remove_all_rows<gaia::slam::range_data_t>();

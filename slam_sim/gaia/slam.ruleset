@@ -22,6 +22,21 @@
 
 #include "slam_sim.hpp"
 
+/***********************************************************************
+Rules
+
+map_ruleset serial_group
+  on_insert(edges)        If optimization required, do so and rebuild maps.
+  on_change(destination)  Rebuild working map, move to destination.
+  on_insert(vertices)     Extend area map if necessary.
+
+ruleset
+  on_insert(vertices)     Spatial query to link to other nodes.
+  on_insert(vertices)     Determine if it's time to change destination.
+  on_insert(collision_event)  Full stop and create vertex.
+ 
+
+***********************************************************************/
 
 using slam_sim::optimization_required;
 using slam_sim::optimize_graph;
@@ -35,42 +50,25 @@ using slam_sim::move_toward_destination;
 using slam_sim::full_stop;
 
 
-/***********************************************************************
-Rules
-
-map_ruleset serial_group
-  on_insert(edges)        If optimization required, do so and rebuild maps.
-  on_change(destination)  Rebuild working map, move to destination.
-  on_insert(observation)  Extend area map if necessary.
-
-ruleset
-  on_insert(observation)  Spatial query to link to other nodes.
-  on_insert(observation)  Determine if it's time to change destination.
-  on_insert(collision_event)  Full stop and create observation.
- 
-
-***********************************************************************/
-
-
 // Wrap error correction and map creation in a serial group as these are
 //  expensive operations and we want to avoid concurrent operations 
 //  experiencing a txn conflict, and avoid race conditions.
 ruleset map_ruleset : serial_group()
 {
     // We don't want multiple edges to be created at similar points in time
-    //  and both realize that it's time to optimize the map, and do so 
-    //  together, so keep the graph optimization check in a serial group.
+    //  and both edges realize that it's time to optimize the map, so keep 
+    //  the graph optimization check in a serial group.
     on_insert(edges)
     {
         // New edge created. See if it's time to run new graph optimization.
         if (optimization_required())
         {
-            optimize_graph(edges.dest->observations.graph->graphs);
+            optimize_graph(edges.dest->vertices.graph->graphs);
 
             // Whenever new error-correction data is available, regenerate
             //  maps. This can be triggered in a separate rule or simply
             //  done here, so do it here.
-            build_area_map(/area_map, /observed_area);
+            build_area_map(/destination, /area_map, /observed_area);
             build_working_map(/destination, /area_map, /working_map);
         }
     }
@@ -84,8 +82,8 @@ ruleset map_ruleset : serial_group()
     }
 
 
-    // For each observation, update working map using new sensor data.
-    on_insert(observations)
+    // For each vertex, update working map using new sensor data.
+    on_insert(vertices)
     {
         // If working map will go beyond border of area map, rebuild
         //  area map.
@@ -100,32 +98,32 @@ ruleset map_ruleset : serial_group()
 
 ruleset runtime_ruleset
 {
-    // Observations are created at a lower infrastructure level. The
+    // Vertices are created at a lower infrastructure level. The
     //  decision to do so is based on the following assumptions about
     //  when an observation is made:
-    //  1) Observations (nodes) are generated at locations that provide
+    //  1) Vertices are generated at locations that provide
     //    non-redundant information about the environment, such as range
     //    data that covers previously unexplored territory or being
     //    near salient landmark to form closures with other nearby
-    //    observations.
-    //  2) Sensor data is read at a rate higher than observations are
+    //    vertices.
+    //  2) Sensor data is read at a rate higher than vertices are
     //    created.
     //  3) The time required to evaluate whether or not to make an
     //    observation may be longer than the interval between successive
     //    packets of sensor data.
     // This latter assumption means that one can't directly use a rule
-    //  triggering of sensor data to build observations as these must
-    //  run in parallel, risking violation of (1), as other observations
+    //  triggering of sensor data to build vertices as these must
+    //  run in parallel, risking violation of (1), as other vertices
     //  made during processing will be invisible to the rule's txn.
 
 
-    on_insert(observations)
+    on_insert(vertices)
     {
         // TODO Perform spatial query in area of observation and see if
-        //  there are other observations to build edges with.
+        //  there are other vertices to build edges with.
     }
 
-    on_insert(observations)
+    on_insert(vertices)
     {
         // Determine if it's time to change destinations.
         select_new_destination();

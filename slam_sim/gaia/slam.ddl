@@ -13,7 +13,7 @@
 -- Schema is split into 3 categories of tables.
 --
 -- The first includes tables that have individual records in them. For
---  example, the 'ego', the 'position', and maps that represent the
+--  example, the 'ego', the 'destination', and maps that represent the
 --  area (used for path finding).
 --
 -- The second includes tables storing event data. This includes destination
@@ -21,8 +21,7 @@
 --  to go to a particular position) or if Alice senses a collision.
 --
 -- The third includes the main elements of the SLAM algorithm. This includes
---  observations (more commonly called poses) and sequences of
---  observations here called paths (akin to simplified pose graphs).
+--  graphs, edges, and vertices, and auxiliary tables to support these.
 --
 ------------------------------------------------------------------------
 
@@ -42,13 +41,17 @@ database slam;
 --
 -- Data tables:
 --    graphs                Group of observations to produce pose graph.
---    observations          Synonymous with node, pose, vertex.
+--    vertices              Where an observation is made (aka: pose, node).
 --      positions               Position associated with observation.
 --      movements               Movement to reach this observation.
 --      range_data              Sensor range data for an observation.
 --    edges                 Connects two observations.
 --    error_corrections     Information from graph optimization round.
 
+-- Note that 'vertex' and 'observation' are often used interchangeaby.
+-- In future, these should be split. An 'observation' is a view of the
+--  environment, and that may or may not become a vertex, while a vertex
+--  will always be associated with an observation.
 
 ------------------------------------------------------------------------
 -- Tables with single records (i.e., exactly one)
@@ -63,7 +66,7 @@ table ego
   current_graph references graphs
       where ego.current_graph_id = graphs.id,
 
-  -- Most recent timestmap is stored in most recent observation
+  -- Most recent timestmap is stored in most recent observation/vertex
   --  (referenced below).
 
   -- Explicitly created references.
@@ -134,10 +137,12 @@ table working_map
 
   -- Bounding polygon
   -- Uses world coordinates, with increasing X,Y being rightward/upward
-  left_meters float,
-  right_meters float,
-  top_meters float,
-  bottom_meters float,
+  width_meters float,
+  height_meters float,
+--  left_meters float,
+--  right_meters float,
+--  top_meters float,
+--  bottom_meters float,
   -- Grid size
   num_rows uint32,
   num_cols uint32,
@@ -171,9 +176,9 @@ table destination
 -- Represents the most recently created observation.
 table latest_observation
 (
-  observation_id uint32,
-  observation references observations
-      where latest_observation.observation_id = observations.id,
+  vertex_id uint32,
+  vertex references vertices
+      where latest_observation.vertex_id = vertices.id,
   ego references ego
 )
 
@@ -207,7 +212,7 @@ table graphs
 (
   id uint32 unique,
 
-  observations references observations[],
+  vertices references vertices[],
   edges references edges[],
 
   -- Reverse reference to ego (necessary until one-way references are 
@@ -217,8 +222,7 @@ table graphs
 
 
 ------------------------------------------------
--- Observation related
--- TODO rename 'observations' to either 'nodes', 'poses', or 'vertices'.
+-- Vertex related
 
 -- An observation from a point in the world, including sensor readings
 --  from this point and a link to other nearby observations. This is
@@ -226,7 +230,7 @@ table graphs
 -- Most of observation data in kept different tables so that updates to
 --  one field don't risk conflict and txn rollback if others are
 --  modified.
-table observations
+table vertices
 (
   ------------------------------
   -- Constant data. These values are set at creation and don't change.
@@ -241,7 +245,7 @@ table observations
 
   graph_id uint32,
   graph references graphs
-      where graphs.id = observations.graph_id,
+      where graphs.id = vertices.graph_id,
 
   timestamp_sec double,
 
@@ -269,7 +273,7 @@ table positions
   heading_degs float,
 
   -- Constant reference established at record creation time.
-  observation references observations
+  vertex references vertices
 )
 
 
@@ -283,7 +287,7 @@ table movements
   dheading_degs float,
 
   -- Constant reference established at record creation time.
-  observation references observations
+  vertex references vertices
 )
 
 
@@ -295,7 +299,7 @@ table range_data
   distance_meters float[],
 
   -- Constant reference established at record creation time.
-  observation references observations
+  vertex references vertices
 )
 
 
@@ -315,12 +319,12 @@ table edges
   --  they won't be (e.g., if an edge is formed between observation Y
   --  and existing observation M).
   src_id uint32,
-  src references observations
-      using out_edges where edges.src_id = observations.id,
+  src references vertices
+      using out_edges where edges.src_id = vertices.id,
 
   dest_id uint32,
-  dest references observations
-      using in_edges where edges.dest_id = observations.id
+  dest references vertices
+      using in_edges where edges.dest_id = vertices.id
 )
 
 

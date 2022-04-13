@@ -34,7 +34,7 @@ using gaia::slam::ego_t;
 using gaia::slam::error_corrections_t;
 using gaia::slam::graphs_t;
 using gaia::slam::observed_area_t;
-using gaia::slam::observations_t;
+using gaia::slam::vertices_t;
 using gaia::slam::area_map_t;
 using gaia::slam::working_map_t;
 
@@ -43,7 +43,7 @@ using gaia::slam::working_map_t;
 // In a live example, this function would apply logic to determine if
 //  enough data has been collected (e.g., new range data, new closures,
 //  etc.) to justify performing another map optimization. For now, say 
-//  an optiimzation is required every X observations.
+//  an optiimzation is required every X vertices.
 bool optimization_required()
 {
     static int32_t ctr = 0;
@@ -69,11 +69,11 @@ void optimize_graph(graphs_t& graph)
     // By edges:
     for (edges_t& e: edges_t::list())
     {
-        gaia_log::app().info("Edge connects observations {} and {}",
+        gaia_log::app().info("Edge connects vertices {} and {}",
             e.src().id(), e.dest().id());
     }
-    // By observations:
-    for (observations_t& o: observations_t::list())
+    // By vertices:
+    for (vertices_t& o: vertices_t::list())
     {
         gaia_log::app().info("Obervation {} connects to:", o.id());
         for (edges_t& e: o.in_edges())
@@ -108,16 +108,16 @@ bool need_to_extend_map()
 }
 
 
-static void build_map(const graphs_t& g, const world_coordinate_t& top_left,
-    const world_coordinate_t bottom_right)
+static void build_map(const graphs_t& g, const world_coordinate_t& bottom_left,
+    float width_meters, float height_meters)
 {
     static int32_t ctr = 0;
-    occupancy_grid_t map(c_standard_map_node_width_meters, 
-        top_left, bottom_right);
+    occupancy_grid_t map(c_standard_map_node_width_meters, bottom_left,
+        width_meters, height_meters);
     // Iterate through observations in this graph and build a map.
-    for (const observations_t& o: g.observations())
+    for (const vertices_t& o: g.vertices())
     {
-        gaia_log::app().info("Applying sensor data from observation {}", 
+        gaia_log::app().info("Applying sensor data from vertex {}", 
             o.id());
         map.apply_sensor_data(o);
     }
@@ -137,15 +137,13 @@ void export_map_to_file()
     gaia::db::begin_transaction();
     ego_t ego = *(ego_t::list().begin());
     area_map_t& am = *(area_map_t::list().begin());
-    world_coordinate_t top_left = {
+    world_coordinate_t bottom_left = {
         .x_meters = am.left_meters(),
-        .y_meters = am.top_meters()
-    };
-    world_coordinate_t bottom_right = {
-        .x_meters = am.right_meters(),
         .y_meters = am.bottom_meters()
     };
-    build_map(ego.current_graph(), top_left, bottom_right);
+    float width_meters = am.right_meters() - am.left_meters();
+    float height_meters = am.top_meters() - am.bottom_meters();
+    build_map(ego.current_graph(), bottom_left, width_meters, height_meters);
     gaia::db::commit_transaction();
 }
 

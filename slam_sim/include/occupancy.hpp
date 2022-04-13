@@ -147,10 +147,10 @@ struct map_node_t
 class occupancy_grid_t
 {
 public:
-    occupancy_grid_t(float node_width_meters, world_coordinate_t top_left,
-        world_coordinate_t bottom_right);
-    occupancy_grid_t(gaia::slam::area_map_t&);
-    occupancy_grid_t(gaia::slam::working_map_t&);
+    // Creates new uncached map.
+    occupancy_grid_t(float node_width_meters, world_coordinate_t bottom_left,
+        float width_meters, float height_meters);
+
     ~occupancy_grid_t();
 
     // Resets the map grid.
@@ -160,19 +160,43 @@ public:
     map_node_t& get_node(float x_meters, float y_meters);
     map_node_flags_t& get_node_flags(float x_meters, float y_meters);
 
-    // Apply sensor data to map from observation.
-    void apply_sensor_data(const gaia::slam::observations_t&);
+    // Apply sensor data to map from vertex.
+    void apply_sensor_data(const gaia::slam::vertices_t&);
 
     void export_as_pnm(std::string file_name);
 
     // Path finding. Traces all routes to the destination. If map is
     //  embedded in larger map, the larger map is used to set boundary
     //  conditions for this map.
-    void trace_routes(world_coordinate_t destination,
+    void trace_routes(world_coordinate_t& destination,
         occupancy_grid_t& parent_map);
-    void trace_routes(world_coordinate_t destination);
+    void trace_routes(world_coordinate_t& destination);
+
+    // Provide interface to blob ID in use so that can be pushed
+    //  to the database.
+    int32_t get_blob_id()                   { return m_blob_id;       }
+
+    grid_size_t get_grid_size()             { return m_grid_size;     }
+    world_coordinate_t get_bottom_left()    { return m_bottom_left;   }
+    map_size_t get_map_size()               { return m_map_size;      }
 
 protected:
+    // Default constructor is used by subclasses. They're expected to
+    //  do their own construction that's consistent and compatible with
+    //  superclass. They really aren't subclasses in a traditional
+    //  sense, as they don't extend the functionality of the base class,
+    //  but they do represent different types, one each for different
+    //  singleton map database tables, and this class is cleaner
+    //  when they're moved onto their own.
+    occupancy_grid_t() { }
+    // Contructor helper function, with code common between constructors.
+    void init(float node_width_meters, world_coordinate_t bottom_left,
+        float width_meters, float height_meters);
+    // Allocates own memory for m_grid, which is freed on destruction.
+    // Grids created from DB blobs have memory for m_grid that is
+    //  managed externally.
+    void allocate_own_grid();
+
     grid_index_t get_node_index(float pos_x_meters, float pos_y_meters);
     void apply_radial(float radial_degs, float range_meters, 
         float pos_x_meters, float pos_y_meters);
@@ -227,6 +251,32 @@ protected:
     //  value, such as when setting boundary conditions.
     void add_anchor_to_path_stack(const grid_index_t idx, 
         const float path_weight);
+};
+
+
+class area_grid_t : public occupancy_grid_t
+{
+public:
+    // Constructors to be called by rules.
+    // Loads existing map, if present (map will be blank if it's doesn't
+    //  exist yet).
+    area_grid_t(gaia::slam::area_map_t&);
+    // Purges existing map and rebuilds a new one, using observed area as
+    //  bounds.
+    area_grid_t(gaia::slam::area_map_t&, gaia::slam::observed_area_t&);
+};
+
+
+class working_grid_t : public occupancy_grid_t
+{
+public:
+    // Creates a grid that's not associated w/ database record.
+    working_grid_t();
+
+    // Constructor to be called by rules.
+    // Loads existinig working map. If this is to be embedded in larger
+    //  map, that must be done separately.
+    working_grid_t(gaia::slam::working_map_t&);
 };
 
 } // namespace slam_sim

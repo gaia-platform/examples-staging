@@ -28,101 +28,85 @@ namespace slam_sim
 
 using std::string;
 
-using gaia::slam::paths_t;
-using gaia::slam::observations_t;
+using gaia::slam::graphs_t;
 using gaia::slam::edges_t;
+using gaia::slam::vertices_t;
+
 using gaia::slam::area_map_t;
-using gaia::slam::local_map_t;
 using gaia::slam::working_map_t;
-using gaia::slam::error_correction_t;
+//using gaia::slam::error_corrections_t;
 
 using gaia::slam::area_map_writer;
-using gaia::slam::local_map_writer;
-using gaia::slam::working_map_writer;
-using gaia::slam::error_correction_writer;
+//using gaia::slam::working_map_writer;
 
 
 // Mock function to calculate error and optimize graph.
 void optimize_graph(graphs_t& graph)
 {
     gaia_log::app().info("Calculating error (mock)");
-    for (observations_t o: graph.observations())
+    for (vertices_t v: graph.observations())
     {
         // Just iterate through the observations in the graph to show
         //  how it's done.
-        gaia_log::app().info("Observaation {} at {},{}", o.id(),
-            o.position().pos_x_meters(), o.position().pos_y_meters());
+        gaia_log::app().info("Vertex {} at {},{}", v.id(),
+            v.position().pos_x_meters(), v.position().pos_y_meters());
     }
     for (edges_t e: graph.edges())
     {
         // Just iterate through the edges in the graph to show
         //  how it's done.
-        gaia_log::app().info("Edge connecting observations {} and {}",
+        gaia_log::app().info("Edge connecting vertices {} and {}",
             e.src().id(), e.dest().id());
     }
     // When the graph is optimized, the position data for each observation
-    //  is expected to be updated.
+    //  is subject to being updated.
 }
 
 
-void export_area_map()
-{
-    static int32_t ctr = 0;
-    string fname("map_" + std::to_string(ctr) + ".pgm");
-    gaia_log::app().info("Building map {}", fname);
-    g_area_map->export_as_pnm(fname);
-    ctr++;
-}
+//void export_area_map()
+//{
+//    static int32_t ctr = 0;
+//    string fname("map_" + std::to_string(ctr) + ".pgm");
+//    gaia_log::app().info("Building map {}", fname);
+//    g_area_map->export_as_pnm(fname);
+//    ctr++;
+//}
 
 
-void build_area_map(area_map_t& am)
+// TODO move to rules_api.cpp
+void build_area_map(destination_t& dest, area_map_t& am, 
+    observed_area_t& bounds)
 {
-    g_area_map->clear();
-    for (paths_t& p: paths_t::list())
+#warning "Need to adapt constructor to accept new bounds"
+    // Each time we build an area map 
+    occupancy_grid_t area_map(am, true);
+    for (graphs_t& g: graphs_t::list())
     {
-        observations_t obs = p.first_observation();
-        while (obs)
+        for (vertex_t& v: g.vertices())
         {
-            // TODO do something with observation data.
             gaia_log::app().info("Pulling sensor data from {}:{}", 
-                p.id(), obs.id());
-            g_area_map->apply_sensor_data(obs);
-            if (!obs.forward_edge()) {
-                break;
-            }
-            obs = obs.forward_edge().next();
+                g.id(), v.id());
+            area_map->apply_sensor_data(v);
         }
     }
-
-    // TODO rebuild the area map
-    // In the meantime, just 'touch' the record by updating the
-    //  change counter.
+    // Build paths to destination
+    area_map.trace_routes(dest);
+    // Update blob ID in database
     area_map_writer writer = am.writer();
-    writer.change_counter = am.change_counter() + 1;
+    writer.blob_id = area_map.blob_id();
     writer.update_row();
-
-    export_area_map();
+//    export_area_map();
 }
 
 
-void build_local_map(local_map_t& lm)
-{
-    // TODO rebuild the local map
-    // In the meantime, just 'touch' the record by updating the
-    //  change counter.
-    local_map_writer writer = lm.writer();
-    writer.change_counter = lm.change_counter() + 1;
-    writer.update_row();
-}
-
-void build_working_map(working_map_t& wm)
+void build_working_map(destination_t& dest, working_map_t& wm)
 {
     // TODO rebuild the working map
     // In the meantime, just 'touch' the record by updating the
     //  change counter.
-    working_map_writer writer = wm.writer();
-    writer.change_counter = wm.change_counter() + 1;
-    writer.update_row();
+//    working_map_writer writer = wm.writer();
+//    writer.change_counter = wm.change_counter() + 1;
+//    writer.update_row();
 }
 
 } // namespace slam_sim

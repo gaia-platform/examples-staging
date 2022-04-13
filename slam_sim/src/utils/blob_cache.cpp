@@ -9,7 +9,8 @@
 #include "blob_cache.hpp"
 #include "retail_assert.hpp"
 
-blob_cache_t blob_cache_t::s_blob_cache;
+namespace slam_sim
+{
 
 blob_t::blob_t(uint32_t id, size_t size, uint32_t id_superseded_blob)
 {
@@ -47,12 +48,9 @@ void blob_t::reset(uint32_t id, size_t size, uint32_t id_superseded_blob)
     data = new uint8_t[size];
 }
 
-blob_cache_t* blob_cache_t::get()
-{
-    return &s_blob_cache;
-}
 
-blob_t* blob_cache_t::create_or_reset_blob(uint32_t id, size_t size, uint32_t id_superseded_blob)
+blob_t* blob_cache_t::create_or_reset_blob(uint32_t id, size_t size, 
+    uint32_t id_superseded_blob)
 {
     RETAIL_ASSERT(
         id != c_invalid_blob_id,
@@ -87,19 +85,19 @@ blob_t* blob_cache_t::create_or_reset_blob(uint32_t id, size_t size, uint32_t id
     }
 
     // Check if we have a previously superseded blob to delete.
-    // We only need to do this for new blobs, because old blobs have already gone through this.
-    if (is_new_blob && superseded_blob_ptr && superseded_blob_ptr->id_superseded_blob != c_invalid_blob_id)
+    // We only need to do this for new blobs, because old blobs have 
+    //  already gone through this.
+    if ((is_new_blob && superseded_blob_ptr) && 
+        (superseded_blob_ptr->id_superseded_blob != c_invalid_blob_id))
     {
-        auto iterator = m_blob_map.find(superseded_blob_ptr->id_superseded_blob);
-
+        auto iterator = 
+            m_blob_map.find(superseded_blob_ptr->id_superseded_blob);
         RETAIL_ASSERT(
             iterator != m_blob_map.end(),
             "Failed to find the previously superseded blob!");
-
         delete iterator->second;
         m_blob_map.erase(iterator);
     }
-
     return blob_ptr;
 }
 
@@ -114,3 +112,6 @@ blob_t* blob_cache_t::get_blob(uint32_t id)
     auto iterator = m_blob_map.find(id);
     return (iterator == m_blob_map.end()) ? nullptr : iterator->second;
 }
+
+} // namespace slam_sim
+

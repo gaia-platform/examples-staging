@@ -180,32 +180,50 @@ void seed_database(float x_meters, float y_meters)
         0             // observation_id
     );
 
+    // Area map and observed area start out with same dimensions. 
+    float left = floorf(x_meters - (c_range_sensor_max_meters+1));
+    float bottom = floorf(y_meters - (c_range_sensor_max_meters+1));
+    float right = ceilf(x_meters + (c_range_sensor_max_meters+1));
+    float top = ceilf(y_meters + (c_range_sensor_max_meters+1));
+
     gaia_id_t world_id = observed_area_t::insert_row(
-        floor(x_meters - (c_range_sensor_max_meters+1)),    // left_meters
-        ceil(x_meters + (c_range_sensor_max_meters+1)),     // right_meters
-        ceil(y_meters + (c_range_sensor_max_meters+1)),     // top_meters
-        floor(y_meters - (c_range_sensor_max_meters+1))     // bottom_meters
+        left,     // left_meters
+        right,    // right_meters
+        top,      // top_meters
+        bottom    // bottom_meters
     );
 
+    // Working map record.
+    // Create local context to not worry about variable name conflicts.
     gaia_id_t area_id = area_map_t::insert_row(
-        0,                                                  // blob_id
-        floor(x_meters - (c_range_sensor_max_meters+1)),    // left_meters
-        ceil(x_meters + (c_range_sensor_max_meters+1)),     // right_meters
-        ceil(y_meters + (c_range_sensor_max_meters+1)),     // top_meters
-        floor(y_meters - (c_range_sensor_max_meters+1)),    // bottom_meters
-        0,                                                  // num_rows
-        0                                                   // num_cols
+        0,        // blob_id
+        left,     // left_meters
+        right,    // right_meters
+        top,      // top_meters
+        bottom,   // bottom_meters
+        0,        // num_rows
+        0         // num_cols
     );
 
+    // Working map record.
+    // Working map has only one blob as it doesn't change size, which
+    //  is id=1.
+    // Create an empty working map to get map dimensions from.
+    working_grid_t map;
+    world_coordinate_t bl = map.get_bottom_left();
+    map_size_t size = map.get_map_size();
+    grid_size_t dims = map.get_grid_size();
     gaia_id_t working_id = working_map_t::insert_row(
-        0,                                                  // blob_id
-        floor(x_meters - (c_range_sensor_max_meters)),    // left_meters
-        ceil(x_meters + (c_range_sensor_max_meters)),     // right_meters
-        ceil(y_meters + (c_range_sensor_max_meters)),     // top_meters
-        floor(y_meters - (c_range_sensor_max_meters)),    // bottom_meters
-        0,                                                  // num_rows
-        0                                                   // num_cols
+        1,                                  // blob_id
+        bl.x_meters,                        // left_meters
+        bl.x_meters + size.x_meters,        // right_meters
+        bl.y_meters + size.y_meters,        // top_meters
+        bl.y_meters,                        // bottom_meters
+        dims.rows,                          // num_rows
+        dims.cols                           // num_cols
     );
+    // Don't create blob here. Blob will be created and initialized
+    //  when it's first needed.
 
     gaia_id_t destination_id = destination_t::insert_row(
         x_meters,     // x_meters
