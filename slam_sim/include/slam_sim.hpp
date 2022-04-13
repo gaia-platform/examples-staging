@@ -24,20 +24,11 @@
 
 #include "gaia_slam.h"
 
-#include "blob_cache.hpp"
 #include "occupancy.hpp"
 #include "sensor_data.hpp"
 
 namespace slam_sim
 {
-
-// Flag to indicate app should exit. Normally this is 0. When it's time
-//  to quit it's set to 1.
-extern int32_t g_quit;
-
-// Blob caches for area maps and working maps.
-extern blob_cache_t g_area_blobs;
-extern blob_cache_t g_working_blobs;
 
 ////////////////////////////////////////////////
 // Rules API
@@ -60,7 +51,8 @@ bool need_to_extend_map();
 // Generates a low-res map off the known world and generates coarse path
 //  info to the destination.
 // Stores output 'area_map' record.
-void build_area_map(gaia::slam::area_map_t&, gaia::slam::observed_area_t&);
+void build_area_map(gaia::slam::destination_t&, gaia::slam::area_map_t&, 
+    gaia::slam::observed_area_t&);
 
 // Generates a higher-res map of the local area for local route planning
 //  and collision avoidance, and uses the area map for the map's path 

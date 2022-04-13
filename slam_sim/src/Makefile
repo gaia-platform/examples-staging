@@ -17,7 +17,6 @@ LIBS = $(LIB_SLAM_UTILS) /usr/local/lib/libgaia.so -pthread -lcurl
 all: $(OBJS) 
 	cd utils && make
 	$(CXX) $(OBJS) $(EXT_OBJS) -o $(TARGET) $(LIBS)
-	#cp $(TARGET) ../runtime/sim_shell
 
 run:
 	./$(TARGET) -m ../data/map.json -x -3.0 -y -3.0

@@ -20,6 +20,7 @@
 
 #include "gaia_slam.h"
 
+#include "globals.hpp"
 #include "slam_sim.hpp"
 
 

@@ -89,7 +89,7 @@ ruleset map_ruleset : serial_group()
         //  area map.
         if (need_to_extend_map())
         {
-            build_area_map(/area_map, /observed_area);
+            build_area_map(/destination, /area_map, /observed_area);
         }
         build_working_map(/destination, /area_map, /working_map);
     }

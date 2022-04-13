@@ -412,7 +412,7 @@ world_coordinate_t occupancy_grid_t::get_node_location(
 // Builds map to destination using parent map to set boundary conditions.
 //  If destination is outside of map bounds, only parent map is used
 //  for path finding.
-void occupancy_grid_t::trace_routes(world_coordinate_t destination,
+void occupancy_grid_t::trace_routes(world_coordinate_t& destination,
     occupancy_grid_t& parent_map)
 {
     clear();
@@ -463,7 +463,7 @@ void occupancy_grid_t::trace_routes(world_coordinate_t destination,
 }
 
 
-void occupancy_grid_t::trace_routes(world_coordinate_t destination)
+void occupancy_grid_t::trace_routes(world_coordinate_t& destination)
 {
     clear();
     grid_index_t idx = get_node_index(destination.x_meters, 

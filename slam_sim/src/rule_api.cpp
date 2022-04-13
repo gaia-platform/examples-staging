@@ -28,16 +28,19 @@ namespace slam_sim
 
 using std::string;
 
-using gaia::slam::destination_t;
 using gaia::slam::edges_t;
 using gaia::slam::ego_t;
-using gaia::slam::error_corrections_t;
 using gaia::slam::graphs_t;
-using gaia::slam::observed_area_t;
 using gaia::slam::vertices_t;
+
 using gaia::slam::area_map_t;
+using gaia::slam::destination_t;
+using gaia::slam::error_corrections_t;
+using gaia::slam::observed_area_t;
 using gaia::slam::working_map_t;
 
+using gaia::slam::area_map_writer;
+using gaia::slam::working_map_writer;
 
 // Determine if a new graph optimization is necessary.
 // In a live example, this function would apply logic to determine if
@@ -147,6 +150,62 @@ void export_map_to_file()
     gaia::db::commit_transaction();
 }
 
+
+void build_area_map(destination_t& dest, area_map_t& am, 
+    observed_area_t& bounds)
+{
+    // Each time we build an area map 
+    area_grid_t area_map(am, bounds);
+    for (graphs_t& g: graphs_t::list())
+    {
+        for (vertices_t& v: g.vertices())
+        {
+            gaia_log::app().info("Pulling sensor data from {}:{}", 
+                g.id(), v.id());
+            area_map.apply_sensor_data(v);
+        }
+    }
+    // Build paths to destination
+    world_coordinate_t pos = {
+        .x_meters = dest.x_meters(),
+        .y_meters = dest.y_meters()
+    };
+    area_map.trace_routes(pos);
+    // Update blob ID in database
+    area_map_writer writer = am.writer();
+    writer.blob_id = area_map.get_blob_id();
+    writer.update_row();
+//    export_area_map();
+}
+
+////////////////////////////////////////////////////////////////////////
+// YET TO FINISH
+
+void build_working_map(destination_t& dest, area_map_t& am, working_map_t& wm)
+{
+    // TODO rebuild the working map
+    // In the meantime, just 'touch' the record by updating the
+    //  change counter.
+//    working_map_writer writer = wm.writer();
+//    writer.change_counter = wm.change_counter() + 1;
+//    writer.update_row();
+}
+
+void full_stop()
+{
+    // TODO Take and observation and stop moving.
+}
+
+void move_toward_destination(working_map_t& wm)
+{
+    // TODO Relocate to new position and take and observation.
+}
+
+bool select_new_destination()
+{
+    // TODO Determine if it's time to change destinations.
+    return false;
+}
 
 } // namespace slam_sim
 

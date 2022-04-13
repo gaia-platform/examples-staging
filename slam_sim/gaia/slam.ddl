@@ -136,13 +136,13 @@ table working_map
   blob_id uint32,
 
   -- Bounding polygon
-  -- Uses world coordinates, with increasing X,Y being rightward/upward
-  width_meters float,
-  height_meters float,
---  left_meters float,
---  right_meters float,
---  top_meters float,
---  bottom_meters float,
+  -- Uses world coordinates, with increasing X,Y being rightward/upward.
+  -- Position is relative to bot, with bot in center. Position must be
+  --  updated whenever map regenerated.
+  left_meters float,
+  right_meters float,
+  top_meters float,
+  bottom_meters float,
   -- Grid size
   num_rows uint32,
   num_cols uint32,
