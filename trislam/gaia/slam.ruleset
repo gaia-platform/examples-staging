@@ -1,0 +1,74 @@
+////////////////////////////////////////////////////////////////////////
+// Copyright (c) Gaia Platform LLC
+//
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE.txt file
+// or at https://opensource.org/licenses/MIT.
+////////////////////////////////////////////////////////////////////////
+// 
+// Rules for performing SLAM in the slam simulator.
+//
+////////////////////////////////////////////////////////////////////////
+
+#include <assert.h>
+#include <math.h>
+
+#include <iostream>
+#include <string>
+
+#include <gaia/common.hpp>
+#include <gaia/logger.hpp>
+#include <gaia/rules/rules.hpp>
+
+#include "gaia_slam.h"
+
+#include "slam_sim.hpp"
+
+
+using slam_sim::optimization_required;
+using slam_sim::optimize_graph;
+using slam_sim::build_map;
+
+using gaia::slam::edges_t;
+using gaia::slam::ego_t;
+using gaia::slam::graphs_t;
+using gaia::slam::observations_t;
+using gaia::slam::error_corrections_t;
+
+
+// Observation creation and searching for neighbors to connect to can
+//  be done concurrently so no serail_group is required.
+// Note that creating edges with other observations may be subject to
+//  transaction rollbacks, but it is easy to try/catch/retry such problems.
+ruleset observation_ruleset
+{
+    on_insert(o: observations)
+    {
+        // TODO Perform spatial query in area of observation and see if
+        //  there are other observations to build edges with.
+    }
+}
+
+
+// Wrap edge and error-correction related rules in a serial group to 
+//  avoid race conditions in case multiple edges are created at the same time.
+ruleset edge_ruleset : serial_group()
+{
+    on_insert(e: edges)
+    {
+        // New edge created. See if it's time to run new graph optimization.
+        if (optimization_required())
+        {
+            optimize_graph(e.dest->observations.graph->graphs);
+        }
+    }
+
+
+    on_insert(ec: error_corrections)
+    {
+        graphs_t g = *(graphs_t::list()
+            .where(graphs_t::expr::id == ec.graph_id).begin());
+        build_map(g, /observed_area);
+    }
+}
+
