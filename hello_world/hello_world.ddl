@@ -1,11 +1,11 @@
 database hello_world
 
-table person
+table entity
 (
     name string
 )
 
-table greetings
+table greeting
 (
     name string
 )
