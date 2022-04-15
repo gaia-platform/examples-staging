@@ -11,6 +11,8 @@ int main()
 
     gaia::db::begin_transaction();
     gaia::hello_world::entity_t::insert_row("World");
+    // [Try uncommenting the following line and see how the program output changes]
+    // gaia::hello_world::entity_t::insert_row("Alice");
     gaia::db::commit_transaction();
 
     gaia::system::shutdown();
