@@ -10,7 +10,7 @@ int main()
     gaia_log::app().info("Hello World example is running...");
 
     gaia::db::begin_transaction();
-    gaia::hello_world::person_t::insert_row("Alice");
+    gaia::hello_world::entity_t::insert_row("World");
     gaia::db::commit_transaction();
 
     gaia::system::shutdown();
