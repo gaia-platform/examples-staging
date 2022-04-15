@@ -8,13 +8,13 @@ ruleset hello_world_ruleset
         gaia_log::app().info("{} inserted!", entity.name);
 
         // Insert a 'greeting' record which triggers 'Rule 2'.
-        greetings.insert(name: entity.name);
+        greeting.insert(name: entity.name);
     }
 
     // Rule 2: Triggered every time a record is inserted in the table 'greeting'.
     // [Try uncommenting the following lines and see how the program output changes]
     // on_insert(greeting)
     // {
-    //   gaia_log::app().info("Hello {}!", greeting.name);
+    //     gaia_log::app().info("Hello {}!", greeting.name);
     // }
 }
