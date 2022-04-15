@@ -60,7 +60,7 @@ need to change the database from your C++ code to trigger the first rule.
 
 The following snippet initializes the Gaia system (`gaia::system::initialize`) and inserts a record into the `entity`
 table. As soon as the transaction is committed (`gaia::db::commit_transaction()`), the rules engine enqueues and executes
-the `on_insert(entity)` rule asynchronously, passing it the `"Alice"` record. Note that because Gaia manages your data
+the `on_insert(entity)` rule asynchronously, passing it the `"World"` record. Note that because Gaia manages your data
 in a transactional manner, all data must be accessed and updated from within a transaction.
 
 When your application is done, call `gaia::system::shutdown()`. On shutdown, the rules engine will wait for all enqueued
@@ -71,7 +71,7 @@ int main()
     gaia::system::initialize();
 
     gaia::db::begin_transaction();
-    gaia::hello_world::entity_t::insert_row("Alice");
+    gaia::hello_world::entity_t::insert_row("World");
     gaia::db::commit_transaction();
 
     gaia::system::shutdown();
