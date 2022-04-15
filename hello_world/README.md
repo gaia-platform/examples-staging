@@ -41,7 +41,7 @@ The following snippet defines a ruleset with one rule. The rule `on_insert(entit
 inserted into the table `entity` (defined in the DDL). The reference to `entity.name` accesses the `name` column of the
 newly inserted  `entity` record:
 ```cpp
-ruleset hello_ruleset
+ruleset hello_world_ruleset
 {
     on_insert(entity)
     {

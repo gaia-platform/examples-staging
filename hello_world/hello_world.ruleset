@@ -1,6 +1,6 @@
 #include <gaia/logger.hpp>
 
-ruleset hello_ruleset
+ruleset hello_world_ruleset
 {
     // Rule 1: Triggered every time a record is inserted in the table 'entity'.
     on_insert(entity)
