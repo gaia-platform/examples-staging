@@ -54,14 +54,6 @@ bool need_to_extend_map();
 void build_area_map(gaia::slam::destination_t&, gaia::slam::area_map_t&, 
     gaia::slam::observed_area_t&);
 
-//// Generates a higher-res map of the local area for local route planning
-////  and collision avoidance, and uses the area map for the map's path 
-////  boundary conditions.
-//// Stores output 'working_map' record.
-//void build_working_map(gaia::slam::destination_t&, gaia::slam::area_map_t&,
-//    gaia::slam::working_map_t&);
-
-
 // Checks to see if it's time to select a new destination. If so, the
 //  destination record is updated and the function returns 'true'. Otherwise
 //  returns 'false'.
@@ -80,7 +72,7 @@ void full_stop();
 
 // Creates a record in the vertices table using the supplied sensor
 //  data
-void create_vertex(const slam_sim::sensor_data_t& data);
+void create_vertex(world_coordinate_t pos, float heading_degs);
 
 // Do a sensor sweep from at the stated position. This would normally be
 //  pushed up from the sensor/hardware layer, but polling for it makes
@@ -95,6 +87,12 @@ void export_map_to_file();
 // External request to move to a specific location.
 void request_destination(float x_meters, float y_meters);
 
+
+////////////////////////////////////////////////
+// Environmental analysis
+
+// Calculates sensor view from a position in the environment.
+void calculate_range_data(map_coord_t& coord, sensor_data_t& data);
 
 ////////////////////////////////////////////////
 // Initialization

@@ -38,5 +38,8 @@ constexpr float c_step_meters = 2.0f * c_working_map_node_width_meters;
 
 constexpr uint32_t c_num_steps_between_keyframes = 5;
 
+// How close to destination bot has to declare it's reached it.
+constexpr float c_destination_radius_meters = 0.5f;
+
 } // namespace slam_sim
 

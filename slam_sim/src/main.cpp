@@ -35,7 +35,12 @@ static constexpr uint32_t c_rule_wait_millis = 100;
 // Globals for this namespace
 int32_t g_quit = 0;
 world_coordinate_t g_position = { .x_meters = 0.0, .y_meters = 0.0 };
+float g_heading_degs = 0.0f;
 
+std::vector<world_coordinate_t> g_destinations;
+uint32_t g_next_destination = 0;
+
+double g_now = 0.0;
 
 /**
  * Wait for simulation to complete.
@@ -69,7 +74,6 @@ void clean_db()
     gaia::db::begin_transaction();
     remove_all_rows<gaia::slam::ego_t>();
     remove_all_rows<gaia::slam::area_map_t>();
-//    remove_all_rows<gaia::slam::working_map_t>();
     remove_all_rows<gaia::slam::destination_t>();
     remove_all_rows<gaia::slam::observed_area_t>();
     remove_all_rows<gaia::slam::pending_destination_t>();

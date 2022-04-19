@@ -64,12 +64,10 @@ ruleset map_ruleset : serial_group()
         if (optimization_required())
         {
             optimize_graph(edges.dest->vertices.graph->graphs);
-
             // Whenever new error-correction data is available, regenerate
             //  maps. This can be triggered in a separate rule or simply
             //  done here, so do it here.
             build_area_map(/destination, /area_map, /observed_area);
-//            build_working_map(/destination, /area_map, /working_map);
         }
     }
 
@@ -91,7 +89,6 @@ ruleset map_ruleset : serial_group()
         {
             build_area_map(/destination, /area_map, /observed_area);
         }
-//        build_working_map(/destination, /area_map, /working_map);
     }
 }
 
@@ -120,13 +117,17 @@ ruleset runtime_ruleset
     on_insert(vertices)
     {
         // TODO Perform spatial query in area of observation and see if
-        //  there are other vertices to build edges with.
+        //  there are other vertices to build edges with (i.e., build
+        //  loop closures)
     }
 
     on_insert(vertices)
     {
         // Determine if it's time to change destinations.
-        reassess_destination();
+        if (reassess_destination())
+        {
+            // If destination changes, start a new graph.
+        }
     }
 
     on_insert(collision_event)
@@ -136,6 +137,11 @@ ruleset runtime_ruleset
         //  in turn create a new observation.
         gaia_log::app().info("Collision detected. Stopping bot");
         full_stop();
+    }
+
+    on_insert(graphs)
+    {
+        /ego.current_graph_id = graphs.id
     }
 }
 

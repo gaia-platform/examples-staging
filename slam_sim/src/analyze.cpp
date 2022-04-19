@@ -23,6 +23,7 @@
 
 #include "constants.hpp"
 #include "json.hpp"
+#include "globals.hpp"
 #include "line_segment.hpp"
 #include "sensor_data.hpp"
 #include "slam_sim.hpp"
@@ -59,6 +60,20 @@ static void set_map(const char* map)
             g_world_lines.push_back(line_segment_t(x0, y0, x1, y1));
         }
     }
+    const json& destinations = world_map["destinations"];
+    for (uint32_t i=0; i<destinations.size(); i++)
+    {
+        const json& point = destinations[i];
+        world_coordinate_t dest;
+        dest.x_meters = point["x"];
+        dest.y_meters = point["y"];
+        g_destinations.push_back(dest);
+    }
+
+for (world_coordinate_t w: g_destinations)
+{
+    printf("DESTINATION: %f,%f\n", w.x_meters, w.y_meters);
+}
 }
 
 

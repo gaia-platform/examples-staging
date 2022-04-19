@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "blob_cache.hpp"
 #include "occupancy.hpp"
 
@@ -25,6 +27,13 @@ extern blob_cache_t g_area_blobs;
 //  which is where position data is fed to the DB from. This is the current
 //  (estimated) position of the bot.
 extern world_coordinate_t g_position;
+extern float g_heading_degs;
+
+extern std::vector<world_coordinate_t> g_destinations;
+extern uint32_t g_next_destination;
+
+// Current simulation time.
+extern double g_now;
 
 } // namespace slam_sim
 

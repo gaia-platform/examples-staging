@@ -38,10 +38,9 @@ using gaia::slam::area_map_t;
 using gaia::slam::destination_t;
 using gaia::slam::error_corrections_t;
 using gaia::slam::observed_area_t;
-//using gaia::slam::working_map_t;
 
 using gaia::slam::area_map_writer;
-//using gaia::slam::working_map_writer;
+using gaia::slam::destination_writer;
 
 // Determine if a new graph optimization is necessary.
 // In a live example, this function would apply logic to determine if
@@ -179,55 +178,26 @@ void build_area_map(destination_t& dest, area_map_t& am,
 //    export_area_map();
 }
 
-////////////////////////////////////////////////////////////////////////
-// YET TO FINISH
 
 void build_working_map(occupancy_grid_t& working_map,
     destination_t& dest, area_map_t& am)
 {
-    occupancy_grid_t area_grid(am);
-    // Set boundary conditions.
-    // Iterate through boundary nodes of grid. Look up path values
-    //  from area map.
-    grid_size_t sz = working_map.get_grid_size();
-    for (uint32_t y=0; y<sz.rows; y++)
+    // Apply observation data
+    for (vertices_t& v: vertices_t::list())
     {
-        for (uint32_t x=0; x<sz.cols; x++)
-        {
-            // For middle rows, only seed first and last column.
-            if ((y != 0) && (y != sz.rows-1))
-            {
-                // In one of middle rows. Check if in first or last col.
-                if ((x != 0) && (x != sz.cols-1))
-                {
-                    // Nope -- nothing to do here.
-                    continue;
-                }
-            }
-            // Get node from working map.
-            grid_index_t idx = { .idx = x + y * sz.cols };
-            map_node_t& local_node = working_map.get_node(idx);
-            // Get corresponding node from area map.
-            grid_coordinate_t xy = { .x=x, .y=y };
-            world_coordinate_t pos = working_map.get_node_position(xy);
-            map_node_t& world_node = 
-                area_grid.get_node(pos.x_meters, pos.y_meters);
-            local_node.path_cost = world_node.path_cost;
-        }
+        working_map.apply_sensor_data(v);
     }
-    // TODO Enter observation data since area map was generated.
-    
-
-
-
-
     // Find paths toward destination.
     world_coordinate_t dest_coord = {
         .x_meters = dest.x_meters(),
         .y_meters = dest.y_meters()
     };
-    area_grid.trace_routes(dest_coord);
+    occupancy_grid_t area_grid(am);
+    area_grid.trace_routes(dest_coord, area_grid);
 }
+
+////////////////////////////////////////////////////////////////////////
+// YET TO FINISH
 
 
 void full_stop()
@@ -240,10 +210,6 @@ void full_stop()
 // Infrastructure has info on latest position so no need to query DB
 //  (infra is what sent that info to the DB).
 
-static void create_keyframe()
-{
-    // TODO add vertex to DB
-}
 
 void move_toward_destination(destination_t& dest, area_map_t& am)
 {
@@ -278,12 +244,41 @@ void move_toward_destination(destination_t& dest, area_map_t& am)
         gaia_log::app().info("Moving {},{} meters to {},{}", dx_meters,
             dy_meters, g_position.x_meters, g_position.y_meters);
     }
-    create_keyframe();
+    // TODO Add logic to determine when keyframes should be created and
+    //  when to convert those to a vertex. E.g., does this location have
+    //  salient features? does it provide sensor data that's new?
+    // For now, create a vertex every time we've moved forward a small
+    //  amount.
+    create_vertex(g_position, g_heading_degs);
 }
+
 
 bool reassess_destination()
 {
-    // TODO Determine if it's time to change destinations.
+    // Determine if it's time to change destinations.
+    // If w/in X meters of destination, select new one. It's OK
+    //  if destination is in unexplored area.
+    destination_t& dest = *(destination_t::list().begin());
+    float dx = g_position.x_meters - dest.x_meters();
+    float dy = g_position.y_meters - dest.y_meters();
+    float dist_meters_2 = dx*dx + dy*dy;
+    const float close_enough_radius_2 = c_destination_radius_meters
+        * c_destination_radius_meters;
+    if (dist_meters_2 < close_enough_radius_2)
+    {
+        // Select next destination.
+        world_coordinate_t new_dest = g_destinations[g_next_destination++];
+        if (g_next_destination >= g_destinations.size())
+        {
+            g_next_destination = 0;
+        }
+        destination_writer w = dest.writer();
+        w.x_meters = new_dest.x_meters;
+        w.y_meters = new_dest.y_meters;
+        w.update_row();
+        g_now += 1.0;
+        return true;
+    }
     return false;
 }
 

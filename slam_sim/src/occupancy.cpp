@@ -281,6 +281,8 @@ void occupancy_grid_t::apply_flags()
 
 void occupancy_grid_t::apply_sensor_data(const vertices_t& obs)
 {
+    // TODO make sure that sensor data from outside of map is ignored.
+    //
     positions_t pos = obs.position();
     range_data_t r = obs.range_data();
 //printf("Applying sensor data at %.2f,%.2f (%d)\n", pos.pos_x_meters(), pos.pos_y_meters(), obs.id());

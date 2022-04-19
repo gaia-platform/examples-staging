@@ -128,31 +128,6 @@ table area_map
 )
 
 
---table working_map
---(
---  -- Reference to in-memory blob that stores 2D map.
---  -- Blob ID changes on each map update.
---  -- Working map must be seeded with a different blob_id than area map.
---  blob_id uint32,
---
---  -- Bounding polygon
---  -- Uses world coordinates, with increasing X,Y being rightward/upward.
---  -- Position is relative to bot, with bot in center. Position must be
---  --  updated whenever map regenerated.
---  left_meters float,
---  right_meters float,
---  top_meters float,
---  bottom_meters float,
---  -- Grid size
---  num_rows uint32,
---  num_cols uint32,
---
---  -- References
---  ego references ego,
---  area_map references area_map
---)
-
-
 table destination
 (
   -- Uses world coordinates, with increasing X,Y being rightward/upward.
@@ -215,7 +190,7 @@ table graphs
   vertices references vertices[],
   edges references edges[],
 
-  -- Reverse reference to ego (necessary until one-way references are 
+  -- Reverse reference (VLR) to ego (necessary until one-way references are 
   --  supported)
   ego references ego[]
 )
