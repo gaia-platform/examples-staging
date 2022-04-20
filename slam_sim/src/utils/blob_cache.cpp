@@ -65,14 +65,14 @@ blob_t* blob_cache_t::create_or_reset_blob(uint32_t id, size_t size,
     blob_t* superseded_blob_ptr = nullptr;
     if (id_superseded_blob != c_invalid_blob_id)
     {
-        superseded_blob_ptr = get_blob(id_superseded_blob);
+        superseded_blob_ptr = get_blob_locked(id_superseded_blob);
     }
 
     // Check if a blob with this id already exists;
     // if it exists, then reuse it;
     // if not, then create a new one and insert it in our map.
     bool is_new_blob = false;
-    blob_t* blob_ptr = get_blob(id);
+    blob_t* blob_ptr = get_blob_locked(id);
     if (blob_ptr)
     {
         blob_ptr->reset(id, size, id_superseded_blob);
@@ -108,6 +108,16 @@ blob_t* blob_cache_t::get_blob(uint32_t id)
         "Attempting to retrieve a blob using an invalid id!");
 
     std::shared_lock shared_lock(m_lock);
+
+    auto iterator = m_blob_map.find(id);
+    return (iterator == m_blob_map.end()) ? nullptr : iterator->second;
+}
+
+blob_t* blob_cache_t::get_blob_locked(uint32_t id)
+{
+    RETAIL_ASSERT(
+        id != c_invalid_blob_id,
+        "Attempting to retrieve a blob using an invalid id!");
 
     auto iterator = m_blob_map.find(id);
     return (iterator == m_blob_map.end()) ? nullptr : iterator->second;

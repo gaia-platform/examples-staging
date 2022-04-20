@@ -87,6 +87,10 @@ protected:
     // Map of allocated blobs.
     std::unordered_map<uint32_t, blob_t*> m_blob_map;
     std::shared_mutex m_lock;
+
+    // Nested get_blob() call from w/in create_or_reset_blob(), where a
+    //  lock has already been established.
+    blob_t* get_blob_locked(uint32_t id);
 };
 
 } // namespace slam_sim
