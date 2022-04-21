@@ -21,6 +21,9 @@ all: $(OBJS)
 run:
 	./$(TARGET) -m ../data/map.json -x -3.0 -y -3.0
 
+drun:
+	gdb --args ./slam_sim -m ../data/map.json -x -3.0 -y -3.0
+
 
 %.o: %.cpp 
 	$(CXX) $(INC) -c $(CPPFLAGS) $< 

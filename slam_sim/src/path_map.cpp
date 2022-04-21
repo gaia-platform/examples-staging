@@ -154,7 +154,7 @@ void occupancy_grid_t::add_node_to_stack(
 {
     // Make sure we're not going off the edge of the map. If so, ignore.
     assert(root_idx.idx >= 0);
-    map_node_t& root_node = m_grid[root_idx.idx];
+    const map_node_t& root_node = m_grid[root_idx.idx];
     int32_t new_x = (int32_t) root_node.pos.x + offset.dx;
     int32_t new_y = (int32_t) root_node.pos.y + offset.dy;
     if ((new_x < 0) || (new_x >= m_grid_size.cols) || (new_y < 0) ||
@@ -214,7 +214,7 @@ void occupancy_grid_t::add_node_to_stack_diag(
 {
     // make sure we're not going off the edge of the map
     assert(root_idx.idx >= 0);
-    map_node_t& root_node = m_grid[root_idx.idx];
+    const map_node_t& root_node = m_grid[root_idx.idx];
     int32_t new_x = (int32_t) root_node.pos.x + offset.dx;
     int32_t new_y = (int32_t) root_node.pos.y + offset.dy;
     if ((new_x < 0) || (new_x >= m_grid_size.cols) 
@@ -225,7 +225,7 @@ void occupancy_grid_t::add_node_to_stack_diag(
     /////////////////////////////////////////////////////////////////////
     // point is in the world -- check it
     grid_index_t new_idx = { .idx = new_x + new_y * m_grid_size.cols };
-    map_node_t& child_node = m_grid[new_idx.idx];
+    const map_node_t& child_node = m_grid[new_idx.idx];
     if (child_node.flags.state & PATH_NODE_FLAG_IMPASSABLE)
     {
           return;
@@ -237,8 +237,8 @@ void occupancy_grid_t::add_node_to_stack_diag(
         (uint32_t) (root_node.pos.x + new_y * m_grid_size.cols);
     uint32_t idx_horiz =
         (uint32_t) (new_x + root_node.pos.y * m_grid_size.cols);
-    map_node_t& vert_child_node = m_grid[idx_vert];
-    map_node_t& horiz_child_node = m_grid[idx_horiz];
+    const map_node_t& vert_child_node = m_grid[idx_vert];
+    const map_node_t& horiz_child_node = m_grid[idx_horiz];
     if ((vert_child_node.flags.state & PATH_NODE_FLAG_IMPASSABLE) &&
         (horiz_child_node.flags.state & PATH_NODE_FLAG_IMPASSABLE))
     {
@@ -330,12 +330,12 @@ void occupancy_grid_t::compute_path_costs()
         for (uint32_t x=0; x<m_grid_size.cols; x++) {
             uint32_t idx = x + y * m_grid_size.cols;
             map_node_t& root = m_grid[idx];
-            map_node_t& ggp = root;
+            map_node_t ggp = root;
             // Find direction to ancestor.
             for (uint32_t gen=0; gen<c_num_ancestors_for_direction; gen++) {
                 if (ggp.parent_idx.idx != c_invalid_grid_idx) 
                 {
-                    map_node_t& next_ggp = m_grid[ggp.parent_idx.idx];
+                    map_node_t next_ggp = m_grid[ggp.parent_idx.idx];
                     if (gen == 0) 
                     {
                         // Get base direction. This returns bitfield 

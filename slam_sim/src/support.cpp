@@ -101,6 +101,7 @@ static void update_observed_area(ego_t& ego)
 
 void create_vertex(world_coordinate_t pos, float heading_degs)
 {
+printf("Creating vertex\n");
     uint32_t obs_num = s_next_vertex_id++;
     gaia_log::app().info("Performing observation {} at {},{} heading {}", 
         obs_num, pos.x_meters, pos.y_meters, heading_degs);
@@ -240,6 +241,7 @@ void seed_database(float x_meters, float y_meters)
         y_meters,     // y_meters
         0.0           // departure_time_sec
     );
+printf("initial destination %f,%f\n", x_meters, y_meters);
 
     ////////////////////////////////////////////
     // Relationships

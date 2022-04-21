@@ -141,7 +141,7 @@ ruleset runtime_ruleset
 
     on_insert(graphs)
     {
-        /ego.current_graph_id = graphs.id
+        /ego.current_graph_id = graphs.id;
     }
 }
 

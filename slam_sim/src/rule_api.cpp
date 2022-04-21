@@ -197,7 +197,6 @@ void build_working_map(occupancy_grid_t& working_map,
 }
 
 ////////////////////////////////////////////////////////////////////////
-// YET TO FINISH
 
 
 void full_stop()

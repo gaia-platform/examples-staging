@@ -361,12 +361,9 @@ occupancy_grid_t::occupancy_grid_t(area_map_t& am)
     init(c_area_map_node_width_meters, bottom_left,
         am.right_meters() - am.left_meters(),
         am.top_meters() - am.bottom_meters());
-    assert(m_grid_size.rows = am.num_rows());
-    assert(m_grid_size.cols = am.num_cols());
     // Recover memory from blob cache.
     uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
     m_blob_id = am.blob_id();;
-    assert(m_blob_id != c_invalid_blob_id);
     blob_t* blob = NULL;
     // Fetch existing blob.
     g_area_blobs.get_blob(m_blob_id);
@@ -381,6 +378,9 @@ occupancy_grid_t::occupancy_grid_t(area_map_t& am)
         blob = g_area_blobs.create_or_reset_blob(m_blob_id, sz);
         // New grid. Nodes need initialization.
         clear();
+    } else {
+        assert(m_grid_size.rows == am.num_rows());
+        assert(m_grid_size.cols == am.num_cols());
     }
     m_grid = (map_node_t*) blob->data;
 }
@@ -414,57 +414,6 @@ occupancy_grid_t::occupancy_grid_t(area_map_t& am, observed_area_t& area)
     writer.bottom_meters = area.bottom_meters();
     writer.update_row();
 }
-
-//////////////////////////////////////////////////////////////////////////
-//// working grid subclass
-//
-//// Load existing working map.
-//working_grid_t::working_grid_t()
-//{
-//
-//    world_coordinate_t bottom_left = {
-//        .x_meters = floorf(-c_range_sensor_max_meters),
-//        .y_meters = floorf(-c_range_sensor_max_meters)
-//    };
-//    float right_meters = ceilf(c_range_sensor_max_meters);
-//    float top_meters = ceilf(c_range_sensor_max_meters);
-//    init(c_working_map_node_width_meters, bottom_left,
-//        right_meters - bottom_left.x_meters,
-//        top_meters - bottom_left.y_meters);
-//    allocate_own_grid();
-//}
-//
-//// Load existing working map.
-//working_grid_t::working_grid_t(working_map_t& wm)
-//{
-//    world_coordinate_t bottom_left = {
-//        .x_meters = wm.left_meters(),
-//        .y_meters = wm.bottom_meters()
-//    };
-//    init(c_working_map_node_width_meters, bottom_left,
-//        wm.right_meters() - wm.left_meters(),
-//        wm.top_meters() - wm.bottom_meters());
-//    assert(m_grid_size.rows = wm.num_rows());
-//    assert(m_grid_size.cols = wm.num_cols());
-//    // Recover memory from blob cache.
-//    uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
-//    m_blob_id = wm.blob_id();
-//    assert(m_blob_id != c_invalid_blob_id);
-//    blob_t* blob = g_working_blobs.get_blob(m_blob_id);
-//    if (blob == NULL)
-//    {
-//        // Blob doesn't exist yet. This means that the process was
-//        //  started up against an existing database. This shouldn't
-//        //  happen, but allow it. Create it.
-//        gaia_log::app().warn("Area map with ID {} did not have cached "
-//            "blob. Recreating one.", m_blob_id);
-//        size_t sz = num_nodes * sizeof *m_grid;
-//        blob = g_working_blobs.create_or_reset_blob(wm.blob_id(), sz);
-//        // New grid. Nodes need initialization.
-//        clear();
-//    }
-//    m_grid = (map_node_t*) blob->data;
-//}
 
 } // namespace slam_sim
 
