@@ -46,7 +46,8 @@ void optimize_graph(gaia::slam::graphs_t&);
 
 // Checks to see if known world has extended beyong map boundaries so much
 //  that it's time to rebuild the area map.
-bool need_to_extend_map();
+bool need_to_extend_map(gaia::slam::positions_t& pos, 
+    gaia::slam::observed_area_t& bounds);
 
 // Generates a low-res map off the known world and generates coarse path
 //  info to the destination.

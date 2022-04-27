@@ -32,6 +32,7 @@ using std::string;
 using gaia::slam::edges_t;
 using gaia::slam::ego_t;
 using gaia::slam::graphs_t;
+using gaia::slam::positions_t;
 using gaia::slam::vertices_t;
 
 using gaia::slam::area_map_t;
@@ -50,10 +51,25 @@ using gaia::slam::destination_writer;
 bool optimization_required()
 {
     static int32_t ctr = 0;
-    const int32_t MAP_INTERVAL = 10;
-    if ((++ctr % MAP_INTERVAL) == 0)
+    if (ctr < 4)
     {
         return true;
+    }
+    else if (ctr < 8)
+    {
+        return (ctr & 1) == 0;
+    }
+    else if (ctr < 16)
+    {
+        return (ctr & 3) == 0;
+    }
+    else if (ctr < 32)
+    {
+        return (ctr & 7) == 0;
+    }
+    else
+    {
+        return (ctr & 15) == 0;
     }
     return false;
 }
@@ -104,9 +120,29 @@ void optimize_graph(graphs_t& graph)
 
 // Determines if sensor data extends beyond present area map and returns
 //  'true' if so.
-bool need_to_extend_map()
+bool need_to_extend_map(positions_t& pos, observed_area_t& bounds)
 {
-    assert(1 == 0);
+    float right_meters = ceilf(pos.x_meters() + c_range_sensor_max_meters);
+    float top_meters = ceilf(pos.y_meters() + c_range_sensor_max_meters);
+    float left_meters = floorf(pos.x_meters() - c_range_sensor_max_meters);
+    float bottom_meters = floorf(pos.y_meters() - c_range_sensor_max_meters);
+    if (right_meters > bounds.right_meters())
+    {
+        return true;
+    }
+    if (left_meters < bounds.left_meters())
+    {
+        return true;
+    }
+    if (top_meters > bounds.top_meters())
+    {
+        return true;
+    }
+    if (bottom_meters < bounds.bottom_meters())
+    {
+        return true;
+    }
+    // Else, sensor range doesn't exceed map boundaries.
     return false;
 }
 
@@ -137,7 +173,7 @@ static void build_map(const graphs_t& g, const world_coordinate_t& bottom_left,
 
 void export_map_to_file()
 {
-    gaia::db::begin_transaction();
+    //gaia::db::begin_transaction();
     ego_t ego = *(ego_t::list().begin());
     area_map_t& am = *(area_map_t::list().begin());
     world_coordinate_t bottom_left = {
@@ -147,7 +183,7 @@ void export_map_to_file()
     float width_meters = am.right_meters() - am.left_meters();
     float height_meters = am.top_meters() - am.bottom_meters();
     build_map(ego.current_graph(), bottom_left, width_meters, height_meters);
-    gaia::db::commit_transaction();
+    //gaia::db::commit_transaction();
 }
 
 
@@ -175,7 +211,7 @@ void build_area_map(destination_t& dest, area_map_t& am,
     area_map_writer writer = am.writer();
     writer.blob_id = area_map.get_blob_id();
     writer.update_row();
-//    export_area_map();
+    export_map_to_file();
 }
 
 

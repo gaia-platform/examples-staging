@@ -5,3 +5,4 @@ out2
 slam_sim
 *.o
 logs
+*.pgm

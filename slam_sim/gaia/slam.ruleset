@@ -60,6 +60,7 @@ ruleset map_ruleset : serial_group()
     //  the graph optimization check in a serial group.
     on_insert(edges)
     {
+printf("1 enter on_insert(edges)\n");
         // New edge created. See if it's time to run new graph optimization.
         if (optimization_required())
         {
@@ -69,26 +70,31 @@ ruleset map_ruleset : serial_group()
             //  done here, so do it here.
             build_area_map(/destination, /area_map, /observed_area);
         }
+printf("1 leave on_insert(edges)\n");
     }
 
 
     // Destination changed. Update working map and start moving toward it.
     on_change(destination)
     {
+printf("2 enter on_change(destination)\n");
         build_area_map(/destination, /area_map, /observed_area);
         move_toward_destination(/destination, /area_map);
+printf("2 leave on_change(destination)\n");
     }
 
 
     // For each vertex, update working map using new sensor data.
     on_insert(vertices)
     {
+printf("3 enter on_insert(vertices)\n");
         // If working map will go beyond border of area map, rebuild
         //  area map.
-        if (need_to_extend_map())
+        if (need_to_extend_map(vertices.position->positions, /observed_area))
         {
             build_area_map(/destination, /area_map, /observed_area);
         }
+printf("3 leave on_insert(vertices)\n");
     }
 }
 
@@ -123,25 +129,31 @@ ruleset runtime_ruleset
 
     on_insert(vertices)
     {
+printf("4 enter on_insert(vertices)\n");
         // Determine if it's time to change destinations.
         if (reassess_destination())
         {
             // If destination changes, start a new graph.
         }
+printf("4 leave on_insert(vertices)\n");
     }
 
     on_insert(collision_event)
     {
+printf("5 enter on_insert(collision_event)\n");
         // A collision was detected, or the range sensor detected something
         //  closer than it's supposed to be. Initiate a stop, which will
         //  in turn create a new observation.
         gaia_log::app().info("Collision detected. Stopping bot");
         full_stop();
+printf("5 leave on_insert(collision_event)\n");
     }
 
     on_insert(graphs)
     {
+printf("6 enter on_insert(graphs)\n");
         /ego.current_graph_id = graphs.id;
+printf("6 leave on_insert(graphs)\n");
     }
 }
 

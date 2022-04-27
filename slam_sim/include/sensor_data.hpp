@@ -31,7 +31,7 @@ constexpr double RANGE_SENSOR_MAX_METERS = 4.0;
 
 struct sensor_data_t
 {
-    uint32_t num_radials;
+//    uint32_t num_radials;
 
     // Range on each radial. Range is -1 if there's no data.
     std::vector<float> range_meters;

@@ -306,9 +306,8 @@ void occupancy_grid_t::apply_sensor_data(const vertices_t& obs)
 void occupancy_grid_t::export_as_pnm(string file_name)
 {
     uint32_t n_pix = m_grid_size.cols * m_grid_size.rows;
-    uint8_t* r = (uint8_t*) calloc(1, n_pix);
-    uint8_t* g = (uint8_t*) calloc(1, n_pix);
-    uint8_t* b = (uint8_t*) calloc(1, n_pix);
+    std::vector<uint8_t> r(n_pix, 0), g(n_pix, 0), b(n_pix, 0);
+
     // Create image.
     for (uint32_t y=0; y<m_grid_size.rows; y++)
     {
@@ -326,7 +325,6 @@ void occupancy_grid_t::export_as_pnm(string file_name)
         }
     }
 
-
     // Export image.
     try 
     {
@@ -343,9 +341,6 @@ void occupancy_grid_t::export_as_pnm(string file_name)
     {
         cerr << "Error writing to " << file_name << ": " << ioe.what() << "\n";
     }
-    free(r);
-    free(g);
-    free(b);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -376,13 +371,15 @@ occupancy_grid_t::occupancy_grid_t(area_map_t& am)
             "blob. Recreating one.", m_blob_id);
         size_t sz = num_nodes * sizeof *m_grid;
         blob = g_area_blobs.create_or_reset_blob(m_blob_id, sz);
+        m_grid = (map_node_t*) blob->data;
         // New grid. Nodes need initialization.
         clear();
     } else {
         assert(m_grid_size.rows == am.num_rows());
         assert(m_grid_size.cols == am.num_cols());
+        m_grid = (map_node_t*) blob->data;
+        // Existing grid. Should be initialized already.
     }
-    m_grid = (map_node_t*) blob->data;
 }
 
 

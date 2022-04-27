@@ -119,10 +119,10 @@ printf("Creating vertex\n");
     
     // Get most recent obesrvation.
     vertices_t prev_vert = ego.latest_observation().vertex();
-    positions_t prev_pos = prev_vert.position();
     float prev_x_meters, prev_y_meters, prev_heading_degs;
-    if (prev_pos)
+    if (prev_vert)
     {
+        positions_t prev_pos = prev_vert.position();
         prev_x_meters = prev_pos.x_meters();
         prev_y_meters = prev_pos.y_meters();
         prev_heading_degs = prev_pos.heading_degs();
@@ -148,8 +148,10 @@ printf("Creating vertex\n");
     );
 
     // create range_data record
+    assert(data.bearing_degs.size() == c_num_range_radials);
+    assert(data.range_meters.size() == c_num_range_radials);
     gaia_id_t range_id = range_data_t::insert_row(
-        data.num_radials,     // num_radials
+        c_num_range_radials,  // num_radials
         data.bearing_degs,    // bearing_degs
         data.range_meters     // distance_meters
     );

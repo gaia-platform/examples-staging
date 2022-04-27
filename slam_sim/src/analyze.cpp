@@ -107,12 +107,14 @@ void load_world_map(const char* world_map)
 //  making up the 2D world map.
 void calculate_range_data(map_coord_t& coord, sensor_data_t& data)
 {
+printf("Calculating range data\n");
     data.range_meters.clear();
     data.bearing_degs.clear();
-    float step_degs = c_range_sensor_sweep_degs / (data.num_radials - 1);
+    float step_degs = c_range_sensor_sweep_degs / (c_num_range_radials - 1);
     // Get range on each radial, and store both distance and radial degs.
-    for (uint32_t n=0; n<data.num_radials; n++)
+    for (uint32_t n=0; n<c_num_range_radials; n++)
     {
+//printf("  %d (of %d)\n", n, c_num_range_radials);
         // Get this radial and constrain to [0,360)
         float theta_degs = coord.heading_degs - c_range_sensor_sweep_degs/2.0
             + (float) n * step_degs;
@@ -139,6 +141,7 @@ void calculate_range_data(map_coord_t& coord, sensor_data_t& data)
         {
             min_meters = -1.0;
         }
+//printf("    range %.1f at %.1f\n", min_meters, theta_degs);
         data.range_meters.push_back(min_meters);
         data.bearing_degs.push_back(theta_degs);
     }
