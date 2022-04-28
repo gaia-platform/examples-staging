@@ -20,6 +20,7 @@
 #include <gaia/logger.hpp>
 #include <gaia/rules/rules.hpp>
 
+#include "globals.hpp"
 #include "slam_sim.hpp"
 
 /***********************************************************************
@@ -38,16 +39,16 @@ ruleset
 
 ***********************************************************************/
 
-using slam_sim::optimization_required;
-using slam_sim::optimize_graph;
-
-using slam_sim::need_to_extend_map;
 using slam_sim::build_area_map;
-//using slam_sim::build_working_map;
-
-using slam_sim::reassess_destination;
-using slam_sim::move_toward_destination;
 using slam_sim::full_stop;
+using slam_sim::move_toward_destination;
+using slam_sim::need_to_extend_map;
+using slam_sim::optimize_graph;
+using slam_sim::optimization_required;
+using slam_sim::reassess_destination;
+using slam_sim::update_world_area;
+
+using slam_sim::g_running;
 
 
 // Wrap error correction and map creation in a serial group as these are
@@ -78,8 +79,13 @@ printf("1 leave on_insert(edges)\n");
     on_change(destination)
     {
 printf("2 enter on_change(destination)\n");
+        // Destination's changed. Make sure the known world includes 
+        //  this point.
+        update_world_area(/ego);
+        // Build map, including paths, to destination.
         build_area_map(/destination, /area_map, /observed_area);
-        move_toward_destination(/destination, /area_map);
+        // Start movement toward destination.
+        g_running = true;
 printf("2 leave on_change(destination)\n");
     }
 
@@ -133,7 +139,7 @@ printf("4 enter on_insert(vertices)\n");
         // Determine if it's time to change destinations.
         if (reassess_destination())
         {
-            // If destination changes, start a new graph.
+            // TODO If destination changes, start a new graph.
         }
 printf("4 leave on_insert(vertices)\n");
     }

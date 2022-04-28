@@ -10,11 +10,10 @@
 
 #include <vector>
 
-#include "blob_cache.hpp"
-#include "occupancy.hpp"
-
 namespace slam_sim
 {
+class blob_cache_t;
+struct world_coordinate_t;
 
 // Flag to indicate app should exit. Normally this is 0. When it's time
 //  to quit it's set to 1.
@@ -34,6 +33,9 @@ extern uint32_t g_next_destination;
 
 // Current simulation time.
 extern double g_now;
+
+// Flag to indicate motion state (true=moving, false=halted).
+extern bool g_running;
 
 } // namespace slam_sim
 

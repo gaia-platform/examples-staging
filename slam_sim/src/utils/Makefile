@@ -1,6 +1,6 @@
 include ../../Makefile.inc
 
-TEST_TARGETS = test_line_segment 
+TEST_TARGETS = test_line_segment test_blob_cache
 
 OBJS = line_segment.o blob_cache.o
 
@@ -11,7 +11,10 @@ all: $(OBJS)
 test: $(TEST_TARGETS)
 
 test_line_segment: line_segment.cpp 
-	$(CXX) $(CPPFLAGS) line_segment.cpp -o test_line_segment -DTEST_LINE_SEGMENT
+	$(CXX) $(CPPFLAGS) test_line_segment.cpp line_segment.cpp -o zline_segment
+
+test_blob_cache: blob_cache.cpp 
+	$(CXX) $(CPPFLAGS) test_blob_cache.cpp blob_cache.cpp -o zblob_cache
 
 
 %.o: %.cpp 
@@ -20,6 +23,6 @@ test_line_segment: line_segment.cpp
 refresh: clean all
 
 clean:
-	rm -f *.o *.a $(TEST_TARGETS)
+	rm -f *.o *.a $(TEST_TARGETS) z*
 
 

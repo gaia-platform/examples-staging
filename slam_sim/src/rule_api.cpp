@@ -50,28 +50,29 @@ using gaia::slam::destination_writer;
 //  an optiimzation is required every X vertices.
 bool optimization_required()
 {
-    static int32_t ctr = 0;
-    if (ctr < 4)
-    {
-        return true;
-    }
-    else if (ctr < 8)
-    {
-        return (ctr & 1) == 0;
-    }
-    else if (ctr < 16)
-    {
-        return (ctr & 3) == 0;
-    }
-    else if (ctr < 32)
-    {
-        return (ctr & 7) == 0;
-    }
-    else
-    {
-        return (ctr & 15) == 0;
-    }
-    return false;
+    return true;
+//    static int32_t ctr = 0;
+//    if (ctr < 4)
+//    {
+//        return true;
+//    }
+//    else if (ctr < 8)
+//    {
+//        return (ctr & 1) == 0;
+//    }
+//    else if (ctr < 16)
+//    {
+//        return (ctr & 3) == 0;
+//    }
+//    else if (ctr < 32)
+//    {
+//        return (ctr & 7) == 0;
+//    }
+//    else
+//    {
+//        return (ctr & 15) == 0;
+//    }
+//    return false;
 }
 
 
@@ -153,6 +154,7 @@ static void build_map(const graphs_t& g, const world_coordinate_t& bottom_left,
     static int32_t ctr = 0;
     occupancy_grid_t map(c_standard_map_node_width_meters, bottom_left,
         width_meters, height_meters);
+printf("Building map between %.1f,%.1f and %.1f,%.1f\n", bottom_left.x_meters, bottom_left.y_meters, bottom_left.x_meters + width_meters, bottom_left.y_meters + height_meters);
     // Iterate through observations in this graph and build a map.
     for (const vertices_t& o: g.vertices())
     {
@@ -214,77 +216,14 @@ void build_area_map(destination_t& dest, area_map_t& am,
     export_map_to_file();
 }
 
-
-void build_working_map(occupancy_grid_t& working_map,
-    destination_t& dest, area_map_t& am)
-{
-    // Apply observation data
-    for (vertices_t& v: vertices_t::list())
-    {
-        working_map.apply_sensor_data(v);
-    }
-    // Find paths toward destination.
-    world_coordinate_t dest_coord = {
-        .x_meters = dest.x_meters(),
-        .y_meters = dest.y_meters()
-    };
-    occupancy_grid_t area_grid(am);
-    area_grid.trace_routes(dest_coord, area_grid);
-}
-
 ////////////////////////////////////////////////////////////////////////
-
 
 void full_stop()
 {
-    // TODO Take observation and stop moving.
-    // TODO Need way to decide when to move_toward_destination() again.
-}
-
-
-// Infrastructure has info on latest position so no need to query DB
-//  (infra is what sent that info to the DB).
-
-
-void move_toward_destination(destination_t& dest, area_map_t& am)
-{
-    // Need position, area map, destination
-    // Generate working map.
-    world_coordinate_t bottom_left = {
-        .x_meters = floorf(-c_range_sensor_max_meters),
-        .y_meters = floorf(-c_range_sensor_max_meters)
-    };
-    float right_meters = ceilf(c_range_sensor_max_meters);
-    float top_meters = ceilf(c_range_sensor_max_meters);
-    float width_meters = right_meters - bottom_left.x_meters;
-    float height_meters = top_meters - bottom_left.y_meters;
-    occupancy_grid_t working_map(c_working_map_node_width_meters,
-        bottom_left, width_meters, height_meters);
-    build_working_map(working_map, dest, am);
-    // Make several small steps.
-    for (uint32_t i=0; i<c_num_steps_between_keyframes; i++)
-    {
-        // Get direction to head from map.
-        map_node_t& node = working_map.get_node(g_position.x_meters, 
-            g_position.y_meters);
-        float heading_degs = node.direction_degs;
-        // Move in that direction.
-        float dist_meters = c_step_meters;
-        float s, c;
-        sincosf(c_deg_to_rad * heading_degs, &s, &c);
-        float dx_meters = s * dist_meters;
-        float dy_meters = c * dist_meters;
-        g_position.x_meters += dx_meters;
-        g_position.y_meters += dy_meters;
-        gaia_log::app().info("Moving {},{} meters to {},{}", dx_meters,
-            dy_meters, g_position.x_meters, g_position.y_meters);
-    }
-    // TODO Add logic to determine when keyframes should be created and
-    //  when to convert those to a vertex. E.g., does this location have
-    //  salient features? does it provide sensor data that's new?
-    // For now, create a vertex every time we've moved forward a small
-    //  amount.
-    create_vertex(g_position, g_heading_degs);
+    // TODO Take observation.
+    // Stop moving.
+    g_running = false;
+    // TODO Need way to decide when to start running again.
 }
 
 
@@ -303,6 +242,7 @@ bool reassess_destination()
     {
         // Select next destination.
         world_coordinate_t new_dest = g_destinations[g_next_destination++];
+printf("Next destination: %.1f,%.1f\n", new_dest.x_meters, new_dest.y_meters);
         if (g_next_destination >= g_destinations.size())
         {
             g_next_destination = 0;

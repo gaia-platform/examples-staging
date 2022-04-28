@@ -31,64 +31,11 @@ The code has to manage the switch between the two.
 
 #include "gaia_slam.h"
 
+#include "map_types.hpp"
 #include "sensor_data.hpp"
 
 namespace slam_sim
 {
-
-////////////////////////////////////////////////////////////////////////
-// Supporting types. X,Y values are used in many different contexts. To
-//  help avoid mixing paradigms, different types are defined for the
-//  different contexts.
-
-// Physical location in world space.
-// NOTE: this is in world coordinates (i.e., increasing x,y is up/right).
-struct world_coordinate_t
-{
-    float x_meters;
-    float y_meters;
-};
-
-// Bounding area of map in world space.
-// NOTE: this is in world coordinates (i.e., increasing x,y is up/right).
-struct map_size_t
-{
-    float x_meters;
-    float y_meters;
-};
-
-// Dimensions of map (occupancy grid).
-struct grid_size_t
-{
-    uint32_t rows;
-    uint32_t cols;
-};
-
-// Node location in grid.
-// NOTE: this is in image coordinates (i.e., 0,0 is top left).
-struct grid_coordinate_t
-{
-    uint32_t x;
-    uint32_t y;
-};
-
-// Distance from one grid node to another, in units of grid coordinates.
-// NOTE: this is in image coordiantes (i.e., increasing x,y is down/right).
-struct node_offset_t
-{
-    int32_t dx;
-    int32_t dy;
-};
-
-// Storage index of a node w/in the 2D grid.
-struct grid_index_t
-{
-    // The index here is unsigned in order to help detect improper usage 
-    //  (e.g., index of -1). 
-    uint32_t idx;
-};
-constexpr uint32_t c_invalid_grid_idx = 0xffffffff;
-
 
 ////////////////////////////////////////////////////////////////////////
 // The map is composed of several nodes arranged on a grid. 
@@ -269,32 +216,6 @@ protected:
     void add_anchor_to_path_stack(const grid_index_t idx, 
         const float path_weight);
 };
-
-
-//class area_grid_t : public occupancy_grid_t
-//{
-//public:
-//    // Constructors to be called by rules.
-//    // Loads existing map, if present (map will be blank if it's doesn't
-//    //  exist yet).
-//    area_grid_t(gaia::slam::area_map_t&);
-//    // Purges existing map and rebuilds a new one, using observed area as
-//    //  bounds.
-//    area_grid_t(gaia::slam::area_map_t&, gaia::slam::observed_area_t&);
-//};
-//
-//
-//class working_grid_t : public occupancy_grid_t
-//{
-//public:
-//    // Creates a grid that's not associated w/ database record.
-//    working_grid_t();
-//
-//    // Constructor to be called by rules.
-//    // Loads existinig working map. If this is to be embedded in larger
-//    //  map, that must be done separately.
-//    working_grid_t(gaia::slam::working_map_t&);
-//};
 
 } // namespace slam_sim
 

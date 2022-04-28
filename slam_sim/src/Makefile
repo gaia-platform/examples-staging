@@ -9,8 +9,10 @@ endif
 
 
 TARGET = slam_sim
+TEST_TARGETS = test_analyze
 
-OBJS = main.o analyze.o occupancy.o rule_api.o  path_map.o support.o
+CORE_OBJS = analyze.o occupancy.o rule_api.o  path_map.o support.o globals.o
+OBJS = main.o $(CORE_OBJS)
 EXT_OBJS = ../gaia/slam_rules.o ../gaia/gaia_slam.o
 LIBS = $(LIB_SLAM_UTILS) /usr/local/lib/libgaia.so -pthread -lcurl
 
@@ -18,11 +20,18 @@ all: $(OBJS)
 	cd utils && make
 	$(CXX) $(OBJS) $(EXT_OBJS) -o $(TARGET) $(LIBS)
 
+test: $(TEST_TARGETS)
+
+test_analyze: test_analyze.cpp analyze.cpp $(CORE_OBJS)
+	$(CXX) $(CPPFLAGS) test_analyze.cpp -o test_analyze \
+        $(CORE_OBJS) $(EXT_OBJS) $(LIBS)
+
+
 run:
-	./$(TARGET) -m ../data/map.json -x -3.0 -y -3.0
+	./$(TARGET) -m ../data/map.json -x -3.0 -y 3.0
 
 drun:
-	gdb --args ./slam_sim -m ../data/map.json -x -3.0 -y -3.0
+	gdb --args ./slam_sim -m ../data/map.json -x -3.0 -y 3.0
 
 
 %.o: %.cpp 
@@ -32,7 +41,7 @@ refresh: clean all
 
 clean:
 	cd utils && make clean
-	rm -f *.o $(TARGET)
+	rm -f *.o $(TARGET) *.pgm
 	rm -rf logs
 
 

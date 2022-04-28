@@ -31,9 +31,11 @@ namespace slam_sim
 
 static int32_t s_next_vertex_id = 1;
 
-//
+using std::min;
+using std::max;
+
 using gaia::common::gaia_id_t;
-//
+
 using gaia::slam::area_map_t;
 using gaia::slam::edges_t;
 using gaia::slam::destination_t;
@@ -55,13 +57,17 @@ using gaia::slam::observed_area_writer;
 //  importantly, this means that the functions here are expected to 
 //  be called from within an active transaction
 
-static void update_observed_area(ego_t& ego)
+// Updates the observed_area record to make sure it includes all observed
+//  areas plus the destination.
+void update_world_area(ego_t& ego)
 {
     observed_area_t area = ego.world();
+    destination_t dest = ego.destination();
+
     bool change = false;
     // Left and right bounds.
-    float left_edge   = area.left_meters();
-    float right_edge  = area.right_meters();
+    float left_edge   = min(area.left_meters(), dest.x_meters());
+    float right_edge  = max(area.right_meters(), dest.x_meters());
     float max_range = c_range_sensor_max_meters;
     if (floor(g_position.x_meters - max_range) < left_edge)
     {
@@ -74,8 +80,8 @@ static void update_observed_area(ego_t& ego)
         change = true;
     }
     // Top and bottom bounds.
-    float bottom_edge = area.bottom_meters();
-    float top_edge    = area.top_meters();
+    float bottom_edge = min(area.bottom_meters(), dest.y_meters());
+    float top_edge    = max(area.top_meters(), dest.y_meters());
     if (floor(g_position.y_meters - max_range) < bottom_edge)
     {
         bottom_edge = floor(g_position.y_meters - max_range);
@@ -96,6 +102,7 @@ static void update_observed_area(ego_t& ego)
         oa_writer.top_meters    = top_edge;
         oa_writer.update_row();
     }
+printf("World area: %.1f,%.1f to %.1f,%.1f\n", left_edge, bottom_edge, right_edge, top_edge);
 }    
 
 
@@ -174,7 +181,7 @@ printf("Creating vertex\n");
     v.range_data().connect(range_id);
     v.motion().connect(movement_id);
 
-    update_observed_area(ego);
+    update_world_area(ego);
 
     // create edge
     if (prev_vert)
@@ -197,6 +204,76 @@ printf("Creating vertex\n");
 // Non-rule API
 // The functions here must manage their own transactions.
 
+static void build_working_map(occupancy_grid_t& working_map,
+    destination_t& dest, area_map_t& am)
+{
+    // Apply observation data
+    for (vertices_t& v: vertices_t::list())
+    {
+        working_map.apply_sensor_data(v);
+    }
+    // Find paths toward destination.
+    world_coordinate_t dest_coord = {
+        .x_meters = dest.x_meters(),
+        .y_meters = dest.y_meters()
+    };
+    occupancy_grid_t area_grid(am);
+    area_grid.trace_routes(dest_coord, area_grid);
+}
+
+
+// Infrastructure has info on latest position so no need to query DB
+//  (infra is what sent that info to the DB).
+void move_toward_destination()
+{
+    gaia::db::begin_transaction();
+    destination_t& dest = *(destination_t::list().begin());
+    area_map_t& am = *(area_map_t::list().begin());
+    //
+    // Need position, area map, destination
+    // Generate working map.
+    world_coordinate_t bottom_left = {
+        .x_meters = floorf(-c_range_sensor_max_meters),
+        .y_meters = floorf(-c_range_sensor_max_meters)
+    };
+    float right_meters = ceilf(c_range_sensor_max_meters);
+    float top_meters = ceilf(c_range_sensor_max_meters);
+    float width_meters = right_meters - bottom_left.x_meters;
+    float height_meters = top_meters - bottom_left.y_meters;
+    occupancy_grid_t working_map(c_working_map_node_width_meters,
+        bottom_left, width_meters, height_meters);
+    build_working_map(working_map, dest, am);
+    // Make several small steps.
+    for (uint32_t i=0; i<c_num_steps_between_keyframes; i++)
+    {
+        // Get direction to head from map.
+        map_node_t& node = working_map.get_node(g_position.x_meters, 
+            g_position.y_meters);
+        float heading_degs = node.direction_degs;
+        // Move in that direction.
+        float dist_meters = c_step_meters;
+        float s, c;
+        sincosf(c_deg_to_rad * heading_degs, &s, &c);
+        float dx_meters = s * dist_meters;
+        float dy_meters = c * dist_meters;
+        g_position.x_meters += dx_meters;
+        g_position.y_meters += dy_meters;
+        gaia_log::app().info("Moving {},{} meters to {},{}", dx_meters,
+            dy_meters, g_position.x_meters, g_position.y_meters);
+    }
+    // Position moved. Wait a bit before proceeding, to account for
+    //  at least a little bit of travel time.
+    usleep(50000);
+    // TODO Add logic to determine when keyframes should be created and
+    //  when to convert those to a vertex. E.g., does this location have
+    //  salient features? does it provide sensor data that's new?
+    // For now, create a vertex every time we've moved forward a small
+    //  amount.
+    create_vertex(g_position, g_heading_degs);
+    //
+    gaia::db::commit_transaction();
+}
+
 void seed_database(float x_meters, float y_meters)
 {
     // There shouldn't be any transaction conflicts as this is the first
@@ -213,11 +290,18 @@ void seed_database(float x_meters, float y_meters)
         0             // observation_id
     );
 
+    world_coordinate_t new_dest = g_destinations[g_next_destination++];
+    assert(g_destinations.size() > 1);
+
     // Area map and observed area start out with same dimensions. 
-    float left = floorf(x_meters - (c_range_sensor_max_meters+1));
-    float bottom = floorf(y_meters - (c_range_sensor_max_meters+1));
-    float right = ceilf(x_meters + (c_range_sensor_max_meters+1));
-    float top = ceilf(y_meters + (c_range_sensor_max_meters+1));
+    // Shorthand.
+    float max_range = c_range_sensor_max_meters;
+    // Align calls laterally for visual inspection to help make sure variables
+    //  are correct.
+    float left =    floorf(min(x_meters, new_dest.x_meters) - (max_range+1));
+    float bottom =  floorf(min(y_meters, new_dest.y_meters) - (max_range+1));
+    float right =   ceilf(max(x_meters, new_dest.x_meters) + (max_range+1));
+    float top =     ceilf(max(y_meters, new_dest.y_meters) + (max_range+1));
 
     gaia_id_t world_id = observed_area_t::insert_row(
         left,     // left_meters
@@ -239,11 +323,11 @@ void seed_database(float x_meters, float y_meters)
     );
 
     gaia_id_t destination_id = destination_t::insert_row(
-        x_meters,     // x_meters
-        y_meters,     // y_meters
-        0.0           // departure_time_sec
+        new_dest.x_meters,    // x_meters
+        new_dest.y_meters,    // y_meters
+        0.0                   // departure_time_sec
     );
-printf("initial destination %f,%f\n", x_meters, y_meters);
+printf("initial destination %f,%f\n", new_dest.x_meters, new_dest.y_meters);
 
     ////////////////////////////////////////////
     // Relationships

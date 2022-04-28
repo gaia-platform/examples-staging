@@ -25,8 +25,8 @@
 #include "json.hpp"
 #include "globals.hpp"
 #include "line_segment.hpp"
+#include "map_types.hpp"
 #include "sensor_data.hpp"
-#include "slam_sim.hpp"
 
 namespace slam_sim
 {
@@ -69,11 +69,6 @@ static void set_map(const char* map)
         dest.y_meters = point["y"];
         g_destinations.push_back(dest);
     }
-
-for (world_coordinate_t w: g_destinations)
-{
-    printf("DESTINATION: %f,%f\n", w.x_meters, w.y_meters);
-}
 }
 
 
@@ -107,19 +102,19 @@ void load_world_map(const char* world_map)
 //  making up the 2D world map.
 void calculate_range_data(map_coord_t& coord, sensor_data_t& data)
 {
-printf("Calculating range data\n");
+printf("Calculating range data from %f,%f\n", coord.x_meters, coord.y_meters);
     data.range_meters.clear();
     data.bearing_degs.clear();
     float step_degs = c_range_sensor_sweep_degs / (c_num_range_radials - 1);
     // Get range on each radial, and store both distance and radial degs.
     for (uint32_t n=0; n<c_num_range_radials; n++)
     {
-//printf("  %d (of %d)\n", n, c_num_range_radials);
         // Get this radial and constrain to [0,360)
         float theta_degs = coord.heading_degs - c_range_sensor_sweep_degs/2.0
             + (float) n * step_degs;
         theta_degs = theta_degs >= 360.0 ? theta_degs - 360.0 : theta_degs;
         theta_degs = theta_degs < 0.0    ? theta_degs + 360.0 : theta_degs;
+printf("  %d: %.1f\n", n, theta_degs);
         // Measure distance on this radial
         float min_meters = -1.0;
         int32_t line_num = -1;
@@ -128,6 +123,7 @@ printf("Calculating range data\n");
             line_segment_t& seg = g_world_lines[i];
             float dist_meters =
                 seg.intersect_range(coord.x_meters, coord.y_meters, theta_degs);
+printf("    %.1f,%.1f -> %.1f,%.1f   range %.2f\n", seg.m_x0, seg.m_y0, seg.m_x1, seg.m_y1, dist_meters);
             if (dist_meters > 0.0)
             {
                 if ((min_meters < 0.0) || (dist_meters < min_meters))
@@ -141,7 +137,7 @@ printf("Calculating range data\n");
         {
             min_meters = -1.0;
         }
-//printf("    range %.1f at %.1f\n", min_meters, theta_degs);
+printf("    range %.1f at %.1f\n", min_meters, theta_degs);
         data.range_meters.push_back(min_meters);
         data.bearing_degs.push_back(theta_degs);
     }

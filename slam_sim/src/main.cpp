@@ -32,26 +32,28 @@ using std::this_thread::sleep_for;
 static constexpr uint32_t c_rule_wait_millis = 100;
 
 
-// Globals for this namespace
-int32_t g_quit = 0;
-world_coordinate_t g_position = { .x_meters = 0.0, .y_meters = 0.0 };
-float g_heading_degs = 0.0f;
-
-std::vector<world_coordinate_t> g_destinations;
-uint32_t g_next_destination = 0;
-
-double g_now = 0.0;
-
 /**
  * Wait for simulation to complete.
  */
 void main_loop()
 {
+int32_t ctr = 0;
     // When the simulation completes it will set g_quit to 1. Then we can
     //  exit. In the meantime, the simulation is being handled by rules.
     while (g_quit == 0)
     {
-        sleep_for(std::chrono::milliseconds(c_rule_wait_millis));
+        if (g_running)
+        {
+            move_toward_destination();
+            if (ctr++ > 3)
+            {
+                g_quit = 1;
+            }
+        }
+        else
+        {
+            sleep_for(std::chrono::milliseconds(c_rule_wait_millis));
+        }
     }
 }
 

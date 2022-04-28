@@ -6,3 +6,5 @@ slam_sim
 *.o
 logs
 *.pgm
+test_analyze
+z*

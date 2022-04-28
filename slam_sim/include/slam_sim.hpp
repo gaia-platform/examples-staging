@@ -60,9 +60,12 @@ void build_area_map(gaia::slam::destination_t&, gaia::slam::area_map_t&,
 //  returns 'false'.
 bool reassess_destination();
 
+// Updates the observed_area record to make sure it includes all observed
+//  areas plus the destination.
+void update_world_area(gaia::slam::ego_t& ego);
+
 // Instructs hardware layer to move toward destination.
-void move_toward_destination(gaia::slam::destination_t&, 
-    gaia::slam::area_map_t&);
+void move_toward_destination();
 
 // Instructs bot to stop. An observation will be taken here.
 void full_stop();
