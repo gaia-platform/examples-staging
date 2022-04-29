@@ -11,10 +11,10 @@ all: $(OBJS)
 test: $(TEST_TARGETS)
 
 test_line_segment: line_segment.cpp 
-	$(CXX) $(CPPFLAGS) test_line_segment.cpp line_segment.cpp -o zline_segment
+	$(CXX) $(CPPFLAGS) test_line_segment.cpp line_segment.cpp -o test_line_segment
 
 test_blob_cache: blob_cache.cpp 
-	$(CXX) $(CPPFLAGS) test_blob_cache.cpp blob_cache.cpp -o zblob_cache
+	$(CXX) $(CPPFLAGS) test_blob_cache.cpp blob_cache.cpp -o test_blob_cache
 
 
 %.o: %.cpp 
@@ -23,6 +23,6 @@ test_blob_cache: blob_cache.cpp
 refresh: clean all
 
 clean:
-	rm -f *.o *.a $(TEST_TARGETS) z*
+	rm -f *.o *.a $(TEST_TARGETS)
 
 

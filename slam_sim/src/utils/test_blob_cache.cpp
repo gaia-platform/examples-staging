@@ -18,53 +18,97 @@ using namespace std;
 namespace slam_sim
 {
 
-void test_blob_cache();
-
-void test_blob_cache()
+static int32_t test_blob_cache()
 {
+    uint32_t errs = 0;
     blob_cache_t cache;
-    // Create two blobs.
-    cache.create_or_reset_blob(1, 1, 0);
-    cache.create_or_reset_blob(2, 1, 1);
+    // Create blob.
+    blob_t* blob1 = cache.create_blob(1, 16, 0);
+    if (blob1 == nullptr)
+    {
+        fprintf(stderr, "Failed to create blob 1\n");
+        errs++;
+    }
+    if (cache.get_blob(1) == nullptr)
+    {
+        fprintf(stderr, "Failed to fetch blob 1\n");
+        errs++;
+    }
 
-    // Read back the information of the blobs that we created.
-    blob_t* blob_ptr = cache.get_blob(1);
-    cout << "Blob 1 has superseded blob with id '" << blob_ptr->id_superseded_blob << "'" << endl;
+    // Create blob 2, superseding 1.
+    blob_t* blob2 = cache.create_blob(2, 16, 1);
+    if (blob2 == nullptr)
+    {
+        fprintf(stderr, "Failed to create blob 2\n");
+        errs++;
+    }
+    if (cache.get_blob(2) == nullptr)
+    {
+        fprintf(stderr, "Failed to fetch blob 2\n");
+        errs++;
+    }
 
-    blob_ptr = cache.get_blob(2);
-    cout << "Blob 2 has superseded blob with id '" << blob_ptr->id_superseded_blob << "'" << endl;
+    // Make sure 1's still around
+    if (cache.get_blob(1) == nullptr)
+    {
+        fprintf(stderr, "Blob 1 delete prematurely\n");
+        errs++;
+    }
 
-    // Create a third blob. It should lead to the deletion of the first blob.
-    cache.create_or_reset_blob(3, 1, 2);
+    // Create blob 3, superseding 2, which should eliminate 1
+    blob_t* blob3 = cache.create_blob(3, 16, 2);
+    if (blob3 == nullptr)
+    {
+        fprintf(stderr, "Failed to create blob 3\n");
+        errs++;
+    }
+    if (cache.get_blob(3) == nullptr)
+    {
+        fprintf(stderr, "Failed to fetch blob 3\n");
+        errs++;
+    }
+    // Make sure 2's still around
+    if (cache.get_blob(2) == nullptr)
+    {
+        fprintf(stderr, "Blob 2 delete prematurely\n");
+        errs++;
+    }
+    // Make sure 1 is gone
+    if (cache.get_blob(1) != nullptr)
+    {
+        fprintf(stderr, "Blob 1 was not deleted\n");
+        errs++;
+    }
 
-    blob_ptr = cache.get_blob(3);
-    cout << "Blob 3 has superseded blob with id '" << blob_ptr->id_superseded_blob << "'" << endl;
+    // Try to create invalid blob.
+    blob_t* blob0 = cache.create_blob(0, 16, 0);
+    if (blob0 != nullptr)
+    {
+        fprintf(stderr, "Succeeded in creating invalid blob\n");
+        errs++;
+    }
 
-    // Also update this blob's state.
-    blob_ptr->state = blob_state_t::used;
-    cout << "Blob 3 state is now '" << (size_t)blob_ptr->state << "'" << endl;
-
-    // Verify that the first blob has been deleted.
-    blob_ptr = cache.get_blob(1);
-    RETAIL_ASSERT(
-        !blob_ptr, "FAILED: Blob 1 still exists!");
-    cout << "Blob 1 has been removed, as expected!" << endl;
-
-    // Reset the third blob state.
-    cache.create_or_reset_blob(3, 1, 2);
-
-    // Read the third blob and verify that its state has been reset.
-    blob_ptr = cache.get_blob(3);
-    RETAIL_ASSERT(
-        blob_ptr->state == blob_state_t::initialized,
-        "FAILED: Blob 3 state has not been reset!");
-    cout << "Blob 3 has been reset, as expected!" << endl;
+    ////////////////////////////////////////////////////////////////////
+    return errs;
 }
 
 } // namespace slam_sim
 
+
 int main(void)
 {
-    slam_sim::test_blob_cache();
+    uint32_t errs = 0;
+    errs += slam_sim::test_blob_cache();
+    ////////////////////////////////////////////////////////////////////
+    if (errs > 0)
+    {
+        fprintf(stderr, "********************************\n");
+        fprintf(stderr, "Encountered %d errors\n", errs);
+    }
+    else
+    {
+        fprintf(stderr, "All tests pass\n");
+    }
+    return static_cast<int>(errs);
 }
 

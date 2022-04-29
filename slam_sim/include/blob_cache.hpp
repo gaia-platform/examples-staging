@@ -33,40 +33,33 @@ namespace slam_sim
 
 constexpr uint32_t c_invalid_blob_id = 0;
 
-enum class blob_state_t : uint8_t
-{
-    not_set = 0,
 
-    initialized = 1,
-    used = 2,
-};
-
-struct blob_t
+class blob_t
 {
 public:
     blob_t(uint32_t id, size_t size, uint32_t id_superseded_blob);
     ~blob_t();
 
-    // Deallocate blob memory.
-    void clear();
+    uint32_t id()   { return m_id;    }
+    size_t size()   { return m_size;  }
+    uint8_t* data() { return m_data;  }
 
-    // Reset blob content.
-    void reset(uint32_t id, size_t size, uint32_t id_superseded_blob);
+    uint32_t supersedes() { return m_id_superseded_blob;    }
 
-public:
-    uint32_t id;
+protected:
+    friend class blob_cache_t;
+
+    uint32_t m_id;
 
     // Blob data information.
-    size_t size;
-    uint8_t* data;
-
-    // Blob state.
-    blob_state_t state;
+    size_t m_size;
+    uint8_t* m_data;
 
     // Blob that this blob supersedes.
     // It will be deleted when this blob itself is superseded.
-    uint32_t id_superseded_blob;
+    uint32_t m_id_superseded_blob;
 };
+
 
 class blob_cache_t
 {
@@ -76,7 +69,7 @@ public:
     blob_cache_t& operator=(const blob_cache_t&) = delete;
 
     // Creates a blob with the specified ID and characteristics
-    blob_t* create_or_reset_blob(uint32_t id, size_t size, 
+    blob_t* create_blob(uint32_t id, size_t size, 
         uint32_t id_superseded_blob = c_invalid_blob_id);
 
     // Retrieves a blob given an id.
@@ -89,8 +82,8 @@ protected:
     std::shared_mutex m_lock;
 
     // Nested get_blob() call from w/in create_or_reset_blob(), where a
-    //  lock has already been established.
-    blob_t* get_blob_locked(uint32_t id);
+    //  mutex lock has already been established.
+    blob_t* get_blob_(uint32_t id);
 };
 
 } // namespace slam_sim

@@ -7,4 +7,6 @@ slam_sim
 logs
 *.pgm
 test_analyze
+test_blob_cache
+test_line_segment
 z*
