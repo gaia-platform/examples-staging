@@ -56,8 +56,13 @@ struct map_node_flags_t
     void clear();
 };
 
-#define PATH_NODE_FLAG_PROCESSED    0x01
-#define PATH_NODE_FLAG_IMPASSABLE   0x02
+// Indicates whether or not a node has been processed, if it's impassable
+//  (i.e., a boundary was observed there) or if it's adjacent an 
+//  impassable square)
+#define PATH_NODE_FLAG_PROCESSED          0x01
+#define PATH_NODE_FLAG_IMPASSABLE         0x02
+#define PATH_NODE_FLAG_ADJ_IMPASSABLE     0x04
+#define PATH_NODE_FLAG_CLOSE_IMPASSABLE   0x08
 
 // Characteristics of a node in the map, including distance from this node
 //  to a/the destination.
@@ -97,6 +102,9 @@ struct map_node_t
 // The grid (map) itself.
 class occupancy_grid_t
 {
+public:
+  void count_bounds();
+
 public:
     // Creates new uncached map.
     occupancy_grid_t(float node_width_meters, world_coordinate_t bottom_left,

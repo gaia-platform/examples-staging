@@ -17,8 +17,8 @@ constexpr float c_range_sensor_max_meters = 4.0f;
 constexpr float c_range_sensor_sweep_degs = 90.0f;
 constexpr int32_t c_num_range_radials = 45;
 
-constexpr float c_area_map_node_width_meters = 0.25f;
-constexpr float c_working_map_node_width_meters = 0.05f;
+constexpr float c_area_map_node_width_meters = 0.1f;
+//constexpr float c_working_map_node_width_meters = 0.05f;
 constexpr float c_standard_map_node_width_meters = 0.05f;
 
 // Path finding.
@@ -34,9 +34,9 @@ constexpr float c_path_penalty_per_observation = 0.05f;
 constexpr uint32_t c_num_ancestors_for_direction = 5;
 
 // Distance between each step. Keyframes are taken after several steps.
-constexpr float c_step_meters = 2.0f * c_working_map_node_width_meters;
+constexpr float c_step_meters = c_area_map_node_width_meters;
 
-constexpr uint32_t c_num_steps_between_keyframes = 5;
+constexpr uint32_t c_num_steps_between_keyframes = 4;
 
 // How close to destination bot has to declare it's reached it.
 constexpr float c_destination_radius_meters = 0.5f;

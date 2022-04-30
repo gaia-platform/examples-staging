@@ -148,26 +148,23 @@ bool need_to_extend_map(positions_t& pos, observed_area_t& bounds)
 }
 
 
-static void build_map(const graphs_t& g, const world_coordinate_t& bottom_left,
-    float width_meters, float height_meters)
+static void build_map(area_map_t& am)
 {
     static int32_t ctr = 0;
-    occupancy_grid_t map(c_standard_map_node_width_meters, bottom_left,
-        width_meters, height_meters);
-printf("Building map between %.1f,%.1f and %.1f,%.1f\n", bottom_left.x_meters, bottom_left.y_meters, bottom_left.x_meters + width_meters, bottom_left.y_meters + height_meters);
-    // Iterate through observations in this graph and build a map.
-    for (const vertices_t& o: g.vertices())
-    {
-        gaia_log::app().info("Applying sensor data from vertex {}", 
-            o.id());
-        map.apply_sensor_data(o);
-    }
+    occupancy_grid_t map(am);
+//    // Iterate through observations in this graph and build a map.
+//    for (const vertices_t& o: g.vertices())
+//    {
+//        gaia_log::app().info("Applying sensor data from vertex {}", 
+//            o.id());
+//        map.apply_sensor_data(o);
+//    }
     // There are C++ ways to format a number to a string (e.g.,
     //  fmt::format or std::stringstream, but the C approach is
     //  nice in its simplicity.
 // TODO get timestamp to use for name
     char fname[256];
-    sprintf(fname, "map_%03d.pgm", ctr++);
+    sprintf(fname, "map_%03d.pnm", ctr++);
     gaia_log::app().info("Building map {}", fname);
     map.export_as_pnm(fname);
 }
@@ -175,34 +172,43 @@ printf("Building map between %.1f,%.1f and %.1f,%.1f\n", bottom_left.x_meters, b
 
 void export_map_to_file()
 {
-    //gaia::db::begin_transaction();
+    bool existing_transaction = false;
+    if (gaia::db::is_transaction_open()) 
+    {
+        existing_transaction = true;
+    }
+    if (!existing_transaction)
+    {
+        gaia::db::begin_transaction();
+    }
     ego_t ego = *(ego_t::list().begin());
     area_map_t& am = *(area_map_t::list().begin());
-    world_coordinate_t bottom_left = {
-        .x_meters = am.left_meters(),
-        .y_meters = am.bottom_meters()
-    };
-    float width_meters = am.right_meters() - am.left_meters();
-    float height_meters = am.top_meters() - am.bottom_meters();
-    build_map(ego.current_graph(), bottom_left, width_meters, height_meters);
-    //gaia::db::commit_transaction();
+    build_map(am);
+    if (!existing_transaction)
+    {
+        gaia::db::commit_transaction();
+    }
 }
 
 
 void build_area_map(destination_t& dest, area_map_t& am, 
     observed_area_t& bounds)
 {
+printf("Build area map\n");
     // Each time we build an area map 
     occupancy_grid_t area_map(am, bounds);
     for (graphs_t& g: graphs_t::list())
     {
+//printf("Applying sensor data from graph %d\n", g.id());
         for (vertices_t& v: g.vertices())
         {
             gaia_log::app().info("Pulling sensor data from {}:{}", 
                 g.id(), v.id());
+//printf("    Sensor data from %d::%d\n", g.id(), v.id());
             area_map.apply_sensor_data(v);
         }
     }
+//area_map.count_bounds();
     // Build paths to destination
     world_coordinate_t pos = {
         .x_meters = dest.x_meters(),
@@ -213,7 +219,7 @@ void build_area_map(destination_t& dest, area_map_t& am,
     area_map_writer writer = am.writer();
     writer.blob_id = area_map.get_blob_id();
     writer.update_row();
-    export_map_to_file();
+area_map.count_bounds();
 }
 
 ////////////////////////////////////////////////////////////////////////

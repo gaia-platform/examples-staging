@@ -31,7 +31,6 @@ database slam;
 -- Single record tables:
 --    ego                   Stores state of the bot.
 --    area_map              Map of the known world.
-----    working_map           Version of world map with recent sensor overlay.
 --    destination           Location that bot is moving to.
 --    observed_area         Bounds of observed world.
 --
@@ -84,7 +83,6 @@ table ego
 
   -- Map oriented.
   map references area_map
---  working_map references working_map
 )
 
 
@@ -110,7 +108,6 @@ table area_map
 (
   -- Reference to in-memory blob that stores 2D map.
   -- Blob ID changes on each map update.
-  -- Area map must be seeded with a different blob_id than working map.
   blob_id uint32,
 
   -- Bounding polygon
@@ -124,7 +121,6 @@ table area_map
   num_cols uint32,
 
   ego references ego
---  working_map references working_map
 )
 
 

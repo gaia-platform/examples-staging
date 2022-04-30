@@ -85,6 +85,76 @@ occupancy_grid_t::occupancy_grid_t(float node_width_meters,
 }
 
 
+// Loads existing map.
+occupancy_grid_t::occupancy_grid_t(area_map_t& am)
+{
+    world_coordinate_t bottom_left = {
+        .x_meters = am.left_meters(),
+        .y_meters = am.bottom_meters()
+    };
+    init(c_area_map_node_width_meters, bottom_left,
+        am.right_meters() - am.left_meters(),
+        am.top_meters() - am.bottom_meters());
+    // Recover memory from blob cache.
+    uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
+    m_blob_id = am.blob_id();;
+    // Fetch existing blob.
+    blob_t* blob = g_area_blobs.get_blob(m_blob_id);
+    if (blob == NULL)
+    {
+        // Blob doesn't exist yet. This means that the process was
+        //  started up against an existing database. This shouldn't
+        //  happen, but allow it. Create it.
+        gaia_log::app().warn("Area map with ID {} did not have cached "
+            "blob. Recreating one.", m_blob_id);
+        size_t sz = num_nodes * sizeof *m_grid;
+        blob = g_area_blobs.create_blob(m_blob_id, sz);
+        m_grid = (map_node_t*) blob->data();
+        // New grid. Nodes need initialization.
+        clear();
+    } else {
+        assert(m_grid_size.rows == am.num_rows());
+        assert(m_grid_size.cols == am.num_cols());
+        m_grid = (map_node_t*) blob->data();
+        // Existing grid. Should be initialized already.
+    }
+printf("PULLING EXISTING MAP %d   0x%08lx\n", m_blob_id, (uint64_t) m_grid);
+count_bounds();
+}
+
+
+// Overwrites existing cached area map.
+occupancy_grid_t::occupancy_grid_t(area_map_t& am, observed_area_t& area)
+{
+    world_coordinate_t bottom_left = {
+        .x_meters = am.left_meters(),
+        .y_meters = am.bottom_meters()
+    };
+    init(c_area_map_node_width_meters, bottom_left,
+        area.right_meters() - area.left_meters(),
+        area.top_meters() - area.bottom_meters());
+    // Get rid of old content and create a new empty blob.
+    uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
+    uint32_t old_blob_id = am.blob_id();
+    size_t sz = num_nodes * sizeof *m_grid;
+    m_blob_id = old_blob_id + 1;
+    blob_t* blob = g_area_blobs.create_blob(m_blob_id, sz, old_blob_id);
+    m_grid = (map_node_t*) blob->data();
+    clear();
+    // Store changes in DB.
+    area_map_writer writer = am.writer();
+    writer.blob_id = m_blob_id;
+    writer.left_meters = area.left_meters();
+    writer.right_meters = area.right_meters();
+    writer.top_meters = area.top_meters();
+    writer.bottom_meters = area.bottom_meters();
+    writer.num_rows = m_grid_size.rows;
+    writer.num_cols = m_grid_size.cols;
+    writer.update_row();
+printf("BUILDING NEW MAP %d   0x%08lx\n", m_blob_id, (uint64_t) m_grid);
+}
+
+
 occupancy_grid_t::~occupancy_grid_t()
 {
     if (m_blob_id < 0)
@@ -125,6 +195,7 @@ void map_node_flags_t::clear()
 
 void occupancy_grid_t::clear()
 {
+printf("OCCUPANCY GRID CLEAR\n");
     for (uint32_t y=0; y<m_grid_size.rows; y++)
     {
         for (uint32_t x=0; x<m_grid_size.cols; x++)
@@ -275,6 +346,44 @@ void occupancy_grid_t::apply_flags()
                 node.flags.state |= PATH_NODE_FLAG_IMPASSABLE;
             }
         }
+        // Mark impassable's neighbors as near impassable or close to
+        //  impassable.
+        if (node.flags.state & PATH_NODE_FLAG_IMPASSABLE)
+        {
+            // First 8 deltas are in first ring around node. Those
+            //  are ADJ_IMPASSABLE. Remainder are CLOSE_IMPASSABLE.
+            const int32_t x_delta[24] = { 
+                -1,  0,  1, -1,  1, -1,  0,  1,
+                -2, -1,  0,  1,  2, -2,  2, -2, 
+                 2, -2,  2, -2, -1,  0,  1,  2
+            };
+            const int32_t y_delta[24] = {
+                -1, -1, -1,  0,  0,  1,  1,  1,
+                -2, -2, -2, -2, -2, -1, -1,  0, 
+                 0,  1,  1,  2,  2,  2,  2,  2
+            };
+            for (uint32_t i=0; i<24; i++)
+            {
+                uint32_t nbr_x = (uint32_t) 
+                    ((int32_t) node.pos.x + x_delta[i]);
+                uint32_t nbr_y = (uint32_t) 
+                    ((int32_t) node.pos.y + y_delta[i]);
+                if ((nbr_x < m_grid_size.cols) && (nbr_y < m_grid_size.rows))
+                {
+                    uint32_t nbr_idx = nbr_x + nbr_y * m_grid_size.cols;
+                    if (i < 8)
+                    {
+                        m_grid[nbr_idx].flags.state |= 
+                            PATH_NODE_FLAG_ADJ_IMPASSABLE;
+                    }
+                    else
+                    {
+                        m_grid[nbr_idx].flags.state |= 
+                            PATH_NODE_FLAG_CLOSE_IMPASSABLE;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -307,7 +416,9 @@ void occupancy_grid_t::export_as_pnm(string file_name)
 {
     uint32_t n_pix = m_grid_size.cols * m_grid_size.rows;
     std::vector<uint8_t> r(n_pix, 0), g(n_pix, 0), b(n_pix, 0);
+printf("Exporting 0x%08lx  %d\n", (uint64_t) m_grid, m_blob_id);
 
+//printf("-----------------------------------------\n");
     // Create image.
     for (uint32_t y=0; y<m_grid_size.rows; y++)
     {
@@ -315,6 +426,7 @@ void occupancy_grid_t::export_as_pnm(string file_name)
         {
             uint32_t idx = x + y * m_grid_size.cols;
             map_node_t& node = m_grid[idx];
+//printf("%d,%d cost: %f\n", x, y, node.traversal_cost);
             if (node.observed > 0.0)
             {
                 float boundary = node.boundary / node.observed;
@@ -343,73 +455,22 @@ void occupancy_grid_t::export_as_pnm(string file_name)
     }
 }
 
-////////////////////////////////////////////////////////////////////////
-// area map constructors
-
-// Loads existing map.
-occupancy_grid_t::occupancy_grid_t(area_map_t& am)
+void occupancy_grid_t::count_bounds()
 {
-    world_coordinate_t bottom_left = {
-        .x_meters = am.left_meters(),
-        .y_meters = am.bottom_meters()
-    };
-    init(c_area_map_node_width_meters, bottom_left,
-        am.right_meters() - am.left_meters(),
-        am.top_meters() - am.bottom_meters());
-    // Recover memory from blob cache.
-    uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
-    m_blob_id = am.blob_id();;
-    blob_t* blob = NULL;
-    // Fetch existing blob.
-    g_area_blobs.get_blob(m_blob_id);
-    if (blob == NULL)
+    uint32_t cnt = 0;
+    for (uint32_t y=0; y<m_grid_size.rows; y++)
     {
-        // Blob doesn't exist yet. This means that the process was
-        //  started up against an existing database. This shouldn't
-        //  happen, but allow it. Create it.
-        gaia_log::app().warn("Area map with ID {} did not have cached "
-            "blob. Recreating one.", m_blob_id);
-        size_t sz = num_nodes * sizeof *m_grid;
-        blob = g_area_blobs.create_or_reset_blob(m_blob_id, sz);
-        m_grid = (map_node_t*) blob->data;
-        // New grid. Nodes need initialization.
-        clear();
-    } else {
-        assert(m_grid_size.rows == am.num_rows());
-        assert(m_grid_size.cols == am.num_cols());
-        m_grid = (map_node_t*) blob->data;
-        // Existing grid. Should be initialized already.
+        for (uint32_t x=0; x<m_grid_size.cols; x++)
+        {
+            uint32_t idx = x + y * m_grid_size.cols;
+            if (m_grid[idx].boundary > 0.0f)
+            {
+//printf("%d,%d  (%dx%d=%d)  bounds %f\n", x, y, m_grid_size.cols, m_grid_size.rows, idx, m_grid[idx].boundary);
+                cnt++;
+            }
+        }
     }
-}
-
-
-// Overwrites existing cached area map.
-occupancy_grid_t::occupancy_grid_t(area_map_t& am, observed_area_t& area)
-{
-    world_coordinate_t bottom_left = {
-        .x_meters = am.left_meters(),
-        .y_meters = am.bottom_meters()
-    };
-    init(c_area_map_node_width_meters, bottom_left,
-        area.right_meters() - area.left_meters(),
-        area.top_meters() - area.bottom_meters());
-    // Get rid of old content and create a new empty blob.
-    uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
-    uint32_t old_blob_id = am.blob_id();
-    size_t sz = num_nodes * sizeof *m_grid;
-    m_blob_id = old_blob_id + 1;
-    blob_t* blob = g_area_blobs.create_or_reset_blob(m_blob_id, sz, 
-        old_blob_id);
-    m_grid = (map_node_t*) blob->data;
-    clear();
-    // Store changes in DB.
-    area_map_writer writer = am.writer();
-    writer.blob_id = m_blob_id;
-    writer.left_meters = area.left_meters();
-    writer.right_meters = area.right_meters();
-    writer.top_meters = area.top_meters();
-    writer.bottom_meters = area.bottom_meters();
-    writer.update_row();
+    printf("Boundary count: %d\n", cnt);
 }
 
 } // namespace slam_sim

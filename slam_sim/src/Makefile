@@ -41,7 +41,8 @@ refresh: clean all
 
 clean:
 	cd utils && make clean
-	rm -f *.o $(TARGET) *.pgm
+	rm -f *.o $(TARGET) *.pnm
 	rm -rf logs
 
-
+clean_images:
+	rm -f *.pnm

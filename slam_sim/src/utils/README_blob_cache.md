@@ -53,7 +53,7 @@ incremented, so if it's retried it will request a blob with the same ID again.
 That request can simultaneously have the former ID be superseded.
 E.g.,:
 ```
-  blob_t* blob = blob_factory_t.create_blob(
+  blob_t* blob = cache.create_blob(
       ID+1,   // new blob ID
       size_in_bytes,  // size of memory to be allocated
       ID      // superceded blob

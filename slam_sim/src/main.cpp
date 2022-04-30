@@ -45,7 +45,8 @@ int32_t ctr = 0;
         if (g_running)
         {
             move_toward_destination();
-            if (ctr++ > 3)
+            export_map_to_file();
+            if (ctr++ > 30)
             {
                 g_quit = 1;
             }

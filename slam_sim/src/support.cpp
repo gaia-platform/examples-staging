@@ -204,51 +204,40 @@ printf("Creating vertex\n");
 // Non-rule API
 // The functions here must manage their own transactions.
 
-static void build_working_map(occupancy_grid_t& working_map,
-    destination_t& dest, area_map_t& am)
-{
-    // Apply observation data
-    for (vertices_t& v: vertices_t::list())
-    {
-        working_map.apply_sensor_data(v);
-    }
-    // Find paths toward destination.
-    world_coordinate_t dest_coord = {
-        .x_meters = dest.x_meters(),
-        .y_meters = dest.y_meters()
-    };
-    occupancy_grid_t area_grid(am);
-    area_grid.trace_routes(dest_coord, area_grid);
-}
+//static void build_working_map(occupancy_grid_t& working_map,
+//    destination_t& dest, area_map_t& am)
+//{
+//    // Apply observation data
+//    for (vertices_t& v: vertices_t::list())
+//    {
+//        working_map.apply_sensor_data(v);
+//    }
+//    // Find paths toward destination.
+//    world_coordinate_t dest_coord = {
+//        .x_meters = dest.x_meters(),
+//        .y_meters = dest.y_meters()
+//    };
+//    occupancy_grid_t area_grid(am);
+//    area_grid.trace_routes(dest_coord, area_grid);
+//}
 
 
 // Infrastructure has info on latest position so no need to query DB
 //  (infra is what sent that info to the DB).
 void move_toward_destination()
 {
+printf("MOVING\n");
     gaia::db::begin_transaction();
-    destination_t& dest = *(destination_t::list().begin());
+//    destination_t& dest = *(destination_t::list().begin());
     area_map_t& am = *(area_map_t::list().begin());
-    //
-    // Need position, area map, destination
-    // Generate working map.
-    world_coordinate_t bottom_left = {
-        .x_meters = floorf(-c_range_sensor_max_meters),
-        .y_meters = floorf(-c_range_sensor_max_meters)
-    };
-    float right_meters = ceilf(c_range_sensor_max_meters);
-    float top_meters = ceilf(c_range_sensor_max_meters);
-    float width_meters = right_meters - bottom_left.x_meters;
-    float height_meters = top_meters - bottom_left.y_meters;
-    occupancy_grid_t working_map(c_working_map_node_width_meters,
-        bottom_left, width_meters, height_meters);
-    build_working_map(working_map, dest, am);
+    occupancy_grid_t map(am);
     // Make several small steps.
     for (uint32_t i=0; i<c_num_steps_between_keyframes; i++)
     {
         // Get direction to head from map.
-        map_node_t& node = working_map.get_node(g_position.x_meters, 
+        map_node_t& node = map.get_node(g_position.x_meters, 
             g_position.y_meters);
+printf("At node %d,%d. Moving %.2f\n", node.pos.x, node.pos.y, node.direction_degs);
         float heading_degs = node.direction_degs;
         // Move in that direction.
         float dist_meters = c_step_meters;
@@ -258,8 +247,10 @@ void move_toward_destination()
         float dy_meters = c * dist_meters;
         g_position.x_meters += dx_meters;
         g_position.y_meters += dy_meters;
+        g_heading_degs = heading_degs;
         gaia_log::app().info("Moving {},{} meters to {},{}", dx_meters,
             dy_meters, g_position.x_meters, g_position.y_meters);
+printf(" -> %.2f,%.2f @ %.1f\n", g_position.x_meters, g_position.y_meters, g_heading_degs);
     }
     // Position moved. Wait a bit before proceeding, to account for
     //  at least a little bit of travel time.

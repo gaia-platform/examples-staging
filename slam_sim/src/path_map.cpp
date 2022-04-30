@@ -166,21 +166,34 @@ void occupancy_grid_t::add_node_to_stack(
     // Point is in the world. Check it.
     grid_index_t new_idx = { .idx = new_x + new_y * m_grid_size.cols };
     map_node_t& child_node = m_grid[new_idx.idx];
+//printf("Adding child %d,%d   bounds: %f\n", new_x, new_y, child_node.boundary);
     if (child_node.flags.state & PATH_NODE_FLAG_IMPASSABLE)
     {
+//printf("    child %d,%d impassable\n", new_x, new_y);
         return;
     }
-    // Determine weight for traversing this node. Have lower weight to nodes
-    //  infrequently observed/traversed to provide bias to take different
-    //  routes.
-    float weight = 1.0f;
-    weight += child_node.observed * c_path_penalty_per_observation;
+    // Determine added weight for traversing this node. Have lower weight
+    //  to nodes infrequently observed/traversed to provide bias to take 
+    //  different routes.
+    float weight = child_node.observed * c_path_penalty_per_observation;
+    // We don't need to add boundary consideration here because the above
+    //  conditional checking impassable filtered out grid squares where
+    //  a boundary existed. Add a sanity check to make sure.
+    assert(child_node.boundary == 0.0);
+    if (child_node.flags.state | PATH_NODE_FLAG_ADJ_IMPASSABLE)
+    {
+        weight += 50.0;
+    }
+    if (child_node.flags.state | PATH_NODE_FLAG_CLOSE_IMPASSABLE)
+    {
+        weight += 5.0;
+    }
     // Path tracing algorithm is deterministic and can follow vert or
     //    horiz path too easily. Add some jitter to allow pulling in
     //    from more accurate direction.
     double jitter = 0.0;
     drand48_r(&path_rand_, &jitter);
-    jitter = 0.1 * (jitter - 0.5);
+    jitter = 0.1 * jitter;
     float new_cost = root_node.path_cost + weight + traversal_cost + jitter;
     if (child_node.flags.state & PATH_NODE_FLAG_PROCESSED) {
         // This node is already-processed. See if this path might provide
@@ -193,11 +206,13 @@ void occupancy_grid_t::add_node_to_stack(
         // New weight is lower -- allow node to be added to stack again to 
         //    propagate updated weight to neighbors.
     }
+//printf("child %d,%d   %f\n", new_x, new_y, child_node.boundary);
     // Add point to stack for future consideration.
     child_node.parent_idx = root_idx;
     child_node.path_cost = new_cost;
-    child_node.traversal_cost = weight;
+    child_node.traversal_cost = traversal_cost + weight;
     child_node.flags.state |= PATH_NODE_FLAG_PROCESSED;
+//printf("%d,%d  cost %f    boundary %f\n", new_x, new_y, new_cost, child_node.boundary);
     m_queue.push(new_idx);
 }
 
@@ -326,6 +341,7 @@ void occupancy_grid_t::compute_path_costs()
     //  stepping between adjacent nodes) out by several nodes, and measuing
     //  the bearing to that node. If the path turns sharply (e.g., around
     //  an obstacle) then the path is only traced to the turning point.
+//printf("---------------------Checking direction\n");
     for (uint32_t y=0; y<m_grid_size.rows; y++) {
         for (uint32_t x=0; x<m_grid_size.cols; x++) {
             uint32_t idx = x + y * m_grid_size.cols;
@@ -342,6 +358,7 @@ void occupancy_grid_t::compute_path_costs()
                         //  indicating direction of next node relative 
                         //  to this one.
                         base_direction = get_offset_mask(next_ggp.pos, ggp.pos);
+//printf("  node %d,%d   base direction %x\n", ggp.pos.x, ggp.pos.y, base_direction.mask);
                     }
                     else
                     {
@@ -359,19 +376,23 @@ void occupancy_grid_t::compute_path_costs()
                             //    offset. Halt search.
                             break;
                         }
+//printf("  ancestor %d,%d   direction %x\n", ggp.pos.x, ggp.pos.y, next_direction.mask);
                     }
                     ggp = next_ggp;
                 } else {
                     break;
                 }
             }
-            float dx = (float) (ggp.pos.x - root.pos.x);
-            float dy = (float) (ggp.pos.y - root.pos.y);
-            float theta_degs = c_rad_to_deg * atan2f(dx, -dy);
+            float dx = (float) ((int32_t) ggp.pos.x - (int32_t) root.pos.x);
+            float dy = (float) ((int32_t) ggp.pos.y - (int32_t) root.pos.y);
+            // grid locations are stored upside down (image coord system,
+            //  not map)
+            float theta_degs = c_rad_to_deg * atan2f(dx, dy);
             if (theta_degs < 0.0)
             {
                 theta_degs += 360.0;
             }
+//printf("%d,%d -> %d,%d is %.1f degs\n", root.pos.x, root.pos.y, ggp.pos.x, ggp.pos.y, theta_degs);
             root.direction_degs = theta_degs;
         }
     }
@@ -415,7 +436,13 @@ world_coordinate_t occupancy_grid_t::get_node_location(
 void occupancy_grid_t::trace_routes(world_coordinate_t& destination,
     occupancy_grid_t& parent_map)
 {
-    clear();
+    // clear path costs
+    for (uint32_t y=0; y<m_grid_size.rows; y++) {
+        for (uint32_t x=0; x<m_grid_size.cols; x++) {
+            uint32_t idx = x + y * m_grid_size.cols;
+            m_grid[idx].path_cost = 0.0f;
+        }
+    }
     // Add anchors. First destination, then boundary conditions.
     grid_index_t idx = get_node_index(destination.x_meters, 
         destination.y_meters);
@@ -465,11 +492,23 @@ void occupancy_grid_t::trace_routes(world_coordinate_t& destination,
 
 void occupancy_grid_t::trace_routes(world_coordinate_t& destination)
 {
-    clear();
+    // clear path costs
+    for (uint32_t y=0; y<m_grid_size.rows; y++) {
+        for (uint32_t x=0; x<m_grid_size.cols; x++) {
+            uint32_t idx = x + y * m_grid_size.cols;
+            m_grid[idx].path_cost = 0.0f;
+        }
+    }
+printf("TRACE ROUTES grid at 0x%08lx (%d)\n", (uint64_t) m_grid, m_blob_id);
+//count_bounds();
     grid_index_t idx = get_node_index(destination.x_meters, 
         destination.y_meters);
     add_anchor_to_path_stack(idx, 0.0f);
+printf("Added anchor\n");
+//count_bounds();
     compute_path_costs();
+printf("Computed costs\n");
+count_bounds();
 }
 
 } // namespace slam_sim
