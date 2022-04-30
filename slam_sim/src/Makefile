@@ -28,10 +28,13 @@ test_analyze: test_analyze.cpp analyze.cpp $(CORE_OBJS)
 
 
 run:
-	./$(TARGET) -m ../data/map.json -x -3.0 -y 3.0
+	./$(TARGET) -m ../data/maze2.json -x -3.5 -y 1.5
+	#./$(TARGET) -m ../data/maze.json -x -4.5 -y 1.25
+	#./$(TARGET) -m ../data/map.json -x -3.0 -y 3.0
 
 drun:
-	gdb --args ./slam_sim -m ../data/map.json -x -3.0 -y 3.0
+	gdb --args ./slam_sim -m ../data/maze.json -x -4.5 -y 1.25
+	#gdb --args ./slam_sim -m ../data/map.json -x -3.0 -y 3.0
 
 
 %.o: %.cpp 

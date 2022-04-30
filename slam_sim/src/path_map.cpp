@@ -182,9 +182,13 @@ void occupancy_grid_t::add_node_to_stack(
     assert(child_node.boundary == 0.0);
     if (child_node.flags.state | PATH_NODE_FLAG_ADJ_IMPASSABLE)
     {
-        weight += 50.0;
+        weight += 100.0;
     }
-    if (child_node.flags.state | PATH_NODE_FLAG_CLOSE_IMPASSABLE)
+    else if (child_node.flags.state | PATH_NODE_FLAG_CLOSE_IMPASSABLE)
+    {
+        weight += 10.0;
+    }
+    else if (child_node.flags.state | PATH_NODE_FLAG_NEAR_IMPASSABLE)
     {
         weight += 5.0;
     }
@@ -499,16 +503,16 @@ void occupancy_grid_t::trace_routes(world_coordinate_t& destination)
             m_grid[idx].path_cost = 0.0f;
         }
     }
-printf("TRACE ROUTES grid at 0x%08lx (%d)\n", (uint64_t) m_grid, m_blob_id);
+//printf("TRACE ROUTES grid at 0x%08lx (%d)\n", (uint64_t) m_grid, m_blob_id);
 //count_bounds();
     grid_index_t idx = get_node_index(destination.x_meters, 
         destination.y_meters);
     add_anchor_to_path_stack(idx, 0.0f);
-printf("Added anchor\n");
+//printf("Added anchor\n");
 //count_bounds();
     compute_path_costs();
-printf("Computed costs\n");
-count_bounds();
+//printf("Computed costs\n");
+//count_bounds();
 }
 
 } // namespace slam_sim

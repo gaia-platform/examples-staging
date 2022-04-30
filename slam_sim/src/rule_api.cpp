@@ -152,13 +152,6 @@ static void build_map(area_map_t& am)
 {
     static int32_t ctr = 0;
     occupancy_grid_t map(am);
-//    // Iterate through observations in this graph and build a map.
-//    for (const vertices_t& o: g.vertices())
-//    {
-//        gaia_log::app().info("Applying sensor data from vertex {}", 
-//            o.id());
-//        map.apply_sensor_data(o);
-//    }
     // There are C++ ways to format a number to a string (e.g.,
     //  fmt::format or std::stringstream, but the C approach is
     //  nice in its simplicity.

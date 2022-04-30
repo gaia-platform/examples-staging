@@ -22,6 +22,7 @@
 
 #include "blob_cache.hpp"
 #include "constants.hpp"
+#include "globals.hpp"
 #include "line_segment.hpp"
 #include "occupancy.hpp"
 #include "slam_sim.hpp"
@@ -351,18 +352,25 @@ void occupancy_grid_t::apply_flags()
         if (node.flags.state & PATH_NODE_FLAG_IMPASSABLE)
         {
             // First 8 deltas are in first ring around node. Those
-            //  are ADJ_IMPASSABLE. Remainder are CLOSE_IMPASSABLE.
-            const int32_t x_delta[24] = { 
+            //  are ADJ_IMPASSABLE. Second ring are CLOSE_IMPASSABLE.
+            //  Third ring are NEAR_IMPASSABLE.
+            const int32_t x_delta[48] = { 
                 -1,  0,  1, -1,  1, -1,  0,  1,
                 -2, -1,  0,  1,  2, -2,  2, -2, 
-                 2, -2,  2, -2, -1,  0,  1,  2
+                 2, -2,  2, -2, -1,  0,  1,  2,
+                -3, -2, -1,  0,  1,  2,  3,
+                -3,  3, -3,  3, -3,  3, -3,  3, -3,  3,
+                -3, -2, -1,  0,  1,  2,  3
             };
-            const int32_t y_delta[24] = {
+            const int32_t y_delta[48] = {
                 -1, -1, -1,  0,  0,  1,  1,  1,
                 -2, -2, -2, -2, -2, -1, -1,  0, 
-                 0,  1,  1,  2,  2,  2,  2,  2
+                 0,  1,  1,  2,  2,  2,  2,  2,
+                -3, -3, -3, -3, -3, -3, -3, 
+                -2, -2, -1, -1,  0,  0,  1,  1,  2,  2,
+                 3, -3,  3,  3,  3,  3,  3  
             };
-            for (uint32_t i=0; i<24; i++)
+            for (uint32_t i=0; i<48; i++)
             {
                 uint32_t nbr_x = (uint32_t) 
                     ((int32_t) node.pos.x + x_delta[i]);
@@ -376,10 +384,15 @@ void occupancy_grid_t::apply_flags()
                         m_grid[nbr_idx].flags.state |= 
                             PATH_NODE_FLAG_ADJ_IMPASSABLE;
                     }
-                    else
+                    else if (i < 24)
                     {
                         m_grid[nbr_idx].flags.state |= 
                             PATH_NODE_FLAG_CLOSE_IMPASSABLE;
+                    }
+                    else 
+                    {
+                        m_grid[nbr_idx].flags.state |= 
+                            PATH_NODE_FLAG_NEAR_IMPASSABLE;
                     }
                 }
             }
@@ -419,14 +432,13 @@ void occupancy_grid_t::export_as_pnm(string file_name)
 printf("Exporting 0x%08lx  %d\n", (uint64_t) m_grid, m_blob_id);
 
 //printf("-----------------------------------------\n");
-    // Create image.
+    // Draw position and boundaries.
     for (uint32_t y=0; y<m_grid_size.rows; y++)
     {
         for (uint32_t x=0; x<m_grid_size.cols; x++)
         {
             uint32_t idx = x + y * m_grid_size.cols;
             map_node_t& node = m_grid[idx];
-//printf("%d,%d cost: %f\n", x, y, node.traversal_cost);
             if (node.observed > 0.0)
             {
                 float boundary = node.boundary / node.observed;
@@ -436,6 +448,13 @@ printf("Exporting 0x%08lx  %d\n", (uint64_t) m_grid, m_blob_id);
             g[idx] = node.occupied > 0.0 ? 255 : 0;
         }
     }
+    // Indicate destination.
+    world_coordinate_t destination = g_destinations[g_next_destination];
+    const map_node_t& dest = 
+        get_node(destination.x_meters, destination.y_meters);
+    uint32_t dest_idx = dest.pos.x + dest.pos.y * m_grid_size.cols;
+    b[dest_idx] = 255;
+    g[dest_idx] = 128;
 
     // Export image.
     try 

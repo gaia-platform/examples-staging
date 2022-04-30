@@ -63,6 +63,7 @@ struct map_node_flags_t
 #define PATH_NODE_FLAG_IMPASSABLE         0x02
 #define PATH_NODE_FLAG_ADJ_IMPASSABLE     0x04
 #define PATH_NODE_FLAG_CLOSE_IMPASSABLE   0x08
+#define PATH_NODE_FLAG_NEAR_IMPASSABLE    0x10
 
 // Characteristics of a node in the map, including distance from this node
 //  to a/the destination.

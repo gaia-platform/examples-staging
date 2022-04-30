@@ -8,17 +8,16 @@ namespace slam_sim
 constexpr float c_rad_to_deg = (float) (180.0 / M_PI);
 constexpr float c_deg_to_rad = (float) (M_PI / 180.0);
 
-// Width (height) of grids in occupancy grid.
-constexpr float c_map_node_width_meters = 0.1f;
-
 // Max distance range sensors can get range data.
 constexpr float c_range_sensor_max_meters = 4.0f;
 // Width of range sensor sweep in front of bot.
 constexpr float c_range_sensor_sweep_degs = 90.0f;
 constexpr int32_t c_num_range_radials = 45;
 
+// Width (height) of grids in occupancy grid.
+// Map for navigation
 constexpr float c_area_map_node_width_meters = 0.1f;
-//constexpr float c_working_map_node_width_meters = 0.05f;
+// Map for output
 constexpr float c_standard_map_node_width_meters = 0.05f;
 
 // Path finding.
@@ -34,9 +33,9 @@ constexpr float c_path_penalty_per_observation = 0.05f;
 constexpr uint32_t c_num_ancestors_for_direction = 5;
 
 // Distance between each step. Keyframes are taken after several steps.
-constexpr float c_step_meters = c_area_map_node_width_meters;
+constexpr float c_step_meters = 0.75 * c_area_map_node_width_meters;
 
-constexpr uint32_t c_num_steps_between_keyframes = 4;
+constexpr uint32_t c_num_steps_between_keyframes = 2;
 
 // How close to destination bot has to declare it's reached it.
 constexpr float c_destination_radius_meters = 0.5f;
