@@ -166,10 +166,10 @@ void occupancy_grid_t::add_node_to_stack(
     // Point is in the world. Check it.
     grid_index_t new_idx = { .idx = new_x + new_y * m_grid_size.cols };
     map_node_t& child_node = m_grid[new_idx.idx];
-//printf("Adding child %d,%d   bounds: %f\n", new_x, new_y, child_node.boundary);
+printf("Adding child %d,%d   bounds: %f\n", new_x, new_y, child_node.boundary);
     if (child_node.flags.state & PATH_NODE_FLAG_IMPASSABLE)
     {
-//printf("    child %d,%d impassable\n", new_x, new_y);
+printf("    child %d,%d impassable\n", new_x, new_y);
         return;
     }
     // Determine added weight for traversing this node. Have lower weight
@@ -180,15 +180,15 @@ void occupancy_grid_t::add_node_to_stack(
     //  conditional checking impassable filtered out grid squares where
     //  a boundary existed. Add a sanity check to make sure.
     assert(child_node.boundary == 0.0);
-    if (child_node.flags.state | PATH_NODE_FLAG_ADJ_IMPASSABLE)
+    if (child_node.flags.state & PATH_NODE_FLAG_ADJ_IMPASSABLE)
     {
         weight += 100.0;
     }
-    else if (child_node.flags.state | PATH_NODE_FLAG_CLOSE_IMPASSABLE)
+    else if (child_node.flags.state & PATH_NODE_FLAG_CLOSE_IMPASSABLE)
     {
         weight += 10.0;
     }
-    else if (child_node.flags.state | PATH_NODE_FLAG_NEAR_IMPASSABLE)
+    else if (child_node.flags.state & PATH_NODE_FLAG_NEAR_IMPASSABLE)
     {
         weight += 5.0;
     }
@@ -210,13 +210,13 @@ void occupancy_grid_t::add_node_to_stack(
         // New weight is lower -- allow node to be added to stack again to 
         //    propagate updated weight to neighbors.
     }
-//printf("child %d,%d   %f\n", new_x, new_y, child_node.boundary);
+printf("child %d,%d  flags %02x  boundary %f  weight %f\n", new_x, new_y, child_node.flags.state, child_node.boundary, weight);
     // Add point to stack for future consideration.
     child_node.parent_idx = root_idx;
     child_node.path_cost = new_cost;
     child_node.traversal_cost = traversal_cost + weight;
     child_node.flags.state |= PATH_NODE_FLAG_PROCESSED;
-//printf("%d,%d  cost %f    boundary %f\n", new_x, new_y, new_cost, child_node.boundary);
+printf("%d,%d  cost %f\n", new_x, new_y, new_cost);
     m_queue.push(new_idx);
 }
 
@@ -345,7 +345,7 @@ void occupancy_grid_t::compute_path_costs()
     //  stepping between adjacent nodes) out by several nodes, and measuing
     //  the bearing to that node. If the path turns sharply (e.g., around
     //  an obstacle) then the path is only traced to the turning point.
-//printf("---------------------Checking direction\n");
+printf("---------------------Checking direction\n");
     for (uint32_t y=0; y<m_grid_size.rows; y++) {
         for (uint32_t x=0; x<m_grid_size.cols; x++) {
             uint32_t idx = x + y * m_grid_size.cols;
@@ -353,39 +353,40 @@ void occupancy_grid_t::compute_path_costs()
             map_node_t ggp = root;
             // Find direction to ancestor.
             for (uint32_t gen=0; gen<c_num_ancestors_for_direction; gen++) {
-                if (ggp.parent_idx.idx != c_invalid_grid_idx) 
+                if (ggp.parent_idx.idx == c_invalid_grid_idx)
                 {
-                    map_node_t next_ggp = m_grid[ggp.parent_idx.idx];
-                    if (gen == 0) 
-                    {
-                        // Get base direction. This returns bitfield 
-                        //  indicating direction of next node relative 
-                        //  to this one.
-                        base_direction = get_offset_mask(next_ggp.pos, ggp.pos);
-//printf("  node %d,%d   base direction %x\n", ggp.pos.x, ggp.pos.y, base_direction.mask);
-                    }
-                    else
-                    {
-                        // Make sure offset is consistent w/ base direction
-                        //  (ie, w/in 45deg).
-                        // Get new direction. This returns bitfield indicating
-                        //  direction of next node relative to this one,
-                        //  plus adjacent bits. ANDing this to base direction
-                        //  will indicate if it's w/in +/-45deg of base.
-                        next_direction =
-                            get_offset_mask_wide(next_ggp.pos, ggp.pos);
-                        if ((next_direction.mask & base_direction.mask) == 0)
-                        {
-                            // Latest direction is too different from original
-                            //    offset. Halt search.
-                            break;
-                        }
-//printf("  ancestor %d,%d   direction %x\n", ggp.pos.x, ggp.pos.y, next_direction.mask);
-                    }
-                    ggp = next_ggp;
-                } else {
+                    // Parent index is invalid. Can't dig further back into
+                    //  ancestry.
                     break;
                 }
+                map_node_t next_ggp = m_grid[ggp.parent_idx.idx];
+                if (gen == 0) 
+                {
+                    // Get base direction. This returns bitfield 
+                    //  indicating direction of next node relative 
+                    //  to this one.
+                    base_direction = get_offset_mask(next_ggp.pos, ggp.pos);
+printf("  node %d,%d   base direction %x\n", ggp.pos.x, ggp.pos.y, base_direction.mask);
+                }
+                else
+                {
+                    // Make sure offset is consistent w/ base direction
+                    //  (ie, w/in 45deg).
+                    // Get new direction. This returns bitfield indicating
+                    //  direction of next node relative to this one,
+                    //  plus adjacent bits. ANDing this to base direction
+                    //  will indicate if it's w/in +/-45deg of base.
+                    next_direction =
+                        get_offset_mask_wide(next_ggp.pos, ggp.pos);
+                    if ((next_direction.mask & base_direction.mask) == 0)
+                    {
+                        // Latest direction is too different from original
+                        //    offset. Halt search.
+                        break;
+                    }
+printf("  ancestor %d,%d   direction %x  cost %f\n", ggp.pos.x, ggp.pos.y, next_direction.mask, ggp.path_cost);
+                }
+                ggp = next_ggp;
             }
             float dx = (float) ((int32_t) ggp.pos.x - (int32_t) root.pos.x);
             float dy = (float) ((int32_t) ggp.pos.y - (int32_t) root.pos.y);
@@ -396,8 +397,8 @@ void occupancy_grid_t::compute_path_costs()
             {
                 theta_degs += 360.0;
             }
-//printf("%d,%d -> %d,%d is %.1f degs\n", root.pos.x, root.pos.y, ggp.pos.x, ggp.pos.y, theta_degs);
             root.direction_degs = theta_degs;
+printf("%d,%d -> %d,%d is %.1f degs   0x%08lx\n", root.pos.x, root.pos.y, ggp.pos.x, ggp.pos.y, root.direction_degs, (uint64_t) &m_grid[idx]);
         }
     }
 }

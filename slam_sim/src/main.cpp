@@ -29,7 +29,7 @@ namespace slam_sim
 
 using std::this_thread::sleep_for;
 
-static constexpr uint32_t c_rule_wait_millis = 100;
+static constexpr uint32_t c_rule_wait_millis = 200;
 
 
 /**
@@ -45,8 +45,9 @@ int32_t ctr = 0;
         if (g_running)
         {
             move_toward_destination();
-            export_map_to_file();
-            if (ctr++ > 120)
+//            export_map_to_file();
+            build_export_map();
+            if (ctr++ > 40)
             {
                 g_quit = 1;
             }

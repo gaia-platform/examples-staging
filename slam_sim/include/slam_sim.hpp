@@ -85,8 +85,14 @@ void generate_sensor_data(float pos_x_meters, float pos_y_meters,
     sensor_data_t& data);
 
 // Generates and exports a map to disk. Filename will be based on ego's
-//  timestamp.
+//  timestamp. Map is built from the most recent active area_map blob. It's
+//  what the bot is using for navigation.
 void export_map_to_file();
+
+// Generates and exports a map to disk. Filename will be based on ego's
+//  timestamp. Map is generated from scratch using content from the
+//  active graph. This is higher resolution than the navigatin map.
+void build_export_map();
 
 // External request to move to a specific location.
 void request_destination(float x_meters, float y_meters);

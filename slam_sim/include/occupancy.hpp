@@ -103,9 +103,9 @@ struct map_node_t
 // The grid (map) itself.
 class occupancy_grid_t
 {
-public:
-  void count_bounds();
-
+//public:
+//  void count_bounds();
+//
 public:
     // Creates new uncached map.
     occupancy_grid_t(float node_width_meters, world_coordinate_t bottom_left,
@@ -128,6 +128,8 @@ public:
     map_node_t& get_node(grid_index_t idx);
     map_node_flags_t& get_node_flags(float x_meters, float y_meters);
     map_node_flags_t& get_node_flags(grid_index_t idx);
+
+map_node_t* get_node_ptr(grid_index_t idx) { return &m_grid[idx.idx]; }
 
     grid_index_t get_node_index(float pos_x_meters, float pos_y_meters);
 

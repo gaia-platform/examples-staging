@@ -90,18 +90,18 @@ printf("2 leave on_change(destination)\n");
     }
 
 
-    // For each vertex, update working map using new sensor data.
-    on_insert(vertices)
-    {
-printf("3 enter on_insert(vertices)\n");
-        // If working map will go beyond border of area map, rebuild
-        //  area map.
-        if (need_to_extend_map(vertices.position->positions, /observed_area))
-        {
-            build_area_map(/destination, /area_map, /observed_area);
-        }
-printf("3 leave on_insert(vertices)\n");
-    }
+//    // For each vertex, update working map using new sensor data.
+//    on_insert(vertices)
+//    {
+//printf("3 enter on_insert(vertices)\n");
+//        // If working map will go beyond border of area map, rebuild
+//        //  area map.
+//        if (need_to_extend_map(vertices.position->positions, /observed_area))
+//        {
+//            build_area_map(/destination, /area_map, /observed_area);
+//        }
+//printf("3 leave on_insert(vertices)\n");
+//    }
 }
 
 

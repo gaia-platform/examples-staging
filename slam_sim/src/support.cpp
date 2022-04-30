@@ -235,9 +235,13 @@ printf("MOVING\n");
     for (uint32_t i=0; i<c_num_steps_between_keyframes; i++)
     {
         // Get direction to head from map.
-        map_node_t& node = map.get_node(g_position.x_meters, 
+        grid_index_t idx = map.get_node_index(g_position.x_meters, 
             g_position.y_meters);
-printf("At node %d,%d. Moving %.2f\n", node.pos.x, node.pos.y, node.direction_degs);
+        map_node_t node = map.get_node(idx);
+map_node_t* pnode = map.get_node_ptr(idx);
+        //map_node_t& node = map.get_node(g_position.x_meters, 
+        //    g_position.y_meters);
+//printf("At node %d,%d. Moving %.2f\n", node.pos.x, node.pos.y, node.direction_degs);
         float heading_degs = node.direction_degs;
         // Move in that direction.
         float dist_meters = c_step_meters;
@@ -245,12 +249,13 @@ printf("At node %d,%d. Moving %.2f\n", node.pos.x, node.pos.y, node.direction_de
         sincosf(c_deg_to_rad * heading_degs, &s, &c);
         float dx_meters = s * dist_meters;
         float dy_meters = c * dist_meters;
+printf("At %d,%d (%.2f,%.2f  0x%08lx) moving %.1f to ", node.pos.x, node.pos.y, g_position.x_meters, g_position.y_meters, (uint64_t) pnode, g_heading_degs);
         g_position.x_meters += dx_meters;
         g_position.y_meters += dy_meters;
         g_heading_degs = heading_degs;
+printf("%.2f,%.2f\n", g_position.x_meters, g_position.y_meters);
         gaia_log::app().info("Moving {},{} meters to {},{}", dx_meters,
             dy_meters, g_position.x_meters, g_position.y_meters);
-printf(" -> %.2f,%.2f @ %.1f\n", g_position.x_meters, g_position.y_meters, g_heading_degs);
     }
     // Position moved. Wait a bit before proceeding, to account for
     //  at least a little bit of travel time.

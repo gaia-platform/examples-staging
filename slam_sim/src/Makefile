@@ -11,7 +11,7 @@ endif
 TARGET = slam_sim
 TEST_TARGETS = test_analyze
 
-CORE_OBJS = analyze.o occupancy.o rule_api.o  path_map.o support.o globals.o
+CORE_OBJS = analyze.o occupancy.o rule_api.o  path_map.o support.o globals.o txn.o
 OBJS = main.o $(CORE_OBJS)
 EXT_OBJS = ../gaia/slam_rules.o ../gaia/gaia_slam.o
 LIBS = $(LIB_SLAM_UTILS) /usr/local/lib/libgaia.so -pthread -lcurl

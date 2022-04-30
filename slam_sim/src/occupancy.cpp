@@ -26,6 +26,7 @@
 #include "line_segment.hpp"
 #include "occupancy.hpp"
 #include "slam_sim.hpp"
+#include "txn.hpp"
 
 namespace slam_sim
 {
@@ -119,8 +120,6 @@ occupancy_grid_t::occupancy_grid_t(area_map_t& am)
         m_grid = (map_node_t*) blob->data();
         // Existing grid. Should be initialized already.
     }
-printf("PULLING EXISTING MAP %d   0x%08lx\n", m_blob_id, (uint64_t) m_grid);
-count_bounds();
 }
 
 
@@ -429,7 +428,7 @@ void occupancy_grid_t::export_as_pnm(string file_name)
 {
     uint32_t n_pix = m_grid_size.cols * m_grid_size.rows;
     std::vector<uint8_t> r(n_pix, 0), g(n_pix, 0), b(n_pix, 0);
-printf("Exporting 0x%08lx  %d\n", (uint64_t) m_grid, m_blob_id);
+//printf("Exporting 0x%08lx  %d\n", (uint64_t) m_grid, m_blob_id);
 
 //printf("-----------------------------------------\n");
     // Draw position and boundaries.
@@ -449,10 +448,15 @@ printf("Exporting 0x%08lx  %d\n", (uint64_t) m_grid, m_blob_id);
         }
     }
     // Indicate destination.
-    world_coordinate_t destination = g_destinations[g_next_destination];
+    txn_t txn;
+    txn.begin();
+    uint32_t which_dest = (g_next_destination + g_destinations.size() - 1)
+        % g_destinations.size();
+    world_coordinate_t destination = g_destinations[which_dest];
     const map_node_t& dest = 
         get_node(destination.x_meters, destination.y_meters);
     uint32_t dest_idx = dest.pos.x + dest.pos.y * m_grid_size.cols;
+    txn.commit();
     b[dest_idx] = 255;
     g[dest_idx] = 128;
 
@@ -474,23 +478,23 @@ printf("Exporting 0x%08lx  %d\n", (uint64_t) m_grid, m_blob_id);
     }
 }
 
-void occupancy_grid_t::count_bounds()
-{
-    uint32_t cnt = 0;
-    for (uint32_t y=0; y<m_grid_size.rows; y++)
-    {
-        for (uint32_t x=0; x<m_grid_size.cols; x++)
-        {
-            uint32_t idx = x + y * m_grid_size.cols;
-            if (m_grid[idx].boundary > 0.0f)
-            {
-//printf("%d,%d  (%dx%d=%d)  bounds %f\n", x, y, m_grid_size.cols, m_grid_size.rows, idx, m_grid[idx].boundary);
-                cnt++;
-            }
-        }
-    }
-    printf("Boundary count: %d\n", cnt);
-}
+//void occupancy_grid_t::count_bounds()
+//{
+//    uint32_t cnt = 0;
+//    for (uint32_t y=0; y<m_grid_size.rows; y++)
+//    {
+//        for (uint32_t x=0; x<m_grid_size.cols; x++)
+//        {
+//            uint32_t idx = x + y * m_grid_size.cols;
+//            if (m_grid[idx].boundary > 0.0f)
+//            {
+////printf("%d,%d  (%dx%d=%d)  bounds %f\n", x, y, m_grid_size.cols, m_grid_size.rows, idx, m_grid[idx].boundary);
+//                cnt++;
+//            }
+//        }
+//    }
+//    printf("Boundary count: %d\n", cnt);
+//}
 
 } // namespace slam_sim
 

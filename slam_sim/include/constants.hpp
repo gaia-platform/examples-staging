@@ -16,9 +16,9 @@ constexpr int32_t c_num_range_radials = 45;
 
 // Width (height) of grids in occupancy grid.
 // Map for navigation
-constexpr float c_area_map_node_width_meters = 0.1f;
+constexpr float c_area_map_node_width_meters = 0.25f;
 // Map for output
-constexpr float c_standard_map_node_width_meters = 0.05f;
+constexpr float c_export_map_node_width_meters = 0.05f;
 
 // Path finding.
 // Bias factor for seeking out new areas to explore. This is the increase
@@ -33,9 +33,9 @@ constexpr float c_path_penalty_per_observation = 0.05f;
 constexpr uint32_t c_num_ancestors_for_direction = 5;
 
 // Distance between each step. Keyframes are taken after several steps.
-constexpr float c_step_meters = 0.75 * c_area_map_node_width_meters;
+constexpr float c_step_meters = 0.5 * c_area_map_node_width_meters;
 
-constexpr uint32_t c_num_steps_between_keyframes = 2;
+constexpr uint32_t c_num_steps_between_keyframes = 1;
 
 // How close to destination bot has to declare it's reached it.
 constexpr float c_destination_radius_meters = 0.5f;

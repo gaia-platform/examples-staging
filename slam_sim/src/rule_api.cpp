@@ -23,6 +23,7 @@
 #include "globals.hpp"
 #include "occupancy.hpp"
 #include "slam_sim.hpp"
+#include "txn.hpp"
 
 namespace slam_sim
 {
@@ -83,26 +84,29 @@ bool optimization_required()
 //  and just print error to the log.
 void optimize_graph(graphs_t& graph)
 {
-    // Map optimization logic goes here. Here are some ways to iterate
-    //  through the data.
-    gaia_log::app().info("Stub function to optimize graph {}", graph.id());
-    // By edges:
-    for (edges_t& e: edges_t::list())
+    // Map optimization logic goes here.
+    //gaia_log::app().info("Stub function to optimize graph {}", graph.id());
+    if (1 == 0)
     {
-        gaia_log::app().info("Edge connects vertices {} and {}",
-            e.src().id(), e.dest().id());
-    }
-    // By vertices:
-    for (vertices_t& o: vertices_t::list())
-    {
-        gaia_log::app().info("Obervation {} connects to:", o.id());
-        for (edges_t& e: o.in_edges())
+        // Here are some ways to itnerate through the data.
+        // By edges:
+        for (edges_t& e: edges_t::list())
         {
-            gaia_log::app().info("  (in) obervation {}", e.src_id());
+            gaia_log::app().info("Edge connects vertices {} and {}",
+                e.src().id(), e.dest().id());
         }
-        for (edges_t& e: o.out_edges())
+        // By vertices:
+        for (vertices_t& o: vertices_t::list())
         {
-            gaia_log::app().info("  (out) obervation {}", e.dest_id());
+            gaia_log::app().info("Obervation {} connects to:", o.id());
+            for (edges_t& e: o.in_edges())
+            {
+                gaia_log::app().info("  (in) obervation {}", e.src_id());
+            }
+            for (edges_t& e: o.out_edges())
+            {
+                gaia_log::app().info("  (out) obervation {}", e.dest_id());
+            }
         }
     }
     // Create error correction record. This serves to store error correction
@@ -165,22 +169,48 @@ static void build_map(area_map_t& am)
 
 void export_map_to_file()
 {
-    bool existing_transaction = false;
-    if (gaia::db::is_transaction_open()) 
-    {
-        existing_transaction = true;
-    }
-    if (!existing_transaction)
-    {
-        gaia::db::begin_transaction();
-    }
+    txn_t txn;
+    txn.begin();
     ego_t ego = *(ego_t::list().begin());
     area_map_t& am = *(area_map_t::list().begin());
     build_map(am);
-    if (!existing_transaction)
+    txn.commit();
+}
+
+
+// Build an map for export. This is typically a higher resolution than
+//  the navigation map.
+void build_export_map()
+{
+    txn_t txn;
+    txn.begin();
+    ego_t& ego = *(ego_t::list().begin());
+    observed_area_t region = ego.world();
+    const world_coordinate_t bottom_left = {
+        .x_meters = region.left_meters(),
+        .y_meters = region.bottom_meters(),
+    };
+    float width_meters = region.right_meters() - region.left_meters();
+    float height_meters = region.top_meters() - region.bottom_meters();
+    // Each time we build an area map 
+    occupancy_grid_t map(c_export_map_node_width_meters, 
+        bottom_left, width_meters, height_meters);
+    for (graphs_t& g: graphs_t::list())
     {
-        gaia::db::commit_transaction();
+        for (vertices_t& v: g.vertices())
+        {
+            //gaia_log::app().info("Pulling sensor data from {}:{}", 
+            //    g.id(), v.id());
+            map.apply_sensor_data(v);
+        }
     }
+    txn.commit();
+
+    static int32_t ctr = 0;
+    char fname[256];
+    sprintf(fname, "export_%03d.pnm", ctr++);
+    gaia_log::app().info("Building map {}", fname);
+    map.export_as_pnm(fname);
 }
 
 
@@ -195,8 +225,8 @@ printf("Build area map\n");
 //printf("Applying sensor data from graph %d\n", g.id());
         for (vertices_t& v: g.vertices())
         {
-            gaia_log::app().info("Pulling sensor data from {}:{}", 
-                g.id(), v.id());
+            //gaia_log::app().info("Pulling sensor data from {}:{}", 
+            //    g.id(), v.id());
 //printf("    Sensor data from %d::%d\n", g.id(), v.id());
             area_map.apply_sensor_data(v);
         }
@@ -212,7 +242,7 @@ printf("Build area map\n");
     area_map_writer writer = am.writer();
     writer.blob_id = area_map.get_blob_id();
     writer.update_row();
-area_map.count_bounds();
+//area_map.count_bounds();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -228,6 +258,9 @@ void full_stop()
 
 bool reassess_destination()
 {
+    bool rc = false;
+    txn_t txn;
+    txn.begin();
     // Determine if it's time to change destinations.
     // If w/in X meters of destination, select new one. It's OK
     //  if destination is in unexplored area.
@@ -251,9 +284,10 @@ printf("Next destination: %.1f,%.1f\n", new_dest.x_meters, new_dest.y_meters);
         w.y_meters = new_dest.y_meters;
         w.update_row();
         g_now += 1.0;
-        return true;
+        rc = true;
     }
-    return false;
+    txn.commit();
+    return rc;
 }
 
 } // namespace slam_sim
