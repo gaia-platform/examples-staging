@@ -14,13 +14,14 @@
 
 #include <assert.h>
 #include <math.h>
+#include <stdlib.h>
 
 #include <fstream>
 #include <iostream>
 
 #include <gaia/logger.hpp>
 
-#include "blob_cache.hpp"
+//#include "blob_cache.hpp"
 #include "constants.hpp"
 #include "globals.hpp"
 #include "line_segment.hpp"
@@ -35,18 +36,11 @@ using std::vector;
 using std::string;
 using std::cerr;
 
-using gaia::slam::vertices_t;
+using gaia::slam::destination_t;;
+using gaia::slam::observed_area_t;;
 using gaia::slam::positions_t;
 using gaia::slam::range_data_t;
-
-using gaia::slam::area_map_t;;
-//using gaia::slam::working_map_t;;
-using gaia::slam::observed_area_t;;
-
-using gaia::slam::area_map_writer;
-
-blob_cache_t g_area_blobs;
-blob_cache_t g_working_blobs;
+using gaia::slam::vertices_t;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -55,11 +49,11 @@ blob_cache_t g_working_blobs;
 void occupancy_grid_t::init(float node_width_meters,
     world_coordinate_t bottom_left, float width_meters, float height_meters)
 {
+    // Physcal size (width, height) of map grids.
+    m_node_size_meters = node_width_meters;
     // Number of grids in map.
     m_grid_size.rows = (uint32_t) ceil(height_meters / node_width_meters);
     m_grid_size.cols = (uint32_t) ceil(width_meters / node_width_meters);
-    // Physcal size (width, height) of map grids.
-    m_node_size_meters = node_width_meters;
     // Physical size of map.
     m_map_size.x_meters = width_meters;
     m_map_size.y_meters = height_meters;
@@ -68,98 +62,51 @@ void occupancy_grid_t::init(float node_width_meters,
 }
 
 
-void occupancy_grid_t::allocate_own_grid()
+void occupancy_grid_t::allocate_grid(bool realloc_buffer)
 {
-    // Signal that 'this' owns the memory allocation.
-    m_blob_id = -1;
     uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
-    m_grid = (map_node_t*) malloc(num_nodes * sizeof *m_grid);
-}
-
-
-// Creates new uncached map.
-occupancy_grid_t::occupancy_grid_t(float node_width_meters,
-    world_coordinate_t bottom_left, float width_meters, float height_meters)
-{
-    init(node_width_meters, bottom_left, width_meters, height_meters);
-    allocate_own_grid();
-    clear();
-}
-
-
-// Loads existing map.
-occupancy_grid_t::occupancy_grid_t(area_map_t& am)
-{
-    world_coordinate_t bottom_left = {
-        .x_meters = am.left_meters(),
-        .y_meters = am.bottom_meters()
-    };
-    init(c_area_map_node_width_meters, bottom_left,
-        am.right_meters() - am.left_meters(),
-        am.top_meters() - am.bottom_meters());
-    // Recover memory from blob cache.
-    uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
-    m_blob_id = am.blob_id();;
-    // Fetch existing blob.
-    blob_t* blob = g_area_blobs.get_blob(m_blob_id);
-    if (blob == NULL)
+    if (realloc_buffer && (m_grid != NULL))
     {
-        // Blob doesn't exist yet. This means that the process was
-        //  started up against an existing database. This shouldn't
-        //  happen, but allow it. Create it.
-        gaia_log::app().warn("Area map with ID {} did not have cached "
-            "blob. Recreating one.", m_blob_id);
-        size_t sz = num_nodes * sizeof *m_grid;
-        blob = g_area_blobs.create_blob(m_blob_id, sz);
-        m_grid = (map_node_t*) blob->data();
-        // New grid. Nodes need initialization.
-        clear();
-    } else {
-        assert(m_grid_size.rows == am.num_rows());
-        assert(m_grid_size.cols == am.num_cols());
-        m_grid = (map_node_t*) blob->data();
-        // Existing grid. Should be initialized already.
+        m_grid = (map_node_t*) realloc(m_grid, num_nodes * sizeof *m_grid);
+    }
+    else
+    {
+        m_grid = (map_node_t*) malloc(num_nodes * sizeof *m_grid);
     }
 }
 
 
-// Overwrites existing cached area map.
-occupancy_grid_t::occupancy_grid_t(area_map_t& am, observed_area_t& area)
+// Creates empty map.
+occupancy_grid_t::occupancy_grid_t(float node_width_meters)
 {
-    world_coordinate_t bottom_left = {
-        .x_meters = am.left_meters(),
-        .y_meters = am.bottom_meters()
-    };
-    init(c_area_map_node_width_meters, bottom_left,
-        area.right_meters() - area.left_meters(),
-        area.top_meters() - area.bottom_meters());
-    // Get rid of old content and create a new empty blob.
-    uint32_t num_nodes = m_grid_size.rows * m_grid_size.cols;
-    uint32_t old_blob_id = am.blob_id();
-    size_t sz = num_nodes * sizeof *m_grid;
-    m_blob_id = old_blob_id + 1;
-    blob_t* blob = g_area_blobs.create_blob(m_blob_id, sz, old_blob_id);
-    m_grid = (map_node_t*) blob->data();
-    clear();
-    // Store changes in DB.
-    area_map_writer writer = am.writer();
-    writer.blob_id = m_blob_id;
-    writer.left_meters = area.left_meters();
-    writer.right_meters = area.right_meters();
-    writer.top_meters = area.top_meters();
-    writer.bottom_meters = area.bottom_meters();
-    writer.num_rows = m_grid_size.rows;
-    writer.num_cols = m_grid_size.cols;
-    writer.update_row();
-printf("BUILDING NEW MAP %d   0x%08lx\n", m_blob_id, (uint64_t) m_grid);
+    world_coordinate_t bottom_left = { .x_meters = 0.0f, .y_meters = 0.0f };
+    init(node_width_meters, bottom_left, 0.0, 0.0);
+    m_grid = NULL;
+}
+
+
+occupancy_grid_t::occupancy_grid_t(float node_width_meters,
+    world_coordinate_t bottom_left, float width_meters, float height_meters)
+{
+    init(node_width_meters, bottom_left, width_meters, height_meters);
+    allocate_grid();
+    initialize_grid();
+}
+
+
+void occupancy_grid_t::reset(world_coordinate_t bottom_left, 
+    float width_meters, float height_meters)
+{
+    init(m_node_size_meters, bottom_left, width_meters, height_meters);
+    allocate_grid(true);
+    initialize_grid();
 }
 
 
 occupancy_grid_t::~occupancy_grid_t()
 {
-    if (m_blob_id < 0)
+    if (m_grid)
     {
-        // Memory is owned by this.
         free(m_grid);
     }
 }
@@ -193,9 +140,8 @@ void map_node_flags_t::clear()
 }
 
 
-void occupancy_grid_t::clear()
+void occupancy_grid_t::initialize_grid()
 {
-printf("OCCUPANCY GRID CLEAR\n");
     for (uint32_t y=0; y<m_grid_size.rows; y++)
     {
         for (uint32_t x=0; x<m_grid_size.cols; x++)
@@ -284,10 +230,6 @@ world_coordinate_t occupancy_grid_t::get_node_position(grid_coordinate_t& pos)
 void occupancy_grid_t::apply_radial(float radial_degs, float range_meters,
     float pos_x_meters, float pos_y_meters)
 {
-    // Set occupancy for this grid square.
-    map_node_flags_t& home_flags = get_node_flags(pos_x_meters, pos_y_meters);
-//printf("OCCUPANCY position %.2f,%.2f\n", pos_x_meters, pos_y_meters);
-    home_flags.occupied = 1;
     // Set observed and boundary flags.
     // Measured distance on radial.
     double dist_meters = range_meters < 0.0 
@@ -402,11 +344,13 @@ void occupancy_grid_t::apply_flags()
 
 void occupancy_grid_t::apply_sensor_data(const vertices_t& obs)
 {
-    // TODO make sure that sensor data from outside of map is ignored.
-    //
     positions_t pos = obs.position();
     range_data_t r = obs.range_data();
-//printf("Applying sensor data at %.2f,%.2f (%d)\n", pos.pos_x_meters(), pos.pos_y_meters(), obs.id());
+    // Set occupancy for this grid square.
+    map_node_flags_t& home_flags = get_node_flags(pos.x_meters(),
+        pos.y_meters());
+    home_flags.occupied = 1;
+    // Apply sensor data.
     for (int32_t i=0; i<r.num_radials(); i++)
     {
         apply_radial(r.bearing_degs()[i], r.distance_meters()[i], 
@@ -450,15 +394,12 @@ void occupancy_grid_t::export_as_pnm(string file_name)
     // Indicate destination.
     txn_t txn;
     txn.begin();
-    uint32_t which_dest = (g_next_destination + g_destinations.size() - 1)
-        % g_destinations.size();
-    world_coordinate_t destination = g_destinations[which_dest];
-    const map_node_t& dest = 
-        get_node(destination.x_meters, destination.y_meters);
-    uint32_t dest_idx = dest.pos.x + dest.pos.y * m_grid_size.cols;
-    txn.commit();
+    destination_t dest = *(destination_t::list().begin());
+    const map_node_t dest_node = get_node(dest.x_meters(), dest.y_meters());
+    uint32_t dest_idx = dest_node.pos.x + dest_node.pos.y * m_grid_size.cols;
     b[dest_idx] = 255;
     g[dest_idx] = 128;
+    txn.commit();
 
     // Export image.
     try 

@@ -166,16 +166,17 @@ void occupancy_grid_t::add_node_to_stack(
     // Point is in the world. Check it.
     grid_index_t new_idx = { .idx = new_x + new_y * m_grid_size.cols };
     map_node_t& child_node = m_grid[new_idx.idx];
-printf("Adding child %d,%d   bounds: %f\n", new_x, new_y, child_node.boundary);
+//printf("Adding child %d,%d travers %f root cost %f\n", new_x, new_y, traversal_cost, root_node.path_cost);
     if (child_node.flags.state & PATH_NODE_FLAG_IMPASSABLE)
     {
-printf("    child %d,%d impassable\n", new_x, new_y);
+//printf("    child %d,%d impassable\n", new_x, new_y);
         return;
     }
     // Determine added weight for traversing this node. Have lower weight
     //  to nodes infrequently observed/traversed to provide bias to take 
     //  different routes.
-    float weight = child_node.observed * c_path_penalty_per_observation;
+    //float weight = child_node.observed * c_path_penalty_per_observation;
+    float weight = 0.0;
     // We don't need to add boundary consideration here because the above
     //  conditional checking impassable filtered out grid squares where
     //  a boundary existed. Add a sanity check to make sure.
@@ -204,19 +205,20 @@ printf("    child %d,%d impassable\n", new_x, new_y);
         //  it a lower cost.
         if (child_node.path_cost <= new_cost)
         {
+//printf("  new cost %f is above existing cost %f\n", new_cost, child_node.path_cost);
             // Nope.
             return;
         }
         // New weight is lower -- allow node to be added to stack again to 
         //    propagate updated weight to neighbors.
     }
-printf("child %d,%d  flags %02x  boundary %f  weight %f\n", new_x, new_y, child_node.flags.state, child_node.boundary, weight);
+//printf("child %d,%d flags %02x weight %f\n", new_x, new_y, child_node.flags.state, weight);
     // Add point to stack for future consideration.
     child_node.parent_idx = root_idx;
     child_node.path_cost = new_cost;
-    child_node.traversal_cost = traversal_cost + weight;
+    child_node.traversal_cost = weight;
     child_node.flags.state |= PATH_NODE_FLAG_PROCESSED;
-printf("%d,%d  cost %f\n", new_x, new_y, new_cost);
+//printf("%d,%d  cost %f\n", new_x, new_y, new_cost);
     m_queue.push(new_idx);
 }
 
@@ -258,40 +260,15 @@ void occupancy_grid_t::add_node_to_stack_diag(
         (uint32_t) (new_x + root_node.pos.y * m_grid_size.cols);
     const map_node_t& vert_child_node = m_grid[idx_vert];
     const map_node_t& horiz_child_node = m_grid[idx_horiz];
-    if ((vert_child_node.flags.state & PATH_NODE_FLAG_IMPASSABLE) &&
-        (horiz_child_node.flags.state & PATH_NODE_FLAG_IMPASSABLE))
+    uint8_t pass_mask = 
+        PATH_NODE_FLAG_IMPASSABLE | PATH_NODE_FLAG_NEAR_IMPASSABLE;
+    if ((vert_child_node.flags.state & pass_mask) &&
+        (horiz_child_node.flags.state & pass_mask))
     {
         // no direct 4-connected path. nothing to do here
         return;
     }
-    /////////////////////////////////////////////////////////////////////
-    // Point is reachable. Check cost to get there. This will be 
-    //  combination of cost from easiest 4-connected path to get 
-    //  to diagonal node
-    //    and of diagonal node itself
-    float cost = -1.0f;
-    // get lowest traversal weight of vert and horiz paths and use that as
-    //    base for weight to diagonal node
-    if ((vert_child_node.flags.state & PATH_NODE_FLAG_IMPASSABLE) == 0) {
-        cost = vert_child_node.traversal_cost;
-    }
-    if ((horiz_child_node.flags.state & PATH_NODE_FLAG_IMPASSABLE) == 0) {
-        float h_cost = horiz_child_node.traversal_cost;
-        if (cost < 0.0f) {
-            // Not accessible by vert node but horiz provides path. Use
-            //  horiz penalty.
-            cost = h_cost;
-        } else if ((h_cost > 0.0f) && (h_cost < cost)) {
-            // Horiz node is passable and penalty is less than via vert, so
-            //  use horiz's penalty
-            cost = h_cost;
-        }
-    }
-    assert(cost >= 0.0);
-    // Cost needed to traverse to neighboring node. Scale it up because
-    //  distance is farther (it's on a diagonal).
-    float traversal_weight = cost * 1.41f;
-    add_node_to_stack(root_idx, offset, traversal_weight);
+    add_node_to_stack(root_idx, offset, 1.41f);
 }
 
 // pixel neighbors
@@ -345,7 +322,7 @@ void occupancy_grid_t::compute_path_costs()
     //  stepping between adjacent nodes) out by several nodes, and measuing
     //  the bearing to that node. If the path turns sharply (e.g., around
     //  an obstacle) then the path is only traced to the turning point.
-printf("---------------------Checking direction\n");
+//printf("---------------------Checking direction\n");
     for (uint32_t y=0; y<m_grid_size.rows; y++) {
         for (uint32_t x=0; x<m_grid_size.cols; x++) {
             uint32_t idx = x + y * m_grid_size.cols;
@@ -366,7 +343,7 @@ printf("---------------------Checking direction\n");
                     //  indicating direction of next node relative 
                     //  to this one.
                     base_direction = get_offset_mask(next_ggp.pos, ggp.pos);
-printf("  node %d,%d   base direction %x\n", ggp.pos.x, ggp.pos.y, base_direction.mask);
+//printf("  node %d,%d   base direction %x\n", ggp.pos.x, ggp.pos.y, base_direction.mask);
                 }
                 else
                 {
@@ -378,13 +355,14 @@ printf("  node %d,%d   base direction %x\n", ggp.pos.x, ggp.pos.y, base_directio
                     //  will indicate if it's w/in +/-45deg of base.
                     next_direction =
                         get_offset_mask_wide(next_ggp.pos, ggp.pos);
+//printf("  ancestor %d,%d   direction %x  cost %f\n", ggp.pos.x, ggp.pos.y, next_direction.mask, ggp.path_cost);
                     if ((next_direction.mask & base_direction.mask) == 0)
                     {
                         // Latest direction is too different from original
                         //    offset. Halt search.
                         break;
                     }
-printf("  ancestor %d,%d   direction %x  cost %f\n", ggp.pos.x, ggp.pos.y, next_direction.mask, ggp.path_cost);
+//printf("  ancestor %d,%d   direction %x  cost %f\n", ggp.pos.x, ggp.pos.y, next_direction.mask, ggp.path_cost);
                 }
                 ggp = next_ggp;
             }
@@ -398,7 +376,7 @@ printf("  ancestor %d,%d   direction %x  cost %f\n", ggp.pos.x, ggp.pos.y, next_
                 theta_degs += 360.0;
             }
             root.direction_degs = theta_degs;
-printf("%d,%d -> %d,%d is %.1f degs   0x%08lx\n", root.pos.x, root.pos.y, ggp.pos.x, ggp.pos.y, root.direction_degs, (uint64_t) &m_grid[idx]);
+//printf("%d,%d -> %d,%d is %.1f degs   0x%08lx\n", root.pos.x, root.pos.y, ggp.pos.x, ggp.pos.y, root.direction_degs, (uint64_t) &m_grid[idx]);
         }
     }
 }
@@ -414,6 +392,7 @@ void occupancy_grid_t::add_anchor_to_path_stack(
 {
     assert(idx.idx < m_grid_size.cols * m_grid_size.rows);
     map_node_t& path_node = m_grid[idx.idx];
+printf("Anchor point %d,%d, weight %f\n", path_node.pos.x, path_node.pos.y, path_weight);
     path_node.path_cost = path_weight;
     path_node.parent_idx.idx = c_invalid_grid_idx;
     m_queue.push(idx);
@@ -514,6 +493,14 @@ void occupancy_grid_t::trace_routes(world_coordinate_t& destination)
     compute_path_costs();
 //printf("Computed costs\n");
 //count_bounds();
+for (uint32_t y=0; y<m_grid_size.rows; y++) {
+    for (uint32_t x=0; x<m_grid_size.cols; x++) {
+        uint32_t idx = x + y * m_grid_size.cols;
+        map_node_t& root = m_grid[idx];
+        printf("%d,%d  score %.2f  heading %.2f\n", x, y, root.path_cost, root.direction_degs);
+    }
+}
+//exit(1);
 }
 
 } // namespace slam_sim

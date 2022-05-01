@@ -39,16 +39,16 @@ ruleset
 
 ***********************************************************************/
 
-using slam_sim::build_area_map;
+//using slam_sim::build_area_map;
 using slam_sim::full_stop;
-using slam_sim::move_toward_destination;
-using slam_sim::need_to_extend_map;
-using slam_sim::optimize_graph;
-using slam_sim::optimization_required;
-using slam_sim::reassess_destination;
-using slam_sim::update_world_area;
+//using slam_sim::move_toward_destination;
+//using slam_sim::need_to_extend_map;
+//using slam_sim::optimize_graph;
+//using slam_sim::optimization_required;
+//using slam_sim::reassess_destination;
+//using slam_sim::update_world_area;
 
-using slam_sim::g_running;
+//using slam_sim::g_running;
 
 
 // Wrap error correction and map creation in a serial group as these are
@@ -56,40 +56,40 @@ using slam_sim::g_running;
 //  experiencing a txn conflict, and avoid race conditions.
 ruleset map_ruleset : serial_group()
 {
-    // We don't want multiple edges to be created at similar points in time
-    //  and both edges realize that it's time to optimize the map, so keep 
-    //  the graph optimization check in a serial group.
-    on_insert(edges)
-    {
-printf("1 enter on_insert(edges)\n");
-        // New edge created. See if it's time to run new graph optimization.
-        if (optimization_required())
-        {
-            optimize_graph(edges.dest->vertices.graph->graphs);
-            // Whenever new error-correction data is available, regenerate
-            //  maps. This can be triggered in a separate rule or simply
-            //  done here, so do it here.
-            build_area_map(/destination, /area_map, /observed_area);
-        }
-printf("1 leave on_insert(edges)\n");
-    }
-
-
-    // Destination changed. Update working map and start moving toward it.
-    on_change(destination)
-    {
-printf("2 enter on_change(destination)\n");
-        // Destination's changed. Make sure the known world includes 
-        //  this point.
-        update_world_area(/ego);
-        // Build map, including paths, to destination.
-        build_area_map(/destination, /area_map, /observed_area);
-        // Start movement toward destination.
-        g_running = true;
-printf("2 leave on_change(destination)\n");
-    }
-
-
+//    // We don't want multiple edges to be created at similar points in time
+//    //  and both edges realize that it's time to optimize the map, so keep 
+//    //  the graph optimization check in a serial group.
+//    on_insert(edges)
+//    {
+//printf("1 enter on_insert(edges)\n");
+//        // New edge created. See if it's time to run new graph optimization.
+//        if (optimization_required())
+//        {
+//            optimize_graph(edges.dest->vertices.graph->graphs);
+//            // Whenever new error-correction data is available, regenerate
+//            //  maps. This can be triggered in a separate rule or simply
+//            //  done here, so do it here.
+//            build_area_map(/destination, /area_map, /observed_area);
+//        }
+//printf("1 leave on_insert(edges)\n");
+//    }
+//
+//
+//    // Destination changed. Update working map and start moving toward it.
+//    on_change(destination)
+//    {
+//printf("2 enter on_change(destination)\n");
+//        // Destination's changed. Make sure the known world includes 
+//        //  this point.
+//        update_world_area(/ego);
+//        // Build map, including paths, to destination.
+//        build_area_map(/destination, /area_map, /observed_area);
+//        // Start movement toward destination.
+//        g_running = true;
+//printf("2 leave on_change(destination)\n");
+//    }
+//
+//
 //    // For each vertex, update working map using new sensor data.
 //    on_insert(vertices)
 //    {
@@ -126,23 +126,23 @@ ruleset runtime_ruleset
     //  made during processing will be invisible to the rule's txn.
 
 
-    on_insert(vertices)
-    {
-        // TODO Perform spatial query in area of observation and see if
-        //  there are other vertices to build edges with (i.e., build
-        //  loop closures)
-    }
-
-    on_insert(vertices)
-    {
-printf("4 enter on_insert(vertices)\n");
-        // Determine if it's time to change destinations.
-        if (reassess_destination())
-        {
-            // TODO If destination changes, start a new graph.
-        }
-printf("4 leave on_insert(vertices)\n");
-    }
+//    on_insert(vertices)
+//    {
+//        // TODO Perform spatial query in area of observation and see if
+//        //  there are other vertices to build edges with (i.e., build
+//        //  loop closures)
+//    }
+//
+//    on_insert(vertices)
+//    {
+//printf("4 enter on_insert(vertices)\n");
+//        // Determine if it's time to change destinations.
+//        if (reassess_destination())
+//        {
+//            // TODO If destination changes, start a new graph.
+//        }
+//printf("4 leave on_insert(vertices)\n");
+//    }
 
     on_insert(collision_event)
     {
@@ -155,11 +155,11 @@ printf("5 enter on_insert(collision_event)\n");
 printf("5 leave on_insert(collision_event)\n");
     }
 
-    on_insert(graphs)
-    {
-printf("6 enter on_insert(graphs)\n");
-        /ego.current_graph_id = graphs.id;
-printf("6 leave on_insert(graphs)\n");
-    }
+//    on_insert(graphs)
+//    {
+//printf("6 enter on_insert(graphs)\n");
+//        /ego.current_graph_id = graphs.id;
+//printf("6 leave on_insert(graphs)\n");
+//    }
 }
 

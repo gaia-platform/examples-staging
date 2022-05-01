@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 
+#include "constants.hpp"
 #include "occupancy.hpp"
 
 namespace slam_sim
@@ -18,6 +19,8 @@ namespace slam_sim
 int32_t g_quit = 0;
 world_coordinate_t g_position = { .x_meters = 0.0, .y_meters = 0.0 };
 float g_heading_degs = 0.0f;
+
+occupancy_grid_t g_navigation_map(c_navigation_map_node_width_meters);
 
 std::vector<world_coordinate_t> g_destinations;
 uint32_t g_next_destination = 0;

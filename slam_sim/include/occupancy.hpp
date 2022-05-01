@@ -107,21 +107,17 @@ class occupancy_grid_t
 //  void count_bounds();
 //
 public:
-    // Creates new uncached map.
+    // Builds an empty map. This is for use when constructing global map.
+    // Map remains uninitialized. To make it usable, call reset().
+    occupancy_grid_t(float node_width_meters);
     occupancy_grid_t(float node_width_meters, world_coordinate_t bottom_left,
         float width_meters, float height_meters);
-    // Constructors to be called by rules.
-    // Loads existing map, if present (map will be blank if it's doesn't
-    //  exist yet).
-    occupancy_grid_t(gaia::slam::area_map_t&);
-    // Purges existing map and rebuilds a new one, using observed area as
-    //  bounds.
-    occupancy_grid_t(gaia::slam::area_map_t&, gaia::slam::observed_area_t&);
 
     ~occupancy_grid_t();
 
-    // Resets the map grid.
-    void clear();
+    // Full map reset, including reallocating memory if necessary.
+    void reset(world_coordinate_t bottom_left, float width_meters, 
+        float height_meters);
 
     // Returns a reference to tne map node at the specified location.
     map_node_t& get_node(float x_meters, float y_meters);
@@ -171,7 +167,9 @@ protected:
     // Allocates own memory for m_grid, which is freed on destruction.
     // Grids created from DB blobs have memory for m_grid that is
     //  managed externally.
-    void allocate_own_grid();
+    void allocate_grid(bool raelloc=false);
+    // Initialize the map grid.
+    void initialize_grid();
 
     void apply_radial(float radial_degs, float range_meters, 
         float pos_x_meters, float pos_y_meters);

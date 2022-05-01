@@ -36,12 +36,10 @@ using gaia::slam::graphs_t;
 using gaia::slam::positions_t;
 using gaia::slam::vertices_t;
 
-using gaia::slam::area_map_t;
 using gaia::slam::destination_t;
 using gaia::slam::error_corrections_t;
 using gaia::slam::observed_area_t;
 
-using gaia::slam::area_map_writer;
 using gaia::slam::destination_writer;
 
 // Determine if a new graph optimization is necessary.
@@ -152,29 +150,28 @@ bool need_to_extend_map(positions_t& pos, observed_area_t& bounds)
 }
 
 
-static void build_map(area_map_t& am)
-{
-    static int32_t ctr = 0;
-    occupancy_grid_t map(am);
-    // There are C++ ways to format a number to a string (e.g.,
-    //  fmt::format or std::stringstream, but the C approach is
-    //  nice in its simplicity.
-// TODO get timestamp to use for name
-    char fname[256];
-    sprintf(fname, "map_%03d.pnm", ctr++);
-    gaia_log::app().info("Building map {}", fname);
-    map.export_as_pnm(fname);
-}
+//static void build_map(area_map_t& am)
+//{
+//    static int32_t ctr = 0;
+//    occupancy_grid_t map(am);
+//    // There are C++ ways to format a number to a string (e.g.,
+//    //  fmt::format or std::stringstream, but the C approach is
+//    //  nice in its simplicity.
+//// TODO get timestamp to use for name
+//    char fname[256];
+//    sprintf(fname, "map_%03d.pnm", ctr++);
+//    gaia_log::app().info("Building map {}", fname);
+//    map.export_as_pnm(fname);
+//}
 
 
 void export_map_to_file()
 {
-    txn_t txn;
-    txn.begin();
-    ego_t ego = *(ego_t::list().begin());
-    area_map_t& am = *(area_map_t::list().begin());
-    build_map(am);
-    txn.commit();
+    static int32_t ctr = 0;
+    char fname[256];
+    sprintf(fname, "map_%03d.pnm", ctr++);
+    gaia_log::app().info("Building map {}", fname);
+    g_navigation_map.export_as_pnm(fname);
 }
 
 
@@ -214,35 +211,34 @@ void build_export_map()
 }
 
 
-void build_area_map(destination_t& dest, area_map_t& am, 
-    observed_area_t& bounds)
+void update_navigation_map()
 {
-printf("Build area map\n");
-    // Each time we build an area map 
-    occupancy_grid_t area_map(am, bounds);
+    txn_t txn;
+    txn.begin();
+    destination_t dest = *(destination_t::list().begin());
+    observed_area_t bounds = *(observed_area_t::list().begin());
+    const world_coordinate_t bottom_left = {
+        .x_meters = bounds.left_meters(),
+        .y_meters = bounds.bottom_meters(),
+    };
+    float width_meters = bounds.right_meters() - bounds.left_meters();
+    float height_meters = bounds.top_meters() - bounds.bottom_meters();
+    // Build map and apply sensor data.
+    g_navigation_map.reset(bottom_left, width_meters, height_meters);
     for (graphs_t& g: graphs_t::list())
     {
-//printf("Applying sensor data from graph %d\n", g.id());
         for (vertices_t& v: g.vertices())
         {
-            //gaia_log::app().info("Pulling sensor data from {}:{}", 
-            //    g.id(), v.id());
-//printf("    Sensor data from %d::%d\n", g.id(), v.id());
-            area_map.apply_sensor_data(v);
+            g_navigation_map.apply_sensor_data(v);
         }
     }
-//area_map.count_bounds();
-    // Build paths to destination
+    // Build paths to destination.
     world_coordinate_t pos = {
         .x_meters = dest.x_meters(),
         .y_meters = dest.y_meters()
     };
-    area_map.trace_routes(pos);
-    // Update blob ID in database
-    area_map_writer writer = am.writer();
-    writer.blob_id = area_map.get_blob_id();
-    writer.update_row();
-//area_map.count_bounds();
+    g_navigation_map.trace_routes(pos);
+    txn.commit();
 }
 
 ////////////////////////////////////////////////////////////////////////

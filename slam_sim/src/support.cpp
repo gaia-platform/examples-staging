@@ -23,7 +23,7 @@
 #include "constants.hpp"
 #include "globals.hpp"
 #include "slam_sim.hpp"
-//#include "line_segment.hpp"
+#include "txn.hpp"
 
 
 namespace slam_sim
@@ -36,7 +36,6 @@ using std::max;
 
 using gaia::common::gaia_id_t;
 
-using gaia::slam::area_map_t;
 using gaia::slam::edges_t;
 using gaia::slam::destination_t;
 using gaia::slam::ego_t;
@@ -59,8 +58,12 @@ using gaia::slam::observed_area_writer;
 
 // Updates the observed_area record to make sure it includes all observed
 //  areas plus the destination.
-void update_world_area(ego_t& ego)
+void update_world_area()
 {
+    txn_t txn;
+    txn.begin();
+    ego_t ego = *(ego_t::list().begin());
+
     observed_area_t area = ego.world();
     destination_t dest = ego.destination();
 
@@ -103,6 +106,7 @@ void update_world_area(ego_t& ego)
         oa_writer.update_row();
     }
 printf("World area: %.1f,%.1f to %.1f,%.1f\n", left_edge, bottom_edge, right_edge, top_edge);
+    txn.commit();
 }    
 
 
@@ -181,7 +185,7 @@ printf("Creating vertex\n");
     v.range_data().connect(range_id);
     v.motion().connect(movement_id);
 
-    update_world_area(ego);
+    update_world_area();
 
     // create edge
     if (prev_vert)
@@ -204,42 +208,23 @@ printf("Creating vertex\n");
 // Non-rule API
 // The functions here must manage their own transactions.
 
-//static void build_working_map(occupancy_grid_t& working_map,
-//    destination_t& dest, area_map_t& am)
-//{
-//    // Apply observation data
-//    for (vertices_t& v: vertices_t::list())
-//    {
-//        working_map.apply_sensor_data(v);
-//    }
-//    // Find paths toward destination.
-//    world_coordinate_t dest_coord = {
-//        .x_meters = dest.x_meters(),
-//        .y_meters = dest.y_meters()
-//    };
-//    occupancy_grid_t area_grid(am);
-//    area_grid.trace_routes(dest_coord, area_grid);
-//}
-
 
 // Infrastructure has info on latest position so no need to query DB
 //  (infra is what sent that info to the DB).
 void move_toward_destination()
 {
 printf("MOVING\n");
-    gaia::db::begin_transaction();
-//    destination_t& dest = *(destination_t::list().begin());
-    area_map_t& am = *(area_map_t::list().begin());
-    occupancy_grid_t map(am);
+    txn_t txn;
+    txn.begin();
     // Make several small steps.
     for (uint32_t i=0; i<c_num_steps_between_keyframes; i++)
     {
         // Get direction to head from map.
-        grid_index_t idx = map.get_node_index(g_position.x_meters, 
+        grid_index_t idx = g_navigation_map.get_node_index(g_position.x_meters, 
             g_position.y_meters);
-        map_node_t node = map.get_node(idx);
-map_node_t* pnode = map.get_node_ptr(idx);
-        //map_node_t& node = map.get_node(g_position.x_meters, 
+        map_node_t node = g_navigation_map.get_node(idx);
+map_node_t* pnode = g_navigation_map.get_node_ptr(idx);
+        //map_node_t& node = g_navigation_map.get_node(g_position.x_meters, 
         //    g_position.y_meters);
 //printf("At node %d,%d. Moving %.2f\n", node.pos.x, node.pos.y, node.direction_degs);
         float heading_degs = node.direction_degs;
@@ -267,7 +252,7 @@ printf("%.2f,%.2f\n", g_position.x_meters, g_position.y_meters);
     //  amount.
     create_vertex(g_position, g_heading_degs);
     //
-    gaia::db::commit_transaction();
+    txn.commit();
 }
 
 void seed_database(float x_meters, float y_meters)
@@ -306,18 +291,6 @@ void seed_database(float x_meters, float y_meters)
         bottom    // bottom_meters
     );
 
-    // Working map record.
-    // Create local context to not worry about variable name conflicts.
-    gaia_id_t area_id = area_map_t::insert_row(
-        0,        // blob_id
-        left,     // left_meters
-        right,    // right_meters
-        top,      // top_meters
-        bottom,   // bottom_meters
-        0,        // num_rows
-        0         // num_cols
-    );
-
     gaia_id_t destination_id = destination_t::insert_row(
         new_dest.x_meters,    // x_meters
         new_dest.y_meters,    // y_meters
@@ -330,7 +303,6 @@ printf("initial destination %f,%f\n", new_dest.x_meters, new_dest.y_meters);
     ego.destination().connect(destination_id);
     ego.world().connect(world_id);
     ego.latest_observation().connect(latest_observation_id);
-    ego.map().connect(area_id);
 
     ////////////////////////////////////////////
     // All done

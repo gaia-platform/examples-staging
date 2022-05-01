@@ -29,7 +29,7 @@ namespace slam_sim
 
 using std::this_thread::sleep_for;
 
-static constexpr uint32_t c_rule_wait_millis = 200;
+static constexpr uint32_t c_rule_wait_millis = 50;
 
 
 /**
@@ -38,24 +38,28 @@ static constexpr uint32_t c_rule_wait_millis = 200;
 void main_loop()
 {
 int32_t ctr = 0;
+    g_running = true;
     // When the simulation completes it will set g_quit to 1. Then we can
     //  exit. In the meantime, the simulation is being handled by rules.
     while (g_quit == 0)
     {
         if (g_running)
         {
+            update_world_area();
+            update_navigation_map();
             move_toward_destination();
+            if (reassess_destination())
+            {
+                g_quit = 1;
+            }
 //            export_map_to_file();
             build_export_map();
-            if (ctr++ > 40)
+            if (ctr++ > 150)
             {
                 g_quit = 1;
             }
         }
-        else
-        {
-            sleep_for(std::chrono::milliseconds(c_rule_wait_millis));
-        }
+        sleep_for(std::chrono::milliseconds(c_rule_wait_millis));
     }
 }
 
@@ -77,7 +81,6 @@ void clean_db()
 {
     gaia::db::begin_transaction();
     remove_all_rows<gaia::slam::ego_t>();
-    remove_all_rows<gaia::slam::area_map_t>();
     remove_all_rows<gaia::slam::destination_t>();
     remove_all_rows<gaia::slam::observed_area_t>();
     remove_all_rows<gaia::slam::pending_destination_t>();

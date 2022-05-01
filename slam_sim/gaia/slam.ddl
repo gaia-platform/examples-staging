@@ -30,7 +30,7 @@ database slam;
 -- Table list
 -- Single record tables:
 --    ego                   Stores state of the bot.
---    area_map              Map of the known world.
+----    area_map              Map of the known world.
 --    destination           Location that bot is moving to.
 --    observed_area         Bounds of observed world.
 --
@@ -79,10 +79,10 @@ table ego
 
   -- Position oriented.
   destination references destination,
-  world references observed_area,
+  world references observed_area
 
-  -- Map oriented.
-  map references area_map
+--  -- Map oriented.
+--  map references area_map
 )
 
 
@@ -101,27 +101,27 @@ table observed_area
 )
 
 
--- Maps would ideally store map content as blobs but max blob size is
---  presently too small. Instead, store pointer to current map and
---  manage concurrent access manually.
-table area_map
-(
-  -- Reference to in-memory blob that stores 2D map.
-  -- Blob ID changes on each map update.
-  blob_id uint32,
-
-  -- Bounding polygon
-  -- Uses world coordinates, with increasing X,Y being rightward/upward.
-  left_meters float,
-  right_meters float,
-  top_meters float,
-  bottom_meters float,
-  -- Grid size
-  num_rows uint32,
-  num_cols uint32,
-
-  ego references ego
-)
+---- Maps would ideally store map content as blobs but max blob size is
+----  presently too small. Instead, store pointer to current map and
+----  manage concurrent access manually.
+--table area_map
+--(
+--//  -- Reference to in-memory blob that stores 2D map.
+--//  -- Blob ID changes on each map update.
+--//  blob_id uint32,
+--//
+--  -- Bounding polygon
+--  -- Uses world coordinates, with increasing X,Y being rightward/upward.
+--  left_meters float,
+--  right_meters float,
+--  top_meters float,
+--  bottom_meters float,
+--  -- Grid size
+--  num_rows uint32,
+--  num_cols uint32,
+--
+--  ego references ego
+--)
 
 
 table destination

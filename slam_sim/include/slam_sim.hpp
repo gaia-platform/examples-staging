@@ -44,16 +44,13 @@ bool optimization_required();
 void optimize_graph(gaia::slam::graphs_t&);
 
 
-// Checks to see if known world has extended beyong map boundaries so much
-//  that it's time to rebuild the area map.
-bool need_to_extend_map(gaia::slam::positions_t& pos, 
-    gaia::slam::observed_area_t& bounds);
+//// Checks to see if known world has extended beyong map boundaries so much
+////  that it's time to rebuild the area map.
+//bool need_to_extend_map(gaia::slam::positions_t& pos, 
+//    gaia::slam::observed_area_t& bounds);
 
-// Generates a low-res map off the known world and generates coarse path
-//  info to the destination.
-// Stores output 'area_map' record.
-void build_area_map(gaia::slam::destination_t&, gaia::slam::area_map_t&, 
-    gaia::slam::observed_area_t&);
+// Generates/updates path map.
+void update_navigation_map();
 
 // Checks to see if it's time to select a new destination. If so, the
 //  destination record is updated and the function returns 'true'. Otherwise
@@ -62,7 +59,7 @@ bool reassess_destination();
 
 // Updates the observed_area record to make sure it includes all observed
 //  areas plus the destination.
-void update_world_area(gaia::slam::ego_t& ego);
+void update_world_area();
 
 // Instructs hardware layer to move toward destination.
 void move_toward_destination();
