@@ -483,24 +483,10 @@ void occupancy_grid_t::trace_routes(world_coordinate_t& destination)
             m_grid[idx].path_cost = 0.0f;
         }
     }
-//printf("TRACE ROUTES grid at 0x%08lx (%d)\n", (uint64_t) m_grid, m_blob_id);
-//count_bounds();
     grid_index_t idx = get_node_index(destination.x_meters, 
         destination.y_meters);
     add_anchor_to_path_stack(idx, 0.0f);
-//printf("Added anchor\n");
-//count_bounds();
     compute_path_costs();
-//printf("Computed costs\n");
-//count_bounds();
-for (uint32_t y=0; y<m_grid_size.rows; y++) {
-    for (uint32_t x=0; x<m_grid_size.cols; x++) {
-        uint32_t idx = x + y * m_grid_size.cols;
-        map_node_t& root = m_grid[idx];
-        printf("%d,%d  score %.2f  heading %.2f\n", x, y, root.path_cost, root.direction_degs);
-    }
-}
-//exit(1);
 }
 
 } // namespace slam_sim

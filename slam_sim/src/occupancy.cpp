@@ -397,8 +397,16 @@ void occupancy_grid_t::export_as_pnm(string file_name)
     destination_t dest = *(destination_t::list().begin());
     const map_node_t dest_node = get_node(dest.x_meters(), dest.y_meters());
     uint32_t dest_idx = dest_node.pos.x + dest_node.pos.y * m_grid_size.cols;
-    b[dest_idx] = 255;
-    g[dest_idx] = 128;
+    for (int32_t y=-1; y<=1; y++)
+    {
+        int32_t row_idx = dest_idx + y * m_grid_size.cols;
+        for (int32_t x=-1; x<=1; x++)
+        {
+            int32_t idx = x + row_idx;
+            b[idx] = 255;
+            g[idx] = 128;
+        }
+    }
     txn.commit();
 
     // Export image.

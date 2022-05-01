@@ -23,6 +23,9 @@
 #include "globals.hpp"
 #include "slam_sim.hpp"
 
+// To make video of output files, use, e.g.:
+//    ffmpeg -r 5 -i export_%03d.pnm  out.mp4
+
 
 namespace slam_sim
 {
@@ -54,7 +57,7 @@ int32_t ctr = 0;
             }
 //            export_map_to_file();
             build_export_map();
-            if (ctr++ > 150)
+            if (ctr++ > 250)
             {
                 g_quit = 1;
             }
