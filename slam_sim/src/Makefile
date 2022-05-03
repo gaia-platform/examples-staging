@@ -1,20 +1,54 @@
+include ../Makefile.inc
 
-all:
-	mkdir -p ../build && cd ../build/ && cmake .. && make -j 4
-
-run: refresh_db
-	../build/slam_sim -m ../data/map.json -x -3.0 -y 4.4
-
-drun: refresh_db
-	gdb --args ../build/slam_sim -m ../data/map.json -x -3.0 -y 4.4
+# Make sure that we're not using g++. Use that as a proxy to determine
+#   if environment variables are set, as we should be using clang if so.
+GXX_NAME = g++
+ifeq ($(CXX), $(GXX_NAME))
+    $(error Using g++. Environment variables are not correctly configured)
+endif
 
 
-# At present there's no method to delete the contents of the database
-#   from w/in the program, so add a way to do so outside.
-# NOTE: this may be implemented, but there may be a problem w/ that
-#   in regards to connected records
-refresh_db:
-	gaiac ../gaia/slam.ddl --db-name slam -g -o /tmp/slam
+TARGET = slam_sim
+TEST_TARGETS = test_analyze test_line_segment
+
+CORE_OBJS = analyze.o occupancy.o navigation.o path_map.o support.o \
+    globals.o txn.o line_segment.o
+OBJS = main.o $(CORE_OBJS)
+EXT_OBJS = ../gaia/gaia_slam.o
+LIBS = /usr/local/lib/libgaia.so -pthread -lcurl
+
+all: $(OBJS)
+	$(CXX) $(OBJS) $(EXT_OBJS) -o $(TARGET) $(LIBS)
+
+test: $(TEST_TARGETS)
+
+test_analyze: test_analyze.cpp analyze.cpp $(CORE_OBJS)
+	$(CXX) $(CPPFLAGS) test_analyze.cpp -o test_analyze \
+        $(CORE_OBJS) $(EXT_OBJS) $(LIBS)
+
+test_line_segment: test_line_segment.cpp line_segment.cpp $(CORE_OBJS)
+	$(CXX) $(CPPFLAGS) test_line_segment.cpp -o test_line_segment \
+        $(CORE_OBJS) $(EXT_OBJS) $(LIBS)
+
+
+run:
+	./$(TARGET) -m ../data/maze3.json -x 4.5 -y 6.0
+	#./$(TARGET) -m ../data/maze2.json -x -3.5 -y 1.5
+	#./$(TARGET) -m ../data/maze.json -x -4.5 -y 1.25
+
+drun:
+	gdb --args ./slam_sim -m ../data/maze3.json -x 4.5 -y 6.0
+	#gdb --args ./slam_sim -m ../data/maze.json -x -4.5 -y 1.25
+
+
+%.o: %.cpp
+	$(CXX) $(INC) -c $(CPPFLAGS) $(OPTIMIZATION_FLAG) $<
+
+refresh: clean all
 
 clean:
-	rm *.pgm
+	rm -f *.o $(TARGET) *.pnm
+	rm -rf logs
+
+clean_images:
+	rm -f *.pnm

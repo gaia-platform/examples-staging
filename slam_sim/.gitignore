@@ -5,3 +5,10 @@ out2
 slam_sim
 *.o
 logs
+*.pgm
+*.pnm
+test_analyze
+test_blob_cache
+test_line_segment
+z*
+*mp4

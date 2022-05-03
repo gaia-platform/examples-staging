@@ -20,63 +20,87 @@
 
 #include "gaia_slam.h"
 
+#include "globals.hpp"
 #include "slam_sim.hpp"
 
-using namespace gaia::slam;
+// To make video of output files, use, e.g.:
+//    ffmpeg -r 5 -i export_%03d.pnm  out.mp4
 
-using std::this_thread::sleep_for;
 
 namespace slam_sim
 {
 
-constexpr uint32_t c_rule_wait_millis = 100;
+using std::this_thread::sleep_for;
 
-static float g_initial_x_meters = -1.0;
-static float g_initial_y_meters = -1.0;
+static constexpr uint32_t c_rule_wait_millis = 50;
+
 
 /**
  * Wait for simulation to complete.
  */
 void main_loop()
 {
+int32_t ctr = 0;
+int32_t reached_destinations = 0;
+    g_running = true;
     // When the simulation completes it will set g_quit to 1. Then we can
     //  exit. In the meantime, the simulation is being handled by rules.
     while (g_quit == 0)
     {
+        if (g_running)
+        {
+            update_world_area();
+            update_navigation_map();
+            move_toward_destination();
+            if (reassess_destination())
+            {
+                reached_destinations++;
+                if (reached_destinations >= 3)
+                {
+                    g_quit = 1;
+                }
+            }
+            if (ctr & 1)
+            {
+                build_export_map();
+            }
+            if (ctr++ > 1200)
+            {
+                g_quit = 1;
+            }
+        }
         sleep_for(std::chrono::milliseconds(c_rule_wait_millis));
     }
 }
 
 
-template <typename T_type>
-void clear_table()
+template <class T_object>
+void remove_all_rows()
 {
-    for (auto obj_it = T_type::list().begin(); obj_it != T_type::list().end(); )
+    const bool force_disconnect_of_related_rows = true;
+    for (auto obj_it = T_object::list().begin();
+         obj_it != T_object::list().end();)
     {
-        auto current_obj_it = obj_it++;
-        current_obj_it->delete_row();
+        auto this_it = obj_it++;
+        this_it->delete_row(force_disconnect_of_related_rows);
     }
 }
 
 
-void clear_data()
+void clean_db()
 {
-    clear_table<edges_t>();
-    clear_table<landmark_sightings_t>();
-    clear_table<landmarks_t>();
-    clear_table<paths_t>();
-    clear_table<observations_t>();
-    clear_table<collision_event_t>();
-    clear_table<collision_event_t>();
-    clear_table<pending_destination_t>();
-    clear_table<error_correction_t>();
-    clear_table<estimated_position_t>();
-    clear_table<destination_t>();
-    clear_table<working_map_t>();
-    clear_table<local_map_t>();
-    clear_table<area_map_t>();
-    clear_table<ego_t>();
-    clear_table<sim_position_offset_t>();
+    gaia::db::begin_transaction();
+    remove_all_rows<gaia::slam::ego_t>();
+    remove_all_rows<gaia::slam::destination_t>();
+    remove_all_rows<gaia::slam::observed_area_t>();
+    remove_all_rows<gaia::slam::graphs_t>();
+    remove_all_rows<gaia::slam::vertices_t>();
+    remove_all_rows<gaia::slam::positions_t>();
+    remove_all_rows<gaia::slam::movements_t>();
+    remove_all_rows<gaia::slam::range_data_t>();
+    remove_all_rows<gaia::slam::edges_t>();
+    remove_all_rows<gaia::slam::error_corrections_t>();
+    gaia::db::commit_transaction();
 }
 
 
@@ -109,7 +133,7 @@ void parse_command_line(int argc, char** argv)
             case 'x':
                 try
                 {
-                    g_initial_x_meters = std::stod(optarg, NULL);
+                    g_position.x_meters = std::stod(optarg, NULL);
                 }
                 catch (std::invalid_argument& e)
                 {
@@ -120,7 +144,7 @@ void parse_command_line(int argc, char** argv)
             case 'y':
                 try
                 {
-                    g_initial_y_meters = std::stod(optarg, NULL);
+                    g_position.y_meters = std::stod(optarg, NULL);
                 }
                 catch (std::invalid_argument& e)
                 {
@@ -139,8 +163,8 @@ void parse_command_line(int argc, char** argv)
     {
         usage(argc, argv);
     }
-    gaia_log::app().info("Initial possition at {},{}", 
-        g_initial_x_meters, g_initial_y_meters);
+    gaia_log::app().info("Initial possition at {},{}",
+        g_position.x_meters, g_position.y_meters);
     gaia_log::app().info("Loading world map {}", map_file);
     load_world_map(map_file);
 }
@@ -151,16 +175,7 @@ void init_sim()
     // Seed database and then create first path.
     // Seeding function manages its own transaction.
     gaia_log::app().info("Seeding the database...");
-    seed_database(g_initial_x_meters, g_initial_y_meters);
-
-    // Create map(s).
-    g_area_map = new occupancy_grid_t(AREA_MAP_NODE_WIDTH_METERS,
-        DEFAULT_AREA_MAP_WIDTH_METERS, DEFAULT_AREA_MAP_HEIGHT_METERS);
-
-    gaia_log::app().info("Creating initial path...");
-    gaia::db::begin_transaction();
-    create_new_path();
-    gaia::db::commit_transaction();
+    slam_sim::seed_database(g_position.x_meters, g_position.y_meters);
 }
 
 } // namespace slam_sim;
@@ -172,14 +187,7 @@ int main(int argc, char** argv)
 
     slam_sim::parse_command_line(argc, argv);
 
-    // We explicitly handle the transactions with begin_transaction() 
-    //  and commit_transaction() to trigger the rules.
-    gaia::db::begin_transaction();
-    slam_sim::clear_data();
-    gaia::db::commit_transaction();
-
-    gaia_log::app().info("Starting SLAM simulation...");
-
+    slam_sim::clean_db();
     slam_sim::init_sim();
     slam_sim::main_loop();
 
