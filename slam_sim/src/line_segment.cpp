@@ -84,9 +84,6 @@ double line_segment_t::intersect_range(double x, double y, double theta_deg)
     double x4 = x3 + 10.0 * sin(D2R * theta);
     double y3 = y;
     double y4 = y + 10.0 * cos(D2R * theta);
-//printf("This segment:   %.1f,%.1f -> %.1f,%.1f\n", x1, y1, x2, y2);
-//printf(" -> line %.1f,%.1f at %.1f\n", x3, y3, theta);
-//printf("    becomes:   %.1f,%.1f -> %.4f,%.4f\n", x3, y3, x4, y4);
     // Px = ((x1y2 - x2y1)(x3-x4) - (x1-x2)(x3y4-y3x4)) / denom;
     // Py = ((x1y2 - y1x2)(y3-y4) - (y1-y2)(x3y4-y3x4)) / denom;
     // denom = (x1-x2)(y3-y4) - (y1-y2)(x3-x4);
@@ -104,7 +101,6 @@ double line_segment_t::intersect_range(double x, double y, double theta_deg)
     {
         double px = (xy12 * x3_x4 - xy34 * x1_x2) / denom;
         double py = (xy12 * y3_y4 - xy34 * y1_y2) / denom;
-//printf("  intersect point %.4f,%.4f\n", px, py);
         // Intersection may or may not be in the direction of theta.
         //  All this algorithm tells us is that the lines, infinitely
         //  expanded, meet at this point. Find out if intersection
@@ -119,7 +115,6 @@ double line_segment_t::intersect_range(double x, double y, double theta_deg)
         {
             delta_degs -= 360.0;
         }
-//printf("    measured theta: %.1f   delta: %f\n", inter_theta, delta_degs);
         if (fabs(delta_degs) < 1.0)
         {
             // Intersection point is in direction of theta. Now see if
@@ -130,18 +125,14 @@ double line_segment_t::intersect_range(double x, double y, double theta_deg)
             double dist1 = measure_distance(px-x2, py-y2);
             // If longest distance is less than line segment length then
             //  the intersection point is w/in the segment.
-//printf("dist 0: %f\n", dist0);
-//printf("dist 1: %f\n", dist1);
             if ((dist0 <= m_len) && (dist1 <= m_len))
             {
                 dist = measure_distance(px-x3, py-y3);
             }
         }
     }   // Otherwise lines are parallel.
-//printf("    range %.1f\n", dist);
     return dist;
 }
-
 
 } // namespace slam_sim
 

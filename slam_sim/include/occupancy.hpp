@@ -20,8 +20,6 @@ are increasing to the up and right, as elsewhere in the code. The map
 itself is stored in an array which uses the standard image coordinate
 system, with the first element in the array being at the top-left.
 The code has to manage the switch between the two.
-// TODO FIXME verify that this is indeed the case, and that the switch
-//  is being properly handled.
 
 ***********************************************************************/
 #include <stdint.h>
@@ -103,9 +101,6 @@ struct map_node_t
 // The grid (map) itself.
 class occupancy_grid_t
 {
-//public:
-//  void count_bounds();
-//
 public:
     // Builds an empty map. This is for use when constructing global map.
     // Map remains uninitialized. To make it usable, call reset().
@@ -124,8 +119,6 @@ public:
     map_node_t& get_node(grid_index_t idx);
     map_node_flags_t& get_node_flags(float x_meters, float y_meters);
     map_node_flags_t& get_node_flags(grid_index_t idx);
-
-map_node_t* get_node_ptr(grid_index_t idx) { return &m_grid[idx.idx]; }
 
     grid_index_t get_node_index(float pos_x_meters, float pos_y_meters);
 

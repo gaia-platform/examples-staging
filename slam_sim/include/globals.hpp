@@ -24,9 +24,6 @@ extern occupancy_grid_t g_navigation_map;
 //  to quit it's set to 1.
 extern int32_t g_quit;
 
-//// Blob caches for area maps and working maps.
-//extern blob_cache_t g_area_blobs;
-
 // Bot's position. This is known at the 'infrastructure' level (e.g., ROS)
 //  which is where position data is fed to the DB from. This is the current
 //  (estimated) position of the bot.

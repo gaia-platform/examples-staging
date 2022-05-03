@@ -9,7 +9,7 @@ endif
 
 
 TARGET = slam_sim
-TEST_TARGETS = test_analyze
+TEST_TARGETS = test_analyze test_line_segment
 
 CORE_OBJS = analyze.o occupancy.o navigation.o path_map.o support.o \
     globals.o txn.o line_segment.o
@@ -24,6 +24,10 @@ test: $(TEST_TARGETS)
 
 test_analyze: test_analyze.cpp analyze.cpp $(CORE_OBJS)
 	$(CXX) $(CPPFLAGS) test_analyze.cpp -o test_analyze \
+        $(CORE_OBJS) $(EXT_OBJS) $(LIBS)
+
+test_line_segment: test_line_segment.cpp line_segment.cpp $(CORE_OBJS)
+	$(CXX) $(CPPFLAGS) test_line_segment.cpp -o test_line_segment \
         $(CORE_OBJS) $(EXT_OBJS) $(LIBS)
 
 

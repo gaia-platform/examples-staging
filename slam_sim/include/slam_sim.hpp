@@ -43,12 +43,6 @@ bool optimization_required();
 //  to iterate through a graph's vertices and edges.
 void optimize_graph(gaia::slam::graphs_t&);
 
-
-//// Checks to see if known world has extended beyong map boundaries so much
-////  that it's time to rebuild the area map.
-//bool need_to_extend_map(gaia::slam::positions_t& pos, 
-//    gaia::slam::observed_area_t& bounds);
-
 // Generates/updates path map.
 void update_navigation_map();
 
@@ -90,9 +84,6 @@ void export_map_to_file();
 //  timestamp. Map is generated from scratch using content from the
 //  active graph. This is higher resolution than the navigatin map.
 void build_export_map();
-
-// External request to move to a specific location.
-void request_destination(float x_meters, float y_meters);
 
 
 ////////////////////////////////////////////////
