@@ -8,23 +8,17 @@
 
 ///////////////////////////////////////////////////////////////////////
 //
-// Transaction wrapper. Some API code that accesses the database
-//  may need to be called from both within rules and from main(). As
-//  there are no nested transactions, a transaction is open when calling
-//  from within a rule, and it's not automatically open when called
-//  procedurally, a smart wrapper for transactions is needed in the API
-//  that can begin/commit only if a transaction isn't already open.
+// Transaction wrapper. Transactions cannot presently be nested. This
+//  means that each function accessing the database must be aware of
+//  where it's being called from, and whether there's an existing
+//  transaction open or not. To eliminate the boilerplate in each
+//  function, a transaction wrapper is used. Begin and commit calls
+//  are made to the wrapper, and the wrapper keeps track of whether
+//  an existing transaction is open or not. If so, the begin/commit
+//  are ignored as those will be part of the outer transaction.
 //
-// It is of course possible to require that code calling the API be
-//  aware of what the API functions require, but that can result in
-//  convoluted code, and it also works against code compartmentalization.
-//
-// This simple wrapper detects if a transaction is already open. If so,
-//  a user's call to 'begin()' will be ignored, as will any subsequent
-//  call to 'commit()'.
-//
-// There is no action on destruction -- it is entirely up to the user to
-//  call 'commit()'. Likewise, it is up to the user to catch any
+// There is no action on destruction -- it is entirely up to the user
+//  to call 'commit()'. Likewise, it is up to the user to catch any
 //  transaction errors.
 //
 ///////////////////////////////////////////////////////////////////////

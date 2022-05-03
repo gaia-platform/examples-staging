@@ -10,6 +10,9 @@
 /***********************************************************************
 * Path-finding logic for occupancy grid. Code here adapted from
 * <<TODO provide link or give description>>
+*
+* This is a support file for occupancy.cpp.
+*
 ***********************************************************************/
 
 #include <assert.h>
@@ -145,7 +148,8 @@ static struct drand48_data path_rand_;
 //    (eg, weight and link to parent)
 // Add node to stack for future neighbor analysis.
 // 'traversal_cost' is the cost to reach this node from the neighbor that
-//  added it to the stack.
+//  added it to the stack. That should be 1.0 for 4-connected neighbors
+//  and 1.4 for diagonally connected.
 void occupancy_grid_t::add_node_to_stack(
       /* in     */ const grid_index_t root_idx,
       /* in     */ const node_offset_t offset,
@@ -166,17 +170,17 @@ void occupancy_grid_t::add_node_to_stack(
     // Point is in the world. Check it.
     grid_index_t new_idx = { .idx = new_x + new_y * m_grid_size.cols };
     map_node_t& child_node = m_grid[new_idx.idx];
-//printf("Adding child %d,%d travers %f root cost %f\n", new_x, new_y, traversal_cost, root_node.path_cost);
     if (child_node.flags.state & PATH_NODE_FLAG_IMPASSABLE)
     {
-//printf("    child %d,%d impassable\n", new_x, new_y);
         return;
     }
     // Determine added weight for traversing this node. Have lower weight
-    //  to nodes infrequently observed/traversed to provide bias to take 
+    //  to nodes less frequently traversed to provide bias to take
     //  different routes.
-    //float weight = child_node.observed * c_path_penalty_per_observation;
-    float weight = 0.0;
+    float weight = child_node.occupied * c_path_penalty_per_occupation;
+    // Increase the weight for nodes that are impassable or are near
+    //  impassable nodes. In practice, impassable weight should be much
+    //  higher, but this value is OK for the size of maps used presently.
     // We don't need to add boundary consideration here because the above
     //  conditional checking impassable filtered out grid squares where
     //  a boundary existed. Add a sanity check to make sure.
@@ -194,7 +198,7 @@ void occupancy_grid_t::add_node_to_stack(
         weight += 5.0;
     }
     // Path tracing algorithm is deterministic and can follow vert or
-    //    horiz path too easily. Add some jitter to allow pulling in
+    //    horiz paths too easily. Add some jitter to allow pulling in
     //    from more accurate direction.
     double jitter = 0.0;
     drand48_r(&path_rand_, &jitter);
@@ -205,20 +209,17 @@ void occupancy_grid_t::add_node_to_stack(
         //  it a lower cost.
         if (child_node.path_cost <= new_cost)
         {
-//printf("  new cost %f is above existing cost %f\n", new_cost, child_node.path_cost);
             // Nope.
             return;
         }
-        // New weight is lower -- allow node to be added to stack again to 
+        // New weight is lower -- allow node to be added to stack again to
         //    propagate updated weight to neighbors.
     }
-//printf("child %d,%d flags %02x weight %f\n", new_x, new_y, child_node.flags.state, weight);
     // Add point to stack for future consideration.
     child_node.parent_idx = root_idx;
     child_node.path_cost = new_cost;
     child_node.traversal_cost = weight;
     child_node.flags.state |= PATH_NODE_FLAG_PROCESSED;
-//printf("%d,%d  cost %f\n", new_x, new_y, new_cost);
     m_queue.push(new_idx);
 }
 
@@ -238,8 +239,8 @@ void occupancy_grid_t::add_node_to_stack_diag(
     const map_node_t& root_node = m_grid[root_idx.idx];
     int32_t new_x = (int32_t) root_node.pos.x + offset.dx;
     int32_t new_y = (int32_t) root_node.pos.y + offset.dy;
-    if ((new_x < 0) || (new_x >= m_grid_size.cols) 
-        || (new_y < 0) || (new_y >= m_grid_size.rows)) 
+    if ((new_x < 0) || (new_x >= m_grid_size.cols)
+        || (new_y < 0) || (new_y >= m_grid_size.rows))
     {
         return;
     }
@@ -260,7 +261,7 @@ void occupancy_grid_t::add_node_to_stack_diag(
         (uint32_t) (new_x + root_node.pos.y * m_grid_size.cols);
     const map_node_t& vert_child_node = m_grid[idx_vert];
     const map_node_t& horiz_child_node = m_grid[idx_horiz];
-    uint8_t pass_mask = 
+    uint8_t pass_mask =
         PATH_NODE_FLAG_IMPASSABLE | PATH_NODE_FLAG_NEAR_IMPASSABLE;
     if ((vert_child_node.flags.state & pass_mask) &&
         (horiz_child_node.flags.state & pass_mask))
@@ -314,15 +315,14 @@ void occupancy_grid_t::compute_path_costs()
     {
         process_next_stack_node();
     }
-    // Now follow gradient in each node to build directional vector 
+    // Now follow gradient in each node to build directional vector
     //  to reach destination.
     pixel_offset_bitfield_t base_direction, next_direction;
     // Iterate through nodes and build direction vector for each. Vector
-    //  is defined by following the path toward the destination (i.e., 
+    //  is defined by following the path toward the destination (i.e.,
     //  stepping between adjacent nodes) out by several nodes, and measuing
     //  the bearing to that node. If the path turns sharply (e.g., around
     //  an obstacle) then the path is only traced to the turning point.
-//printf("---------------------Checking direction\n");
     for (uint32_t y=0; y<m_grid_size.rows; y++) {
         for (uint32_t x=0; x<m_grid_size.cols; x++) {
             uint32_t idx = x + y * m_grid_size.cols;
@@ -337,13 +337,12 @@ void occupancy_grid_t::compute_path_costs()
                     break;
                 }
                 map_node_t next_ggp = m_grid[ggp.parent_idx.idx];
-                if (gen == 0) 
+                if (gen == 0)
                 {
-                    // Get base direction. This returns bitfield 
-                    //  indicating direction of next node relative 
+                    // Get base direction. This returns bitfield
+                    //  indicating direction of next node relative
                     //  to this one.
                     base_direction = get_offset_mask(next_ggp.pos, ggp.pos);
-//printf("  node %d,%d   base direction %x\n", ggp.pos.x, ggp.pos.y, base_direction.mask);
                 }
                 else
                 {
@@ -355,14 +354,12 @@ void occupancy_grid_t::compute_path_costs()
                     //  will indicate if it's w/in +/-45deg of base.
                     next_direction =
                         get_offset_mask_wide(next_ggp.pos, ggp.pos);
-//printf("  ancestor %d,%d   direction %x  cost %f\n", ggp.pos.x, ggp.pos.y, next_direction.mask, ggp.path_cost);
                     if ((next_direction.mask & base_direction.mask) == 0)
                     {
                         // Latest direction is too different from original
                         //    offset. Halt search.
                         break;
                     }
-//printf("  ancestor %d,%d   direction %x  cost %f\n", ggp.pos.x, ggp.pos.y, next_direction.mask, ggp.path_cost);
                 }
                 ggp = next_ggp;
             }
@@ -376,7 +373,6 @@ void occupancy_grid_t::compute_path_costs()
                 theta_degs += 360.0;
             }
             root.direction_degs = theta_degs;
-//printf("%d,%d -> %d,%d is %.1f degs   0x%08lx\n", root.pos.x, root.pos.y, ggp.pos.x, ggp.pos.y, root.direction_degs, (uint64_t) &m_grid[idx]);
         }
     }
 }
@@ -392,7 +388,6 @@ void occupancy_grid_t::add_anchor_to_path_stack(
 {
     assert(idx.idx < m_grid_size.cols * m_grid_size.rows);
     map_node_t& path_node = m_grid[idx.idx];
-printf("Anchor point %d,%d, weight %f\n", path_node.pos.x, path_node.pos.y, path_weight);
     path_node.path_cost = path_weight;
     path_node.parent_idx.idx = c_invalid_grid_idx;
     m_queue.push(idx);
@@ -406,7 +401,7 @@ world_coordinate_t occupancy_grid_t::get_node_location(
     world_coordinate_t world_pos;
     assert(pos.x < m_grid_size.cols);
     assert(pos.y < m_grid_size.rows);
-    world_pos.x_meters = m_bottom_left.x_meters + 
+    world_pos.x_meters = m_bottom_left.x_meters +
         ((float) pos.x + 0.5) * m_node_size_meters;
     world_pos.y_meters = m_bottom_left.y_meters + m_map_size.y_meters -
         ((float) pos.y + 0.5) * m_node_size_meters;
@@ -428,7 +423,7 @@ void occupancy_grid_t::trace_routes(world_coordinate_t& destination,
         }
     }
     // Add anchors. First destination, then boundary conditions.
-    grid_index_t idx = get_node_index(destination.x_meters, 
+    grid_index_t idx = get_node_index(destination.x_meters,
         destination.y_meters);
     add_anchor_to_path_stack(idx, 0.0f);
     // For each boundary point, get distance/weight from parent map at
@@ -442,14 +437,14 @@ void occupancy_grid_t::trace_routes(world_coordinate_t& destination,
             world_coordinate_t world_pos = get_node_location(pos);
             // It's assumed that this map is a subset of parent map and
             //  is fully contained in it as that's a design constraint.
-            map_node_t& parent_node = parent_map.get_node(world_pos.x_meters, 
+            map_node_t& parent_node = parent_map.get_node(world_pos.x_meters,
                 world_pos.y_meters);
             grid_index_t idx = { .idx = y * m_grid_size.cols };
             add_anchor_to_path_stack(idx, parent_node.path_cost);
             // Last column.
             pos.x = m_grid_size.rows - 1;
             world_pos = get_node_location(pos);
-            parent_node = parent_map.get_node(world_pos.x_meters, 
+            parent_node = parent_map.get_node(world_pos.x_meters,
                 world_pos.y_meters);
             idx.idx = y * m_grid_size.cols + (m_grid_size.cols - 1);
             add_anchor_to_path_stack(idx, parent_node.path_cost);
@@ -483,7 +478,7 @@ void occupancy_grid_t::trace_routes(world_coordinate_t& destination)
             m_grid[idx].path_cost = 0.0f;
         }
     }
-    grid_index_t idx = get_node_index(destination.x_meters, 
+    grid_index_t idx = get_node_index(destination.x_meters,
         destination.y_meters);
     add_anchor_to_path_stack(idx, 0.0f);
     compute_path_costs();

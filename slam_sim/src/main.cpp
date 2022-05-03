@@ -41,6 +41,7 @@ static constexpr uint32_t c_rule_wait_millis = 50;
 void main_loop()
 {
 int32_t ctr = 0;
+int32_t reached_destinations = 0;
     g_running = true;
     // When the simulation completes it will set g_quit to 1. Then we can
     //  exit. In the meantime, the simulation is being handled by rules.
@@ -53,11 +54,17 @@ int32_t ctr = 0;
             move_toward_destination();
             if (reassess_destination())
             {
-                g_quit = 1;
+                reached_destinations++;
+                if (reached_destinations >= 3)
+                {
+                    g_quit = 1;
+                }
             }
-//            export_map_to_file();
-            build_export_map();
-            if (ctr++ > 250)
+            if (ctr & 1)
+            {
+                build_export_map();
+            }
+            if (ctr++ > 1200)
             {
                 g_quit = 1;
             }
@@ -86,8 +93,6 @@ void clean_db()
     remove_all_rows<gaia::slam::ego_t>();
     remove_all_rows<gaia::slam::destination_t>();
     remove_all_rows<gaia::slam::observed_area_t>();
-    remove_all_rows<gaia::slam::pending_destination_t>();
-    remove_all_rows<gaia::slam::collision_event_t>();
     remove_all_rows<gaia::slam::graphs_t>();
     remove_all_rows<gaia::slam::vertices_t>();
     remove_all_rows<gaia::slam::positions_t>();
@@ -158,7 +163,7 @@ void parse_command_line(int argc, char** argv)
     {
         usage(argc, argv);
     }
-    gaia_log::app().info("Initial possition at {},{}", 
+    gaia_log::app().info("Initial possition at {},{}",
         g_position.x_meters, g_position.y_meters);
     gaia_log::app().info("Loading world map {}", map_file);
     load_world_map(map_file);

@@ -45,33 +45,11 @@ using gaia::slam::destination_writer;
 // Determine if a new graph optimization is necessary.
 // In a live example, this function would apply logic to determine if
 //  enough data has been collected (e.g., new range data, new closures,
-//  etc.) to justify performing another map optimization. For now, say 
-//  an optiimzation is required every X vertices.
+//  etc.) to justify performing another map optimization. For now, say
+//  an optiimzation is required every step.
 bool optimization_required()
 {
     return true;
-//    static int32_t ctr = 0;
-//    if (ctr < 4)
-//    {
-//        return true;
-//    }
-//    else if (ctr < 8)
-//    {
-//        return (ctr & 1) == 0;
-//    }
-//    else if (ctr < 16)
-//    {
-//        return (ctr & 3) == 0;
-//    }
-//    else if (ctr < 32)
-//    {
-//        return (ctr & 7) == 0;
-//    }
-//    else
-//    {
-//        return (ctr & 15) == 0;
-//    }
-//    return false;
 }
 
 
@@ -150,21 +128,6 @@ bool need_to_extend_map(positions_t& pos, observed_area_t& bounds)
 }
 
 
-//static void build_map(area_map_t& am)
-//{
-//    static int32_t ctr = 0;
-//    occupancy_grid_t map(am);
-//    // There are C++ ways to format a number to a string (e.g.,
-//    //  fmt::format or std::stringstream, but the C approach is
-//    //  nice in its simplicity.
-//// TODO get timestamp to use for name
-//    char fname[256];
-//    sprintf(fname, "map_%03d.pnm", ctr++);
-//    gaia_log::app().info("Building map {}", fname);
-//    map.export_as_pnm(fname);
-//}
-
-
 void export_map_to_file()
 {
     static int32_t ctr = 0;
@@ -189,14 +152,14 @@ void build_export_map()
     };
     float width_meters = region.right_meters() - region.left_meters();
     float height_meters = region.top_meters() - region.bottom_meters();
-    // Each time we build an area map 
-    occupancy_grid_t map(c_export_map_node_width_meters, 
+    // Each time we build an area map
+    occupancy_grid_t map(c_export_map_node_width_meters,
         bottom_left, width_meters, height_meters);
     for (graphs_t& g: graphs_t::list())
     {
         for (vertices_t& v: g.vertices())
         {
-            //gaia_log::app().info("Pulling sensor data from {}:{}", 
+            //gaia_log::app().info("Pulling sensor data from {}:{}",
             //    g.id(), v.id());
             map.apply_sensor_data(v);
         }
@@ -270,7 +233,8 @@ bool reassess_destination()
     {
         // Select next destination.
         world_coordinate_t new_dest = g_destinations[g_next_destination++];
-printf("Next destination: %.1f,%.1f\n", new_dest.x_meters, new_dest.y_meters);
+        gaia_log::app().info("Next desination is {},{}", new_dest.x_meters,
+            new_dest.y_meters);
         if (g_next_destination >= g_destinations.size())
         {
             g_next_destination = 0;
@@ -285,6 +249,46 @@ printf("Next destination: %.1f,%.1f\n", new_dest.x_meters, new_dest.y_meters);
     txn.commit();
     return rc;
 }
+
+
+// Infrastructure has info on latest position so no need to query DB
+//  (infra is what sent that info to the DB).
+void move_toward_destination()
+{
+    txn_t txn;
+    txn.begin();
+    // Move forward one step.
+    // Get direction to head from map.
+    grid_index_t idx = g_navigation_map.get_node_index(g_position.x_meters,
+        g_position.y_meters);
+    map_node_t node = g_navigation_map.get_node(idx);
+    //map_node_t& node = g_navigation_map.get_node(g_position.x_meters,
+    //    g_position.y_meters);
+    float heading_degs = node.direction_degs;
+    // Move in that direction.
+    float dist_meters = c_step_meters;
+    float s, c;
+    sincosf(c_deg_to_rad * heading_degs, &s, &c);
+    float dx_meters = s * dist_meters;
+    float dy_meters = c * dist_meters;
+    g_position.x_meters += dx_meters;
+    g_position.y_meters += dy_meters;
+    g_heading_degs = heading_degs;
+    gaia_log::app().info("Moving {},{} meters to {},{}", dx_meters,
+        dy_meters, g_position.x_meters, g_position.y_meters);
+    // Position moved. Wait a bit before proceeding, to account for
+    //  at least a little bit of travel time.
+    usleep(50000);
+    // TODO Add logic to determine when keyframes should be created and
+    //  when to convert those to a vertex. E.g., does this location have
+    //  salient features? does it provide sensor data that's new?
+    // For now, create a vertex every time we've moved forward a small
+    //  amount.
+    create_vertex(g_position, g_heading_degs);
+    //
+    txn.commit();
+}
+
 
 } // namespace slam_sim
 

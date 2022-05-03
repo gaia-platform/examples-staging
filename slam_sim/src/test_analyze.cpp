@@ -42,7 +42,7 @@ static uint32_t check_radial(uint32_t num, double expected,
     if (fabs(data.range_meters[num] - expected) > 0.01)
     {
         fprintf(stderr, "Radial %d (%.1f degs) has range of %.3f, "
-            "expected %.3f\n", num, data.bearing_degs[num], 
+            "expected %.3f\n", num, data.bearing_degs[num],
             data.range_meters[num], expected);
         errs++;
     }
@@ -62,7 +62,7 @@ int main(int argc, char** argv)
     load_world_map(WORLD_MAP_FILE);
     std::string response;
     sensor_data_t data;
-    map_coord_t coord = { 
+    map_coord_t coord = {
         .x_meters = -3.0,
         .y_meters = 4.4,
         .heading_degs = 45.0

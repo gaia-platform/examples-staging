@@ -10,17 +10,13 @@
 --
 -- Schema for SLAM simulation.
 --
--- Schema is split into 3 categories of tables.
+-- Schema is split into 2 categories of tables.
 --
 -- The first includes tables that have individual records in them. For
 --  example, the 'ego', the 'destination', and maps that represent the
 --  area (used for path finding).
 --
--- The second includes tables storing event data. This includes destination
---  requests pushed in externally (e.g., an external request for Alice
---  to go to a particular position) or if Alice senses a collision.
---
--- The third includes the main elements of the SLAM algorithm. This includes
+-- The second includes the main elements of the SLAM algorithm, such as
 --  graphs, edges, and vertices, and auxiliary tables to support these.
 --
 ------------------------------------------------------------------------
@@ -30,13 +26,8 @@ database slam;
 -- Table list
 -- Single record tables:
 --    ego                   Stores state of the bot.
-----    area_map              Map of the known world.
 --    destination           Location that bot is moving to.
 --    observed_area         Bounds of observed world.
---
--- Event tables:
---    pending_destination   Destination requested externally.
---    collision_event       Sensors detected imminent collision.
 --
 -- Data tables:
 --    graphs                Group of observations to produce pose graph.
@@ -50,7 +41,9 @@ database slam;
 -- Note that 'vertex' and 'observation' are often used interchangeaby.
 -- In future, these should be split. An 'observation' is a view of the
 --  environment, and that may or may not become a vertex, while a vertex
---  will always be associated with an observation.
+--  will always be associated with an observation. An observation seems
+--  to be called KeyPoint by some.
+
 
 ------------------------------------------------------------------------
 -- Tables with single records (i.e., exactly one)
@@ -80,9 +73,6 @@ table ego
   -- Position oriented.
   destination references destination,
   world references observed_area
-
---  -- Map oriented.
---  map references area_map
 )
 
 
@@ -99,29 +89,6 @@ table observed_area
 
   ego references ego
 )
-
-
----- Maps would ideally store map content as blobs but max blob size is
-----  presently too small. Instead, store pointer to current map and
-----  manage concurrent access manually.
---table area_map
---(
---//  -- Reference to in-memory blob that stores 2D map.
---//  -- Blob ID changes on each map update.
---//  blob_id uint32,
---//
---  -- Bounding polygon
---  -- Uses world coordinates, with increasing X,Y being rightward/upward.
---  left_meters float,
---  right_meters float,
---  top_meters float,
---  bottom_meters float,
---  -- Grid size
---  num_rows uint32,
---  num_cols uint32,
---
---  ego references ego
---)
 
 
 table destination
@@ -151,27 +118,6 @@ table latest_observation
   vertex references vertices
       where latest_observation.vertex_id = vertices.id,
   ego references ego
-)
-
-
-------------------------------------------------------------------------
--- Event table(s)
--- Pending actions should be put in an event table, as well as unexpected
---  events.
-
-table pending_destination
-(
-  -- When a destination request is made, it is stored here. When it's
-  --  appropriate, this location will become the the new destination.
-  -- Uses world coordinates, with increasing X,Y being rightward/upward.
-  x_meters float,
-  y_meters float
-)
-
-
-table collision_event
-(
-  description string
 )
 
 

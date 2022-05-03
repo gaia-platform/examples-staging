@@ -21,7 +21,6 @@
 
 #include <gaia/logger.hpp>
 
-//#include "blob_cache.hpp"
 #include "constants.hpp"
 #include "globals.hpp"
 #include "line_segment.hpp"
@@ -94,7 +93,7 @@ occupancy_grid_t::occupancy_grid_t(float node_width_meters,
 }
 
 
-void occupancy_grid_t::reset(world_coordinate_t bottom_left, 
+void occupancy_grid_t::reset(world_coordinate_t bottom_left,
     float width_meters, float height_meters)
 {
     init(m_node_size_meters, bottom_left, width_meters, height_meters);
@@ -159,7 +158,7 @@ void occupancy_grid_t::initialize_grid()
 // Node access
 
 
-// Returns index of map node at specified location. Location uses 
+// Returns index of map node at specified location. Location uses
 grid_index_t occupancy_grid_t::get_node_index(float x_meters, float y_meters)
 {
     // x index.
@@ -171,7 +170,7 @@ grid_index_t occupancy_grid_t::get_node_index(float x_meters, float y_meters)
     }
     // y index.
     float bottom_inset_meters = y_meters - m_bottom_left.y_meters;;
-    uint32_t y_idx = 
+    uint32_t y_idx =
         (uint32_t) floor(bottom_inset_meters / m_node_size_meters);
     if (y_idx >= m_grid_size.rows)
     {
@@ -214,7 +213,7 @@ world_coordinate_t occupancy_grid_t::get_node_position(grid_coordinate_t& pos)
     assert(pos.x < m_grid_size.cols);
     assert(pos.y < m_grid_size.rows);
     world_coordinate_t coord;
-    coord.x_meters = m_bottom_left.x_meters 
+    coord.x_meters = m_bottom_left.x_meters
         + ((float) pos.x + 0.5f) * m_node_size_meters;
     coord.y_meters = m_bottom_left.y_meters + m_map_size.y_meters
         - (((float) pos.y + 0.5f) * m_node_size_meters);
@@ -224,7 +223,7 @@ world_coordinate_t occupancy_grid_t::get_node_position(grid_coordinate_t& pos)
 ////////////////////////////////////////////////////////////////////////
 // Applying sensor data to the map grids
 
-// Updates occupancy, oberved and boundary flags in map from 
+// Updates occupancy, oberved and boundary flags in map from
 //  observations on this radial.
 // Steps through radial and estimates what grid squares it crosses.
 void occupancy_grid_t::apply_radial(float radial_degs, float range_meters,
@@ -232,13 +231,13 @@ void occupancy_grid_t::apply_radial(float radial_degs, float range_meters,
 {
     // Set observed and boundary flags.
     // Measured distance on radial.
-    double dist_meters = range_meters < 0.0 
+    double dist_meters = (range_meters < 0.0)
         ? c_range_sensor_max_meters : range_meters;
     float s, c;
     sincosf(c_deg_to_rad * radial_degs, &s, &c);
-    // Number of points on radial to examine. Sample at a fraction of 
+    // Number of points on radial to examine. Sample at a fraction of
     //  the grid size.
-    uint32_t num_steps = (uint32_t) 
+    uint32_t num_steps = (uint32_t)
         ceil(dist_meters / (m_node_size_meters / 3.0));
     double step_size_meters = dist_meters / num_steps;
     for (uint32_t i=1; i<=num_steps; i++)
@@ -295,9 +294,9 @@ void occupancy_grid_t::apply_flags()
             // First 8 deltas are in first ring around node. Those
             //  are ADJ_IMPASSABLE. Second ring are CLOSE_IMPASSABLE.
             //  Third ring are NEAR_IMPASSABLE.
-            const int32_t x_delta[48] = { 
+            const int32_t x_delta[48] = {
                 -1,  0,  1, -1,  1, -1,  0,  1,
-                -2, -1,  0,  1,  2, -2,  2, -2, 
+                -2, -1,  0,  1,  2, -2,  2, -2,
                  2, -2,  2, -2, -1,  0,  1,  2,
                 -3, -2, -1,  0,  1,  2,  3,
                 -3,  3, -3,  3, -3,  3, -3,  3, -3,  3,
@@ -305,34 +304,34 @@ void occupancy_grid_t::apply_flags()
             };
             const int32_t y_delta[48] = {
                 -1, -1, -1,  0,  0,  1,  1,  1,
-                -2, -2, -2, -2, -2, -1, -1,  0, 
+                -2, -2, -2, -2, -2, -1, -1,  0,
                  0,  1,  1,  2,  2,  2,  2,  2,
-                -3, -3, -3, -3, -3, -3, -3, 
+                -3, -3, -3, -3, -3, -3, -3,
                 -2, -2, -1, -1,  0,  0,  1,  1,  2,  2,
-                 3, -3,  3,  3,  3,  3,  3  
+                 3, -3,  3,  3,  3,  3,  3
             };
             for (uint32_t i=0; i<48; i++)
             {
-                uint32_t nbr_x = (uint32_t) 
+                uint32_t nbr_x = (uint32_t)
                     ((int32_t) node.pos.x + x_delta[i]);
-                uint32_t nbr_y = (uint32_t) 
+                uint32_t nbr_y = (uint32_t)
                     ((int32_t) node.pos.y + y_delta[i]);
                 if ((nbr_x < m_grid_size.cols) && (nbr_y < m_grid_size.rows))
                 {
                     uint32_t nbr_idx = nbr_x + nbr_y * m_grid_size.cols;
                     if (i < 8)
                     {
-                        m_grid[nbr_idx].flags.state |= 
+                        m_grid[nbr_idx].flags.state |=
                             PATH_NODE_FLAG_ADJ_IMPASSABLE;
                     }
                     else if (i < 24)
                     {
-                        m_grid[nbr_idx].flags.state |= 
+                        m_grid[nbr_idx].flags.state |=
                             PATH_NODE_FLAG_CLOSE_IMPASSABLE;
                     }
-                    else 
+                    else
                     {
-                        m_grid[nbr_idx].flags.state |= 
+                        m_grid[nbr_idx].flags.state |=
                             PATH_NODE_FLAG_NEAR_IMPASSABLE;
                     }
                 }
@@ -353,7 +352,7 @@ void occupancy_grid_t::apply_sensor_data(const vertices_t& obs)
     // Apply sensor data.
     for (int32_t i=0; i<r.num_radials(); i++)
     {
-        apply_radial(r.bearing_degs()[i], r.distance_meters()[i], 
+        apply_radial(r.bearing_degs()[i], r.distance_meters()[i],
             pos.x_meters(), pos.y_meters());
     }
     apply_flags();
@@ -410,10 +409,10 @@ void occupancy_grid_t::export_as_pnm(string file_name)
     txn.commit();
 
     // Export image.
-    try 
+    try
     {
         std::ofstream f(file_name, std::ofstream::binary);
-        f << "P6\n# Slam map\n" << m_grid_size.cols << " " 
+        f << "P6\n# Slam map\n" << m_grid_size.cols << " "
             << m_grid_size.rows << "\n255\n";
         for (uint32_t i=0; i<n_pix; i++)
         {
@@ -426,24 +425,6 @@ void occupancy_grid_t::export_as_pnm(string file_name)
         cerr << "Error writing to " << file_name << ": " << ioe.what() << "\n";
     }
 }
-
-//void occupancy_grid_t::count_bounds()
-//{
-//    uint32_t cnt = 0;
-//    for (uint32_t y=0; y<m_grid_size.rows; y++)
-//    {
-//        for (uint32_t x=0; x<m_grid_size.cols; x++)
-//        {
-//            uint32_t idx = x + y * m_grid_size.cols;
-//            if (m_grid[idx].boundary > 0.0f)
-//            {
-////printf("%d,%d  (%dx%d=%d)  bounds %f\n", x, y, m_grid_size.cols, m_grid_size.rows, idx, m_grid[idx].boundary);
-//                cnt++;
-//            }
-//        }
-//    }
-//    printf("Boundary count: %d\n", cnt);
-//}
 
 } // namespace slam_sim
 

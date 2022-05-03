@@ -23,22 +23,20 @@ constexpr float c_export_map_node_width_meters = 0.05f;
 
 // Path finding.
 // Bias factor for seeking out new areas to explore. This is the increase
-//  in cost to traverse a node for each time it's been observed.
-constexpr float c_path_penalty_per_observation = 0.05f;
+//  in cost to traverse a node for each time it's been occupied.
+constexpr float c_path_penalty_per_occupation = 0.5f;
 
 // The Dijkstra-like path finding algorithms are very rough on the local
 //  scale, having at most 8 directions to move away from a node in the map.
-//  The approach here to smooth that out is to look at the path necessary
-//  to trace out X nodes from a given location and use that to generate
-//  the directional vector from each node. The constant here is that X.
+//  The approach here is to smooth the path direction by looking ahead
+//  X nodes and using this direction necessar to go to that node
+//  to generate the direction vector. The constant here is that X.
 constexpr uint32_t c_num_ancestors_for_direction = 5;
 
-// Distance between each step. Keyframes are taken after several steps.
+// Distance travelled between each simulated step.
 constexpr float c_step_meters = 0.8 * c_navigation_map_node_width_meters;
 
-constexpr uint32_t c_num_steps_between_keyframes = 1;
-
-// How close to destination bot has to declare it's reached it.
+// How close to destination bot has to be to declare victory.
 constexpr float c_destination_radius_meters = 0.5f;
 
 } // namespace slam_sim

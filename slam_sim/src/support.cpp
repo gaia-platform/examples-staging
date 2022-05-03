@@ -20,8 +20,11 @@
 #include <gaia/db/db.hpp>
 #include <gaia/logger.hpp>
 
+#include "gaia_slam.h"
+
 #include "constants.hpp"
 #include "globals.hpp"
+#include "occupancy.hpp"
 #include "slam_sim.hpp"
 #include "txn.hpp"
 
@@ -36,9 +39,10 @@ using std::max;
 
 using gaia::common::gaia_id_t;
 
-using gaia::slam::edges_t;
 using gaia::slam::destination_t;
+using gaia::slam::edges_t;
 using gaia::slam::ego_t;
+using gaia::slam::error_corrections_t;
 using gaia::slam::graphs_t;
 using gaia::slam::latest_observation_t;
 using gaia::slam::movements_t;
@@ -50,11 +54,6 @@ using gaia::slam::vertices_t;
 using gaia::slam::latest_observation_writer;
 using gaia::slam::observed_area_writer;
 
-
-////////////////////////////////////////////////////////////////////////
-// Background API that supports the contents of rule_api.cpp. Most
-//  importantly, this means that the functions here are expected to 
-//  be called from within an active transaction
 
 // Updates the observed_area record to make sure it includes all observed
 //  areas plus the destination.
@@ -105,16 +104,18 @@ void update_world_area()
         oa_writer.top_meters    = top_edge;
         oa_writer.update_row();
     }
-printf("World area: %.1f,%.1f to %.1f,%.1f\n", left_edge, bottom_edge, right_edge, top_edge);
+    gaia_log::app().info("World area is now {},{} to {},{}", left_edge,
+        bottom_edge, right_edge, top_edge);
     txn.commit();
-}    
+}
 
 
 void create_vertex(world_coordinate_t pos, float heading_degs)
 {
-printf("Creating vertex\n");
+    txn_t txn;
+    txn.begin();
     uint32_t obs_num = s_next_vertex_id++;
-    gaia_log::app().info("Performing observation {} at {},{} heading {}", 
+    gaia_log::app().info("Performing observation {} at {},{} heading {}",
         obs_num, pos.x_meters, pos.y_meters, heading_degs);
     sensor_data_t data;
     map_coord_t coord = {
@@ -127,7 +128,7 @@ printf("Creating vertex\n");
     // Get ego
     ego_t& ego = *(ego_t::list().begin());
     uint32_t graph_id = ego.current_graph_id();
-    
+
     // Get most recent obesrvation.
     vertices_t prev_vert = ego.latest_observation().vertex();
     float prev_x_meters, prev_y_meters, prev_heading_degs;
@@ -201,65 +202,17 @@ printf("Creating vertex\n");
     latest_observation_writer lo_writer = ego.latest_observation().writer();
     lo_writer.vertex_id = obs_num;
     lo_writer.update_row();
-}
 
-
-////////////////////////////////////////////////////////////////////////
-// Non-rule API
-// The functions here must manage their own transactions.
-
-
-// Infrastructure has info on latest position so no need to query DB
-//  (infra is what sent that info to the DB).
-void move_toward_destination()
-{
-printf("MOVING\n");
-    txn_t txn;
-    txn.begin();
-    // Make several small steps.
-    for (uint32_t i=0; i<c_num_steps_between_keyframes; i++)
-    {
-        // Get direction to head from map.
-        grid_index_t idx = g_navigation_map.get_node_index(g_position.x_meters, 
-            g_position.y_meters);
-        map_node_t node = g_navigation_map.get_node(idx);
-map_node_t* pnode = g_navigation_map.get_node_ptr(idx);
-        //map_node_t& node = g_navigation_map.get_node(g_position.x_meters, 
-        //    g_position.y_meters);
-//printf("At node %d,%d. Moving %.2f\n", node.pos.x, node.pos.y, node.direction_degs);
-        float heading_degs = node.direction_degs;
-        // Move in that direction.
-        float dist_meters = c_step_meters;
-        float s, c;
-        sincosf(c_deg_to_rad * heading_degs, &s, &c);
-        float dx_meters = s * dist_meters;
-        float dy_meters = c * dist_meters;
-printf("At %d,%d (%.2f,%.2f  0x%08lx) moving %.1f to ", node.pos.x, node.pos.y, g_position.x_meters, g_position.y_meters, (uint64_t) pnode, g_heading_degs);
-        g_position.x_meters += dx_meters;
-        g_position.y_meters += dy_meters;
-        g_heading_degs = heading_degs;
-printf("%.2f,%.2f\n", g_position.x_meters, g_position.y_meters);
-        gaia_log::app().info("Moving {},{} meters to {},{}", dx_meters,
-            dy_meters, g_position.x_meters, g_position.y_meters);
-    }
-    // Position moved. Wait a bit before proceeding, to account for
-    //  at least a little bit of travel time.
-    usleep(50000);
-    // TODO Add logic to determine when keyframes should be created and
-    //  when to convert those to a vertex. E.g., does this location have
-    //  salient features? does it provide sensor data that's new?
-    // For now, create a vertex every time we've moved forward a small
-    //  amount.
-    create_vertex(g_position, g_heading_degs);
-    //
     txn.commit();
 }
+
 
 void seed_database(float x_meters, float y_meters)
 {
     // There shouldn't be any transaction conflicts as this is the first
     //  operation on the database so ignore the try/catch block.
-    gaia::db::begin_transaction();
+    txn_t txn;
+    txn.begin();
 
     ////////////////////////////////////////////
     // Records
@@ -274,7 +227,7 @@ void seed_database(float x_meters, float y_meters)
     world_coordinate_t new_dest = g_destinations[g_next_destination++];
     assert(g_destinations.size() > 1);
 
-    // Area map and observed area start out with same dimensions. 
+    // Area map and observed area start out with same dimensions.
     // Shorthand.
     float max_range = c_range_sensor_max_meters;
     // Align calls laterally for visual inspection to help make sure variables
@@ -296,8 +249,8 @@ void seed_database(float x_meters, float y_meters)
         new_dest.y_meters,    // y_meters
         0.0                   // departure_time_sec
     );
-printf("initial destination %f,%f\n", new_dest.x_meters, new_dest.y_meters);
-
+    gaia_log::app().info("Initial destination is {},{}", new_dest.x_meters,
+        new_dest.y_meters);
     ////////////////////////////////////////////
     // Relationships
     ego.destination().connect(destination_id);
@@ -306,7 +259,7 @@ printf("initial destination %f,%f\n", new_dest.x_meters, new_dest.y_meters);
 
     ////////////////////////////////////////////
     // All done
-    gaia::db::commit_transaction();
+    txn.commit();
 }
 
 } // namespace slam_sim
