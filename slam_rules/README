@@ -1,0 +1,8 @@
+To compile, type:
+  make
+
+To run, type:
+  make run
+
+Output of simulation is stored in image files in src/.
+
